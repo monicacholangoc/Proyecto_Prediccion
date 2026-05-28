@@ -1,0 +1,63 @@
+# =========================
+# Entornos virtuales
+# =========================
+venv/
+.venv/
+env/
+
+# =========================
+# Python
+# =========================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+
+# =========================
+# Jupyter
+# =========================
+.ipynb_checkpoints/
+
+# =========================
+# Streamlit local
+# =========================
+.streamlit/secrets.toml
+
+# =========================
+# IDE / editores
+# =========================
+.vscode/
+.idea/
+
+# =========================
+# Sistema operativo
+# =========================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# =========================
+# Logs y temporales
+# =========================
+*.log
+*.tmp
+*.bak
+
+# =========================
+# Datos pesados / locales
+# =========================
+datos_crudos/Reviews.csv
+datos_crudos/*.zip
+datos_crudos/*.7z
+datos_crudos/*.gz
+
+# =========================
+# Reportes y salidas generadas
+# =========================
+datos_generados/reportes/
+
+# =========================
+# Cache y artefactos varios
+# =========================
+.pytest_cache/

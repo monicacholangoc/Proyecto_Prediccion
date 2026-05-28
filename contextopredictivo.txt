@@ -1,0 +1,189 @@
+modelos ----
+Random Forest 
+LightGBM
+XGBoost
+Decision Tree
+SVM
+K-Nearest Negihbors
+ -----------------------
+Resampling 
+Oversampling (sobremuestreo)
+Random oversampling
+SMOTE 
+Undersampling (submuestreo)
+Random undersampling
+Near Miss
+ 
+class_weight='balanced'
+ -----------------------------
+LDA (Latent Dirichlet Allocation)
+Clustering con TF-IDF + KMeans
+Reglas por keywords
+
+-------------------------------------
+Punto de control de mitad de seminario
+ 
+Punto de control de mitad de seminario. Sirve para asegurar que cada grupo llega a la segunda mitad con el proyecto ordenado. Aquí no se evalúan algoritmos sofisticados, se evalúa orden, entendimiento del negocio y calidad del EDA inicial.
+Estructura del repositorio (en GitHub)
+ 
+ 
+GRUPO_X/
+├── datos_crudos/
+├── datos_procesados/
+├── scripts/
+├── cuadernos/
+├── modelos/
+├── 
+├── requirements.txt
+└── .gitignore
+ 
+Pueden agregar carpetas si su caso lo necesita (ej. 09_geodata/, 09_consultas_sql/). Lo que no se mueve: 07_CONTEXTO, 08_PLAN_Y_EJECUCION y los cuadernos numerados en 03_cuadernos/.
+Sobre los datos pesados
+GitHub bloquea archivos > 100 MB. Si su dataset pesa más:
+No lo suban. Agréguenlo al .gitignore.
+En 00_datos_crudos/README.md pongan: link a la fuente, comando para descargarlo (ej. kaggle datasets download ...) y tamaño esperado.
+Si el procesado también pesa mucho, exporten una muestra (~10–20 MB) que sí se pueda versionar.
+No usamos Git LFS.
+Checklist
+1. Repositorio
+Repo en GitHub (público o privado con el docente invitado).
+README raíz con: título del caso, integrantes, instrucciones de instalación y descarga de datos.
+.gitignore con datos pesados, __pycache__/, .ipynb_checkpoints/, venv/, .DS_Store.
+requirements.txt con versiones fijas (pandas==2.2.2, no pandas solo).
+Mínimo 3 commits por integrante con mensajes descriptivos. Mensajes tipo update, fix, final_v2 no cuentan.
+2. Datos crudos — archivo en el repo si pesa < 100 MB; si no, README con link y comando de descarga.
+3. Datos procesados — al menos un .parquet o .csv limpio, con nombre claro (transacciones_limpias.parquet, no df_v3_final.csv). Schema documentado.
+4. Contexto del negocio (07_CONTEXTO/01_RESUMEN_DEL_CASO.md)
+Resumen del caso en sus palabras (1–2 párrafos).
+Contexto del dominio: qué hace el negocio, quién toma la decisión, qué incentivos tiene. Mínimo 3 fuentes externas citadas (no Wikipedia, no el enunciado).
+Pregunta de negocio principal y 2–3 secundarias.
+Métrica de éxito: qué KPI cambia y en qué dirección.
+Diccionario de variables (tabla): nombre, tipo, descripción, rango, % nulos, observaciones. Todas las columnas.
+Mínimo 5 hipótesis iniciales concretas (no "hay estacionalidad" — sí "los clientes que compran en diciembre tienen ticket promedio mayor").
+5. Plan de preparación (08_PLAN_Y_EJECUCION/preparacion_datos.md)
+Pasos de limpieza en orden, con justificación.
+Decisiones sobre nulos, duplicados, outliers, tipos, encodings, fechas.
+Variables nuevas y por qué.
+Qué se descarta y por qué.
+6. Cuaderno de preparación (03_cuadernos/01_preparacion_datos.ipynb)
+Corre de principio a fin sin errores (Restart & Run All antes de comitear).
+Carga desde 00_datos_crudos/, guarda en 01_datos_procesados/.
+Cada celda de código con celda markdown que explica qué y por qué.
+Validaciones tipo assert df.shape[0] > 0, assert df['cliente_id'].notna().all().
+7. Cuaderno de EDA (03_cuadernos/02_eda.ipynb)
+Corre de principio a fin sin errores.
+Univariado: distribuciones, tendencia central, dispersión.
+Bivariado: relaciones entre variables y con la variable objetivo (o dimensiones clave si es no supervisado).
+Mínimo 8 visualizaciones con título, ejes, leyenda y comentario interpretativo en markdown debajo.
+Sección final con mínimo 5 insights, cada uno con: qué se observó, por qué importa, qué hipótesis confirma/rechaza, qué decisión cambia.
+8. Bitácora de IA (08_PLAN_Y_EJECUCION/uso_de_ia.md) — ver abajo.
+Uso de IA
+Sí, queremos que usen IA (Antigravity, Claude Code, Cursor, Copilot, ChatGPT, Gemini). Un analista que no usa IA en 2026 deja productividad sobre la mesa.
+El trato: toda interacción significativa queda registrada en uso_de_ia.md. Por cada uso, una entrada con:
+Fecha
+Integrante
+Herramienta
+Tarea
+Prompt resumido
+Salida que aceptamos
+Salida que rechazamos o corregimos
+Quién verificó
+Si la bitácora no existe o se nota que se escribió toda el domingo en la noche, asumimos que la entrega fue generada por IA sin revisión humana y se evalúa así.
+Buenas prácticas:
+Usen los agentes para tareas acotadas, no para "haz todo el caso".
+Lean el diff antes de aceptarlo. Si no entienden una línea, pidan explicación.
+Si la IA propone un método estadístico, verifiquen los supuestos antes de aplicarlo.
+Comiteen lo generado por IA con prefijo [ia]: (ej. [ia]: limpieza columna InvoiceNo (revisado por Juan)).
+Si su caso tiene datos sensibles, anonimicen antes de pegar muestras en chats web.
+ -----------------------------------------------------
+Caso 06 · Reseñas Amazon — Predicción de Utilidad
+Dominio
+E-Commerce / NLP
+Técnica principal
+Clasificación + texto
+Dataset
+~100 000 reseñas
+Contexto del problema
+El dataset Amazon Fine Food Reviews contiene 568,000 reseñas de alimentos publicadas en Amazon con texto completo, calificación en estrellas (1–5) y contadores de utilidad percibida: cuántos usuarios encontraron útil la reseña (HelpfulnessNumerator) sobre cuántos la evaluaron (HelpfulnessDenominator).
+
+La plataforma muestra primero las reseñas más valoradas como útiles, lo que impacta directamente en las decisiones de compra de millones de usuarios. El reto analítico es que la utilidad no puede predecirse solo con la calificación de estrellas — es necesario construir características derivadas del texto para capturar la calidad, extensión, sentimiento y coherencia de la reseña.
+
+Desafíos de calidad del dataset:
+
+Reseñas con muy pocos votos producen tasas de utilidad poco representativas — filtrar a reseñas con ≥ 5 votos (HelpfulnessDenominator >= 5), reduciendo a ~100,000 reseñas
+Existen duplicados por usuario-producto-fecha que deben eliminarse con el criterio correcto
+---
+
+Objetivo del proyecto
+Construir un sistema que prediga la utilidad percibida de una reseña de e-commerce mediante ingeniería de características textuales, comparar un modelo interpretable con uno de mayor complejidad, y desarrollar una herramienta que ayude a los usuarios a mejorar la calidad de sus reseñas en tiempo real.
+
+---
+
+Actividades del proyecto
+🎓 Resultado de aprendizaje: el estudiante aplica ingeniería de características sobre texto sin modelos de lenguaje, compara clasificadores con métricas apropiadas y construye un producto analítico de retroalimentación al usuario.
+1
+🔍 Comprensión del dominio
+Investigar qué hace que una reseña en línea sea percibida como útil por otros compradores. Analizar ejemplos reales de reseñas con alta y baja utilidad. Formular hipótesis sobre qué características del texto — más allá de la nota — predicen la utilidad.
+
+2
+🗂️ Preparación y exploración de datos
+Aplicar los filtros de calidad estadística (≥ 5 votos)
+Eliminar duplicados con el criterio correcto: mismo usuario, mismo producto, misma fecha
+Definir la variable objetivo binaria: tasa de utilidad ≥ 0.7 → útil (1), menor → no útil (0)
+Construir las características derivadas del texto:
+- Longitud en palabras y número de oraciones
+
+- Score de sentimiento con VADER (léxico sin entrenamiento)
+
+- Coherencia entre sentimiento del texto y calificación de estrellas (feature binario)
+
+Explorar la distribución de características entre reseñas útiles y no útiles
+3
+🧪 Modelado
+Comparar dos clasificadores:
+
+Modelo baseline: Logistic Regression — interpretable, permite leer el peso de cada característica
+Modelo principal: Random Forest o LightGBM — mayor capacidad predictiva
+Evaluar con Precisión, Recall, F1 y ROC-AUC. Fundamentar por escrito por qué la exactitud (accuracy) no es la métrica correcta aquí. Extraer e interpretar la importancia de las características del modelo principal.
+
+4
+🚀 Producto analítico
+Pipeline técnico:
+
+Aplicar filtros: df[df['HelpfulnessDenominator'] >= 5]
+Eliminar duplicados: drop_duplicates(subset=['UserId', 'ProductId', 'Time'])
+Calcular score VADER: SentimentIntensityAnalyzer().polarity_scores(text)['compound']
+Variable de coherencia: ¿el sentimiento del texto coincide con la calificación de estrellas?
+API (FastAPI):
+
+POST /reviews/predict_helpfulness — recibe texto y calificación de estrellas; devuelve probabilidad de utilidad y desglose de features calculados
+GET /reviews/top_words — palabras más asociadas a reseñas útiles vs. no útiles
+Dashboard (Streamlit):
+
+Área de texto + selector de estrellas; al analizar: probabilidad de utilidad con medidor visual y desglose de las características calculadas
+Gráfico de importancia de variables con interpretación en lenguaje natural ("Las reseñas largas con sentimiento coherente son más útiles")
+Tabla comparativa de métricas de los dos modelos entrenados (con curva ROC)
+5
+💬 Interpretación y comunicación
+¿Qué características del texto predicen más la utilidad? ¿Coincide con las hipótesis iniciales? ¿Qué consejo concreto daría a alguien que quiere escribir una reseña más útil para otros compradores?
+
+---
+
+Dataset y recursos
+📦 Fuentes de datos
+🔗 Amazon Fine Food Reviews — Kaggle
+
+Lecturas recomendadas:
+
+Ingeniería de características para texto: longitud, estructura y coherencia
+Análisis de sentimiento con VADER: léxico basado en reglas sin entrenamiento
+Clasificación binaria: cuándo usar Precision, Recall y F1 en lugar de Accuracy
+Interpretabilidad de modelos: feature_importances_ y su lectura de negocio
+Filtrado estadístico de datos ruidosos en datasets de opiniones
+Rúbrica de evaluación
+Entregable	Semana	Peso	Criterios clave
+Definición del problema	1	10 %	Claridad de la pregunta de negocio, historias de usuario, ficha del dataset
+Pipeline de datos	2	20 %	Reproducibilidad, manejo del reto específico, validaciones documentadas
+EDA + primer modelo	3	25 %	Profundidad del análisis, rigor estadístico, pertinencia del modelo y métricas
+Producto analítico completo	4	30 %	Comparación de ≥ 2 modelos, API y dashboard funcionales, documentación
+Defensa oral y trabajo en equipo
