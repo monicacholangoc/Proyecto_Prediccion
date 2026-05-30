@@ -1,7 +1,7 @@
-"""Pagina base del EDA.
+"""EDA estructurado — version compacta.
 
-Por ahora usa las funciones de graficos y datos centralizados; en la
-siguiente fase creceremos esta vista con mas analisis y narrativa.
+6 graficos clave con una linea de interpretacion cada uno.
+Sin bloques de texto de relleno.
 """
 
 import pandas as pd
@@ -14,7 +14,6 @@ from plots.eda_charts import (
     build_helpfulness_distribution,
     build_incoherence_distribution,
     build_length_vs_helpfulness,
-    build_metric_summary_bar,
     build_review_length_distribution,
     build_stars_distribution,
     build_stars_vs_helpfulness,
@@ -30,199 +29,149 @@ from utils.formatters import format_compact_number, format_percentage
 
 
 st.title("Exploración de Datos")
-st.caption("EDA estructurado con filtros, bloques visuales y narrativa analítica más clara.")
+st.caption("EDA estructurado con filtros interactivos y lecturas analíticas directas.")
 
-st.markdown(
-    """
-    <div class="insight-panel">
-        <div class="insight-title">¿Qué explorar aquí?</div>
-        <p>
-            Este análisis responde tres preguntas clave: ¿cómo se distribuyen las calificaciones?
-            ¿qué longitud tienen las reseñas útiles vs las no útiles? ¿hay coherencia entre
-            el sentimiento del texto y la nota en estrellas? Usa los filtros para explorar
-            subgrupos específicos.
-        </p>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
+# ── Carga de datos ────────────────────────────────────────────────────────────
 
 reviews = add_basic_text_features(load_processed_reviews())
-fallback_reviews = add_basic_text_features(
+fallback = add_basic_text_features(
     get_corporate_audit_db().rename(columns={"Stars": "Score", "Text": "Text"})
 )
-# Si no hay parquet procesado disponible, la pagina sigue viva con la base operativa.
-source_reviews = reviews if not reviews.empty else fallback_reviews
-source_reviews = map_product_metadata(source_reviews)
+source = reviews if not reviews.empty else fallback
+source = map_product_metadata(source)
 
-if "Helpfulness" not in source_reviews.columns:
-    if "HelpfulnessNumerator" in source_reviews.columns and "HelpfulnessDenominator" in source_reviews.columns:
-        denominator = source_reviews["HelpfulnessDenominator"].replace(0, pd.NA)
-        source_reviews["Helpfulness"] = (
-            source_reviews["HelpfulnessNumerator"] / denominator
-        ).fillna(0)
-    elif "y_util" in source_reviews.columns:
-        source_reviews["Helpfulness"] = source_reviews["y_util"].astype(float)
+if "Helpfulness" not in source.columns:
+    if "HelpfulnessNumerator" in source.columns and "HelpfulnessDenominator" in source.columns:
+        denom = source["HelpfulnessDenominator"].replace(0, pd.NA)
+        source["Helpfulness"] = (source["HelpfulnessNumerator"] / denom).fillna(0)
+    elif "y_util" in source.columns:
+        source["Helpfulness"] = source["y_util"].astype(float)
 
-score_column = "Score" if "Score" in source_reviews.columns else "Stars" if "Stars" in source_reviews.columns else None
-category_column = "Categoria_Real" if "Categoria_Real" in source_reviews.columns else None
-helpfulness_column = "Helpfulness" if "Helpfulness" in source_reviews.columns else None
+score_col       = "Score" if "Score" in source.columns else "Stars" if "Stars" in source.columns else None
+category_col    = "Categoria_Real" if "Categoria_Real" in source.columns else None
+helpfulness_col = "Helpfulness" if "Helpfulness" in source.columns else None
 
-st.markdown("### Panel de Exploración")
-filter_cols = st.columns(4, gap="medium")
+# ── Filtros ───────────────────────────────────────────────────────────────────
 
-with filter_cols[0]:
-    score_options = ["Todas"]
-    if score_column:
-        score_options += [str(x) for x in sorted(source_reviews[score_column].dropna().astype(int).unique().tolist())]
-    selected_score = st.selectbox("Filtrar por estrellas", options=score_options)
+st.markdown("### Filtros de exploración")
+f1, f2, f3, f4 = st.columns(4, gap="medium")
 
-with filter_cols[1]:
-    category_options = ["Todas"]
-    if category_column:
-        category_options += sorted(source_reviews[category_column].dropna().astype(str).unique().tolist())
-    selected_category = st.selectbox("Filtrar por categoría", options=category_options)
-
-with filter_cols[2]:
-    min_length = int(source_reviews["review_len"].min()) if not source_reviews.empty and "review_len" in source_reviews.columns else 0
-    max_length = int(source_reviews["review_len"].max()) if not source_reviews.empty and "review_len" in source_reviews.columns else 200
-    selected_length = st.slider(
-        "Rango de longitud",
-        min_value=min_length,
-        max_value=max_length if max_length > min_length else min_length + 1,
-        value=(min_length, max_length if max_length > min_length else min_length + 1),
+with f1:
+    score_opts = ["Todas"] + (
+        [str(x) for x in sorted(source[score_col].dropna().astype(int).unique())]
+        if score_col else []
     )
+    sel_score = st.selectbox("Estrellas", options=score_opts)
 
-with filter_cols[3]:
-    selected_usefulness = st.selectbox(
-        "Filtrar por utilidad",
-        options=["Todas", "Utiles (>= 0.70)", "No utiles (< 0.70)"],
+with f2:
+    cat_opts = ["Todas"] + (
+        sorted(source[category_col].dropna().astype(str).unique().tolist())
+        if category_col else []
     )
+    sel_cat = st.selectbox("Categoría", options=cat_opts)
 
-filtered_reviews = source_reviews.copy()
-if score_column and selected_score != "Todas":
-    filtered_reviews = filtered_reviews[filtered_reviews[score_column].astype(str) == selected_score]
-if category_column and selected_category != "Todas":
-    filtered_reviews = filtered_reviews[filtered_reviews[category_column] == selected_category]
-if "review_len" in filtered_reviews.columns:
-    filtered_reviews = filtered_reviews[
-        filtered_reviews["review_len"].between(selected_length[0], selected_length[1])
-    ]
-if helpfulness_column and selected_usefulness != "Todas":
-    if "Utiles" in selected_usefulness:
-        filtered_reviews = filtered_reviews[filtered_reviews[helpfulness_column] >= 0.70]
-    else:
-        filtered_reviews = filtered_reviews[filtered_reviews[helpfulness_column] < 0.70]
+with f3:
+    min_l = int(source["review_len"].min()) if "review_len" in source.columns and not source.empty else 0
+    max_l = int(source["review_len"].max()) if "review_len" in source.columns and not source.empty else 500
+    max_l = max_l if max_l > min_l else min_l + 1
+    sel_len = st.slider("Rango de longitud", min_value=min_l, max_value=max_l, value=(min_l, max_l))
 
-sample_size = len(filtered_reviews)
-useful_ratio = (
-    float(filtered_reviews[helpfulness_column].ge(0.70).mean())
-    if helpfulness_column and not filtered_reviews.empty
-    else 0.0
-)
-avg_length = (
-    int(filtered_reviews["review_len"].fillna(0).mean())
-    if "review_len" in filtered_reviews.columns and not filtered_reviews.empty
-    else 0
-)
-distinct_products = (
-    int(filtered_reviews["ProductId"].astype(str).nunique())
-    if "ProductId" in filtered_reviews.columns and not filtered_reviews.empty
-    else 0
-)
+with f4:
+    sel_util = st.selectbox("Utilidad", options=["Todas", "Útiles (≥ 0.70)", "No útiles (< 0.70)"])
 
-metric_cols = st.columns(4, gap="medium")
-with metric_cols[0]:
+# Aplicar filtros
+df = source.copy()
+if score_col and sel_score != "Todas":
+    df = df[df[score_col].astype(str) == sel_score]
+if category_col and sel_cat != "Todas":
+    df = df[df[category_col] == sel_cat]
+if "review_len" in df.columns:
+    df = df[df["review_len"].between(sel_len[0], sel_len[1])]
+if helpfulness_col and sel_util != "Todas":
+    df = df[df[helpfulness_col] >= 0.70] if "Útiles" in sel_util else df[df[helpfulness_col] < 0.70]
+
+# ── KPIs del corte ────────────────────────────────────────────────────────────
+
+n        = len(df)
+products = int(df["ProductId"].astype(str).nunique()) if "ProductId" in df.columns else 0
+ratio    = float(df[helpfulness_col].ge(0.70).mean()) if helpfulness_col and n > 0 else 0.0
+avg_len  = int(df["review_len"].fillna(0).mean()) if "review_len" in df.columns and n > 0 else 0
+
+c1, c2, c3, c4 = st.columns(4, gap="medium")
+with c1:
+    render_metric_card("Reseñas en corte", format_compact_number(n), "Tras aplicar filtros")
+with c2:
+    render_metric_card("Productos únicos", format_compact_number(products), "Cobertura del subconjunto")
+with c3:
+    badge = "metric-badge-good" if ratio >= 0.40 else "metric-badge-warn"
+    label = "Proporción sana" if ratio >= 0.40 else "Desbalance"
     st.markdown(
         f"""
         <div class="metric-card">
-            <div class="metric-label">Reseñas en el corte actual</div>
-            <div class="metric-value">{format_compact_number(sample_size)}</div>
-            <div class="metric-caption">Registros visibles tras aplicar los filtros seleccionados.</div>
+            <div class="metric-label">Ratio de útiles</div>
+            <div class="metric-value">{format_percentage(ratio)}</div>
+            <div class="metric-caption">Reseñas con utilidad ≥ 0.70</div>
+            <span class="metric-badge {badge}">{label}</span>
         </div>
         """,
         unsafe_allow_html=True,
     )
-with metric_cols[1]:
-    st.markdown(
-        f"""
-        <div class="metric-card">
-            <div class="metric-label">Productos únicos</div>
-            <div class="metric-value">{format_compact_number(distinct_products)}</div>
-            <div class="metric-caption">Cobertura de productos en el subconjunto filtrado.</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-with metric_cols[2]:
-    _badge_class = "metric-badge-good" if useful_ratio >= 0.40 else "metric-badge-warn"
-    _label_util = "Proporción sana" if useful_ratio >= 0.40 else "Desbalance detectado"
-    st.markdown(
-        f"""
-        <div class="metric-card">
-            <div class="metric-label">Ratio de reseñas útiles</div>
-            <div class="metric-value">{format_percentage(useful_ratio)}</div>
-            <div class="metric-caption">Reseñas con utilidad ≥ 0.70 sobre el total visible.</div>
-            <span class="metric-badge {_badge_class}">{_label_util}</span>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-with metric_cols[3]:
-    _badge_len = "metric-badge-good" if avg_length > 60 else "metric-badge-warn"
-    _label_len = "Longitud útil" if avg_length > 60 else "Reseñas cortas"
+with c4:
+    badge2 = "metric-badge-good" if avg_len > 60 else "metric-badge-warn"
+    label2 = "Longitud útil" if avg_len > 60 else "Reseñas cortas"
     st.markdown(
         f"""
         <div class="metric-card">
             <div class="metric-label">Longitud media</div>
-            <div class="metric-value">{avg_length} palabras</div>
-            <div class="metric-caption">Promedio del subconjunto. Feature clave del modelo.</div>
-            <span class="metric-badge {_badge_len}">{_label_len}</span>
+            <div class="metric-value">{avg_len} palabras</div>
+            <div class="metric-caption">Feature #1 del modelo</div>
+            <span class="metric-badge {badge2}">{label2}</span>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
+# ── Gráficos principales (6 clave + heatmap) ─────────────────────────────────
 
-st.markdown("### Distribuciones Principales")
-dist_left, dist_right = st.columns(2, gap="large")
-with dist_left:
-    st.plotly_chart(build_stars_distribution(filtered_reviews), use_container_width=True)
-with dist_right:
-    st.plotly_chart(build_review_length_distribution(filtered_reviews), use_container_width=True)
+st.markdown("### Distribuciones")
 
-mid_left, mid_right = st.columns(2, gap="large")
-with mid_left:
-    st.plotly_chart(build_helpfulness_distribution(filtered_reviews), use_container_width=True)
-with mid_right:
-    st.plotly_chart(build_category_distribution(filtered_reviews), use_container_width=True)
+d1, d2 = st.columns(2, gap="large")
+with d1:
+    st.caption("**Calificaciones** — Concentración en 4–5 estrellas → desbalance de clases.")
+    st.plotly_chart(build_stars_distribution(df), use_container_width=True)
+with d2:
+    st.caption("**Longitud** — Distribución sesgada a la derecha. Reseñas largas son minoría y suelen ser más útiles.")
+    st.plotly_chart(build_review_length_distribution(df), use_container_width=True)
 
-extra_left, extra_right = st.columns(2, gap="large")
-with extra_left:
-    st.plotly_chart(build_target_balance(filtered_reviews), use_container_width=True)
-with extra_right:
-    st.plotly_chart(build_sentiment_distribution(filtered_reviews), use_container_width=True)
+d3, d4 = st.columns(2, gap="large")
+with d3:
+    st.caption("**Utilidad observada** — Muchas reseñas con utilidad 0 o 1 (sin votos intermedios).")
+    st.plotly_chart(build_helpfulness_distribution(df), use_container_width=True)
+with d4:
+    st.caption("**Balance de la variable objetivo** — Confirma el desbalance que justifica usar F1 en lugar de Accuracy.")
+    st.plotly_chart(build_target_balance(df), use_container_width=True)
 
-st.markdown("### Relaciones Relevantes")
-rel_left, rel_right = st.columns(2, gap="large")
-with rel_left:
-    st.plotly_chart(build_stars_vs_helpfulness(filtered_reviews), use_container_width=True)
-with rel_right:
-    st.plotly_chart(build_length_vs_helpfulness(filtered_reviews), use_container_width=True)
+st.markdown("### Relaciones con la utilidad")
 
-sent_left, sent_right = st.columns(2, gap="large")
-with sent_left:
-    st.plotly_chart(build_sentiment_vs_score(filtered_reviews), use_container_width=True)
-with sent_right:
-    st.plotly_chart(build_incoherence_distribution(filtered_reviews), use_container_width=True)
+r1, r2 = st.columns(2, gap="large")
+with r1:
+    st.caption("**Estrellas vs. utilidad** — Las 3 estrellas tienen mayor dispersión; los extremos son menos útiles en promedio.")
+    st.plotly_chart(build_stars_vs_helpfulness(df), use_container_width=True)
+with r2:
+    st.caption("**Longitud vs. utilidad** — A mayor longitud, mayor concentración de reseñas útiles. Relación más fuerte del dataset.")
+    st.plotly_chart(build_length_vs_helpfulness(df), use_container_width=True)
 
-summary_items = [
-    ("Registros", float(sample_size)),
-    ("Productos", float(distinct_products)),
-    ("Ratio util", useful_ratio * 100),
-    ("Longitud media", float(avg_length)),
-]
-st.plotly_chart(build_metric_summary_bar(summary_items), use_container_width=True)
+r3, r4 = st.columns(2, gap="large")
+with r3:
+    st.caption("**Sentimiento por estrellas** — Las 5 estrellas tienen sentimiento más positivo, pero también más varianza.")
+    st.plotly_chart(build_sentiment_vs_score(df), use_container_width=True)
+with r4:
+    st.caption("**Coherencia texto-estrellas** — Las reseñas incoherentes representan un subgrupo pequeño pero relevante para el modelo.")
+    st.plotly_chart(build_incoherence_distribution(df), use_container_width=True)
 
-st.markdown("### Correlaciones y Lectura de Features")
-st.plotly_chart(build_correlation_heatmap(filtered_reviews), use_container_width=True)
+st.markdown("### Correlación entre variables")
+st.caption(
+    "La longitud (`review_len`) tiene la correlación más alta con `y_util`. "
+    "El sentimiento aporta, pero en menor medida. La incoherencia correlaciona negativamente."
+)
+st.plotly_chart(build_correlation_heatmap(df), use_container_width=True)

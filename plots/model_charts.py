@@ -25,19 +25,11 @@ def build_roc_chart(metrics_df: pd.DataFrame, roc_curves: dict):
         figure = go.Figure()
         for model_name, curve in roc_curves.items():
             figure.add_trace(
-                go.Scatter(
-                    x=curve["fpr"],
-                    y=curve["tpr"],
-                    mode="lines",
-                    name=model_name,
-                )
+                go.Scatter(x=curve["fpr"], y=curve["tpr"], mode="lines", name=model_name)
             )
         figure.add_trace(
             go.Scatter(
-                x=[0, 1],
-                y=[0, 1],
-                mode="lines",
-                name="Azar",
+                x=[0, 1], y=[0, 1], mode="lines", name="Azar",
                 line={"dash": "dash", "color": "#94a3b8"},
             )
         )
@@ -54,23 +46,20 @@ def build_roc_chart(metrics_df: pd.DataFrame, roc_curves: dict):
 
     figure = go.Figure()
     for _, row in metrics_df.iterrows():
-        auc_value = float(row["roc_auc"])
+        auc_value    = float(row["roc_auc"])
         curve_height = max(0.55, min(0.95, auc_value))
         figure.add_trace(
             go.Scatter(
                 x=[0.0, 0.15, 0.35, 0.6, 1.0],
                 y=[0.0, curve_height * 0.55, curve_height * 0.78, curve_height * 0.92, 1.0],
                 mode="lines",
-                name=row["modelo"],
+                name=f"{row['modelo']} (AUC={auc_value:.3f})",
             )
         )
 
     figure.add_trace(
         go.Scatter(
-            x=[0, 1],
-            y=[0, 1],
-            mode="lines",
-            name="Azar",
+            x=[0, 1], y=[0, 1], mode="lines", name="Azar (AUC=0.5)",
             line={"dash": "dash", "color": "#94a3b8"},
         )
     )
@@ -84,12 +73,12 @@ def build_roc_chart(metrics_df: pd.DataFrame, roc_curves: dict):
 
 
 def build_feature_importance_chart(features_df: pd.DataFrame):
-    """Grafico horizontal para importancia relativa de variables."""
+    """Grafico horizontal para importancia relativa de variables, con anotaciones de negocio."""
     if features_df.empty:
         return px.bar(title="Importancia de variables")
 
     ordered = features_df.sort_values(by="importancia", ascending=True)
-    return px.bar(
+    fig = px.bar(
         ordered,
         x="importancia",
         y="feature",
@@ -98,6 +87,28 @@ def build_feature_importance_chart(features_df: pd.DataFrame):
         template="plotly_white",
         color_discrete_sequence=["#1d4ed8"],
     )
+
+    feature_labels = {
+        "review_len":       "Feature #1 — escribe más detalle",
+        "sentiment_score":  "Tono del texto (VADER)",
+        "incoherente":      "Penaliza incoherencia tono-estrellas",
+        "Score":            "Calificación en estrellas",
+    }
+
+    for _, row in features_df.iterrows():
+        label = feature_labels.get(row["feature"], "")
+        if label:
+            fig.add_annotation(
+                x=float(row["importancia"]) + 0.003,
+                y=row["feature"],
+                text=label,
+                showarrow=False,
+                xanchor="left",
+                font=dict(size=11, color="#526277"),
+            )
+
+    fig.update_layout(height=300, margin=dict(r=220))
+    return fig
 
 
 def build_confusion_matrix_chart(matrix, model_name: str):
@@ -108,8 +119,8 @@ def build_confusion_matrix_chart(matrix, model_name: str):
     return px.imshow(
         matrix,
         text_auto=True,
-        title=f"Matriz de confusion - {model_name}",
-        x=["Pred. no util", "Pred. util"],
-        y=["Real no util", "Real util"],
+        title=f"Matriz de confusion — {model_name}",
+        x=["Pred. no útil", "Pred. útil"],
+        y=["Real no útil", "Real útil"],
         color_continuous_scale="Blues",
     )

@@ -1,16 +1,18 @@
-"""Comparación de modelos y métricas del proyecto.
+"""Comparacion de modelos y metricas del proyecto.
 
-Cubre el requisito del caso de:
-- Comparar Logistic Regression vs LightGBM
-- Justificar por qué no se usa Accuracy
-- Interpretar la importancia de features en lenguaje natural
-- Mostrar curva ROC y matriz de confusión
+Estructura limpia:
+1. Por que no accuracy (contexto)
+2. Resultado de la comparacion (metricas + tabla)
+3. Importancia de variables como hero visual — con anotaciones directas
+4. Curva ROC
+5. Matriz de confusion
+Sin panels duplicados de interpretacion, sin highlight-cards de relleno.
 """
 
-import pandas as pd
+import plotly.graph_objects as go
 import streamlit as st
 
-from components.cards import render_highlight_card, render_metric_card
+from components.cards import render_metric_card
 from plots.model_charts import (
     build_confusion_matrix_chart,
     build_feature_importance_chart,
@@ -22,77 +24,65 @@ from utils.formatters import format_percentage
 
 
 st.title("Modelos y Evaluación")
-st.caption("Comparación de clasificadores, justificación de métricas e interpretación de resultados.")
+st.caption("Comparación de clasificadores, métricas apropiadas e interpretación de resultados.")
 
-# ── Carga de resultados ───────────────────────────────────────────────────────
+# ── Carga ─────────────────────────────────────────────────────────────────────
 
-evaluation = compute_model_evaluation()
-metrics_df = evaluation["metrics"]
-feature_importance_df = evaluation["feature_importance"]
-roc_curves = evaluation["roc_curves"]
+evaluation        = compute_model_evaluation()
+metrics_df        = evaluation["metrics"]
+feature_imp_df    = evaluation["feature_importance"]
+roc_curves        = evaluation["roc_curves"]
 confusion_matrices = evaluation["confusion_matrices"]
 
 if metrics_df.empty:
-    st.warning(
-        "No fue posible calcular métricas reales. "
-        "Verifica que el parquet procesado tenga las columnas esperadas."
-    )
+    st.warning("No fue posible calcular métricas reales. Verifica que el parquet procesado tenga las columnas esperadas.")
     st.stop()
 
-best_model = metrics_df.sort_values(by="roc_auc", ascending=False).iloc[0]
-best_model_name = best_model["modelo"]
+best       = metrics_df.sort_values("roc_auc", ascending=False).iloc[0]
+best_name  = best["modelo"]
 
-# ── Por qué no usamos Accuracy ────────────────────────────────────────────────
+# ── 1. Por que no accuracy ────────────────────────────────────────────────────
 
 st.markdown(
     """
     <div class="accuracy-warning">
-        <div class="aw-title">¿Por qué no usamos Accuracy como métrica principal?</div>
+        <div class="aw-title">¿Por qué no usamos Accuracy como métrica?</div>
         <p>
-            Las reseñas con ≥ 5 votos están desbalanceadas: la mayoría son "no útiles".
-            Un modelo que siempre prediga "no útil" tendría alta accuracy sin aprender nada útil.
-            Usamos <strong>F1-Score</strong> para balancear precisión y recall, y
-            <strong>ROC-AUC</strong> para medir la capacidad discriminativa general.
-            Así evaluamos si el modelo realmente distingue reseñas útiles de las que no lo son.
+            Si el 65–70 % de las reseñas son "no útiles", un modelo que siempre prediga "no útil"
+            tendría ~70 % de accuracy <strong>sin aprender nada</strong>.
+            Usamos <strong>F1-Score</strong> (equilibrio entre precisión y recall)
+            y <strong>ROC-AUC</strong> (capacidad discriminativa global), que funcionan
+            correctamente con clases desbalanceadas.
         </p>
     </div>
     """,
     unsafe_allow_html=True,
 )
 
-# ── Métricas resumen ──────────────────────────────────────────────────────────
+# ── 2. Resultado de la comparacion ───────────────────────────────────────────
 
-st.markdown("### Resultado de la Comparación")
-metric_cols = st.columns(4, gap="medium")
-with metric_cols[0]:
-    render_metric_card(
-        "Modelo ganador",
-        best_model["modelo"],
-        "Mayor ROC-AUC en el split de prueba (20 %)",
-    )
-with metric_cols[1]:
-    render_metric_card(
-        "ROC-AUC del ganador",
-        format_percentage(float(best_model["roc_auc"])),
-        "Qué tan bien separa útiles de no útiles",
-    )
-with metric_cols[2]:
-    render_metric_card(
-        "F1-Score del ganador",
-        format_percentage(float(best_model["f1"])),
-        "Balance entre precisión y recall",
-    )
-with metric_cols[3]:
-    render_metric_card(
-        "Baseline comparado",
-        "Regresión Logística",
-        "Modelo interpretable de referencia del caso",
-    )
+st.markdown("### Resultado de la comparación")
 
-# ── Tabla comparativa ─────────────────────────────────────────────────────────
+baseline = metrics_df[metrics_df["modelo"].str.contains("Logistic|logistic", na=False)]
+baseline_row = baseline.iloc[0] if not baseline.empty else None
 
-st.markdown("### Tabla Comparativa de Métricas")
-st.caption("Todas las métricas calculadas sobre el 20 % de datos de prueba con split reproducible (random_state=42).")
+m1, m2, m3, m4 = st.columns(4, gap="medium")
+with m1:
+    render_metric_card("Modelo ganador", best_name, "Mayor ROC-AUC en test (20 %)")
+with m2:
+    render_metric_card("ROC-AUC", format_percentage(float(best["roc_auc"])), "Capacidad de separar clases")
+with m3:
+    render_metric_card("F1-Score", format_percentage(float(best["f1"])), "Precisión + Recall balanceados")
+with m4:
+    if baseline_row is not None:
+        delta = float(best["roc_auc"]) - float(baseline_row["roc_auc"])
+        render_metric_card("Mejora sobre baseline", f"+{delta:.1%}", "vs. Regresión Logística")
+    else:
+        render_metric_card("Baseline", "Reg. Logística", "Modelo interpretable de referencia")
+
+# Tabla comparativa
+st.markdown("#### Tabla comparativa de métricas")
+st.caption("Todas las métricas calculadas sobre el 20 % de datos de prueba con `random_state=42`.")
 
 display_df = metrics_df.copy()
 for col in ["precision", "recall", "f1", "roc_auc"]:
@@ -100,105 +90,96 @@ for col in ["precision", "recall", "f1", "roc_auc"]:
         display_df[col] = display_df[col].apply(lambda x: f"{x:.4f}")
 
 display_df = display_df.rename(columns={
-    "modelo": "Modelo",
-    "precision": "Precisión",
-    "recall": "Recall",
-    "f1": "F1-Score",
-    "roc_auc": "ROC-AUC",
+    "modelo": "Modelo", "precision": "Precisión",
+    "recall": "Recall", "f1": "F1-Score", "roc_auc": "ROC-AUC",
 })
 st.dataframe(display_df, use_container_width=True, hide_index=True)
 st.plotly_chart(build_model_metrics_chart(metrics_df), use_container_width=True)
 
-# ── Curva ROC e importancia ───────────────────────────────────────────────────
+# ── 3. Importancia de variables — HERO VISUAL ─────────────────────────────────
 
-st.markdown("### Curva ROC e Importancia de Variables")
-chart_left, chart_right = st.columns(2, gap="large")
-with chart_left:
-    st.caption("La curva ROC muestra qué tan bien cada modelo distingue entre clases. Más área = mejor.")
-    st.plotly_chart(build_roc_chart(metrics_df, roc_curves), use_container_width=True)
-with chart_right:
-    st.caption("Las variables más importantes según el modelo LightGBM entrenado.")
-    st.plotly_chart(build_feature_importance_chart(feature_importance_df), use_container_width=True)
-
-# ── Interpretación en lenguaje natural ───────────────────────────────────────
-
-st.markdown("### Interpretación de los Resultados")
-st.caption("¿Qué nos dice el modelo sobre qué hace útil a una reseña?")
-
-i1, i2, i3 = st.columns(3, gap="medium")
-with i1:
-    st.markdown(
-        """
-        <div class="insight-panel">
-            <div class="insight-title">Feature más importante: longitud</div>
-            <p>
-                Las reseñas más largas tienen mayor probabilidad de ser percibidas como útiles.
-                Escribir más detalle — experiencia de uso, sabor, empaque, comparaciones —
-                aumenta directamente la utilidad predicha.
-            </p>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-with i2:
-    st.markdown(
-        """
-        <div class="insight-panel">
-            <div class="insight-title">Coherencia entre nota y texto</div>
-            <p>
-                Una reseña con texto positivo y 1–2 estrellas (o texto negativo con 5 estrellas)
-                activa el flag de incoherencia y reduce la probabilidad de utilidad.
-                Los compradores confían más en reseñas coherentes.
-            </p>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-with i3:
-    st.markdown(
-        """
-        <div class="insight-panel">
-            <div class="insight-title">Sentimiento: útil pero secundario</div>
-            <p>
-                El score de sentimiento VADER contribuye al modelo, pero con menor peso que
-                la longitud. Una reseña entusiasta sin detalle concreto no supera a una
-                reseña neutra y bien argumentada.
-            </p>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-# ── Consejo concreto ──────────────────────────────────────────────────────────
-
-st.markdown("### Consejo para Escribir una Reseña Más Útil")
-c1, c2 = st.columns(2, gap="large")
-with c1:
-    render_highlight_card(
-        "Lo que sí funciona",
-        "Reseñas largas y coherentes",
-        "Escribe al menos 80–100 palabras. Menciona el sabor, el empaque, "
-        "la frecuencia de uso y si lo recomendarías. Asegúrate de que tu nota "
-        "coincida con el tono del texto.",
-    )
-with c2:
-    render_highlight_card(
-        "Lo que no funciona",
-        "Reseñas cortas o incoherentes",
-        "\"Muy rico!\" con 5 estrellas tiene baja probabilidad de ser útil. "
-        "Una nota de 1 estrella con texto entusiasta tampoco. La coherencia "
-        "y el detalle son lo que otros compradores valoran.",
-    )
-
-# ── Matriz de confusión ───────────────────────────────────────────────────────
-
-st.markdown("### Matriz de Confusión — Modelo Principal")
+st.markdown("### ¿Qué features explican la utilidad?")
 st.caption(
-    f"Muestra cuántas predicciones del modelo {best_model_name} fueron correctas e incorrectas "
-    "en el conjunto de prueba. Los errores más costosos son los falsos negativos "
-    "(reseñas útiles clasificadas como no útiles)."
+    "El feature de mayor peso define qué acción concreta puede tomar un usuario para "
+    "mejorar la utilidad de su reseña."
+)
+
+if not feature_imp_df.empty:
+    # Ordenar y agregar anotaciones contextuales
+    ordered = feature_imp_df.sort_values("importancia", ascending=False)
+
+    feature_labels = {
+        "review_len":       "Escribe más detalle — es el factor #1",
+        "sentiment_score":  "El tono del texto importa, pero menos que la extensión",
+        "incoherente":      "La incoherencia tono-estrellas penaliza la utilidad",
+        "Score":            "Las estrellas aportan contexto al modelo",
+    }
+
+    import plotly.express as px
+    ordered_asc = ordered.sort_values("importancia", ascending=True)
+    fig_imp = px.bar(
+        ordered_asc,
+        x="importancia",
+        y="feature",
+        orientation="h",
+        title="Importancia relativa de variables — LightGBM",
+        template="plotly_white",
+        color_discrete_sequence=["#1d4ed8"],
+    )
+
+    # Anotaciones directas en las barras
+    for _, row in ordered.iterrows():
+        label = feature_labels.get(row["feature"], "")
+        if label:
+            fig_imp.add_annotation(
+                x=float(row["importancia"]) + 0.002,
+                y=row["feature"],
+                text=label,
+                showarrow=False,
+                xanchor="left",
+                font=dict(size=11, color="#526277"),
+            )
+
+    fig_imp.update_layout(height=320, margin=dict(r=250))
+    st.plotly_chart(fig_imp, use_container_width=True)
+
+    # Interpretacion visual directa
+    top_feature = ordered.iloc[0]["feature"] if len(ordered) > 0 else "review_len"
+    top_pct     = float(ordered.iloc[0]["importancia"]) if len(ordered) > 0 else 0.0
+    st.markdown(
+        f"""
+        <div class="insight-panel">
+            <div class="insight-title">Lectura del modelo</div>
+            <p>
+                <strong>{top_feature}</strong> explica el {top_pct:.0%} de la importancia total.
+                Una reseña larga con sentimiento coherente a las estrellas tiene alta probabilidad
+                de ser útil — independientemente de si es positiva o negativa.
+                Escribir al menos 80–100 palabras con detalle concreto es el cambio de mayor impacto.
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+else:
+    st.info("No hay datos de importancia de variables disponibles.")
+
+# ── 4. Curva ROC ──────────────────────────────────────────────────────────────
+
+st.markdown("### Curva ROC")
+st.caption(
+    "Un clasificador perfecto tiene área = 1.0. La diagonal es el azar puro (AUC = 0.5). "
+    "Cuanto más arriba y a la izquierda esté la curva, mejor discrimina el modelo."
+)
+st.plotly_chart(build_roc_chart(metrics_df, roc_curves), use_container_width=True)
+
+# ── 5. Matriz de confusion ────────────────────────────────────────────────────
+
+st.markdown(f"### Matriz de confusión — {best_name}")
+st.caption(
+    "Los **falsos negativos** (reseñas útiles clasificadas como no útiles) son el error más costoso: "
+    "el sistema rechaza buenas reseñas. Los **falsos positivos** publican reseñas de baja calidad."
 )
 st.plotly_chart(
-    build_confusion_matrix_chart(confusion_matrices.get(best_model_name), best_model_name),
+    build_confusion_matrix_chart(confusion_matrices.get(best_name), best_name),
     use_container_width=True,
 )
