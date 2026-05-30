@@ -32,6 +32,21 @@ from utils.formatters import format_compact_number, format_percentage
 st.title("Exploración de Datos")
 st.caption("EDA estructurado con filtros, bloques visuales y narrativa analítica más clara.")
 
+st.markdown(
+    """
+    <div class="insight-panel">
+        <div class="insight-title">¿Qué explorar aquí?</div>
+        <p>
+            Este análisis responde tres preguntas clave: ¿cómo se distribuyen las calificaciones?
+            ¿qué longitud tienen las reseñas útiles vs las no útiles? ¿hay coherencia entre
+            el sentimiento del texto y la nota en estrellas? Usa los filtros para explorar
+            subgrupos específicos.
+        </p>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
 reviews = add_basic_text_features(load_processed_reviews())
 fallback_reviews = add_basic_text_features(
     get_corporate_audit_db().rename(columns={"Stars": "Score", "Text": "Text"})
@@ -118,13 +133,55 @@ distinct_products = (
 
 metric_cols = st.columns(4, gap="medium")
 with metric_cols[0]:
-    render_metric_card("Muestra filtrada", format_compact_number(sample_size), "Registros visibles tras filtros")
+    st.markdown(
+        f"""
+        <div class="metric-card">
+            <div class="metric-label">Reseñas en el corte actual</div>
+            <div class="metric-value">{format_compact_number(sample_size)}</div>
+            <div class="metric-caption">Registros visibles tras aplicar los filtros seleccionados.</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 with metric_cols[1]:
-    render_metric_card("Productos únicos", format_compact_number(distinct_products), "Cobertura del corte actual")
+    st.markdown(
+        f"""
+        <div class="metric-card">
+            <div class="metric-label">Productos únicos</div>
+            <div class="metric-value">{format_compact_number(distinct_products)}</div>
+            <div class="metric-caption">Cobertura de productos en el subconjunto filtrado.</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 with metric_cols[2]:
-    render_metric_card("Ratio útil", format_percentage(useful_ratio), "Proporción con utilidad alta")
+    _badge_class = "metric-badge-good" if useful_ratio >= 0.40 else "metric-badge-warn"
+    _label_util = "Proporción sana" if useful_ratio >= 0.40 else "Desbalance detectado"
+    st.markdown(
+        f"""
+        <div class="metric-card">
+            <div class="metric-label">Ratio de reseñas útiles</div>
+            <div class="metric-value">{format_percentage(useful_ratio)}</div>
+            <div class="metric-caption">Reseñas con utilidad ≥ 0.70 sobre el total visible.</div>
+            <span class="metric-badge {_badge_class}">{_label_util}</span>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 with metric_cols[3]:
-    render_metric_card("Longitud media", f"{avg_length} palabras", "Promedio del subconjunto actual")
+    _badge_len = "metric-badge-good" if avg_length > 60 else "metric-badge-warn"
+    _label_len = "Longitud útil" if avg_length > 60 else "Reseñas cortas"
+    st.markdown(
+        f"""
+        <div class="metric-card">
+            <div class="metric-label">Longitud media</div>
+            <div class="metric-value">{avg_length} palabras</div>
+            <div class="metric-caption">Promedio del subconjunto. Feature clave del modelo.</div>
+            <span class="metric-badge {_badge_len}">{_label_len}</span>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 st.markdown("### Distribuciones Principales")
