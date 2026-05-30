@@ -1,7 +1,7 @@
-"""Punto de entrada de la aplicacion Streamlit.
+"""Punto de entrada — portada del proyecto.
 
-Portada compacta: hero + KPIs del modelo + mapa de navegacion.
-Sin texto redundante, sin nav-cards de relleno.
+Hero + KPIs del dataset + KPIs del modelo + features usadas.
+Sin emojis, indicadores compactos.
 """
 
 import streamlit as st
@@ -34,7 +34,7 @@ def main() -> None:
     evaluation   = compute_model_evaluation()
     metrics_df   = evaluation["metrics"]
 
-    # ── Hero ──────────────────────────────────────────────────────────────────
+    # ── Hero ───────────────────────────────────────────────────────────────────
     render_app_hero(
         title="Plataforma Analítica de Utilidad de Reseñas",
         subtitle=(
@@ -44,7 +44,7 @@ def main() -> None:
         tag="Seminario Predictivo 2026",
     )
 
-    # ── Sidebar compacto ──────────────────────────────────────────────────────
+    # ── Sidebar ────────────────────────────────────────────────────────────────
     with st.sidebar:
         st.markdown(
             """
@@ -62,17 +62,17 @@ def main() -> None:
             """
             <div class="sidebar-panel">
                 <div class="sidebar-panel-title">Ruta recomendada</div>
-                <div class="sidebar-panel-item">1. Resumen ejecutivo</div>
-                <div class="sidebar-panel-item">2. Exploración de datos</div>
-                <div class="sidebar-panel-item">3. Modelos y evaluación</div>
-                <div class="sidebar-panel-item">4. Auditoría en tiempo real</div>
-                <div class="sidebar-panel-item">5. Ranking y benchmark</div>
+                <div class="sidebar-panel-item">1. Resumen Ejecutivo</div>
+                <div class="sidebar-panel-item">2. Exploración de Datos</div>
+                <div class="sidebar-panel-item">3. Modelos y Evaluación</div>
+                <div class="sidebar-panel-item">4. Auditoría en Tiempo Real</div>
+                <div class="sidebar-panel-item">5. Ranking y Benchmark</div>
             </div>
             """,
             unsafe_allow_html=True,
         )
 
-    # ── KPIs del dataset ──────────────────────────────────────────────────────
+    # ── KPIs del dataset ───────────────────────────────────────────────────────
     st.markdown("### Dataset")
     m1, m2, m3, m4 = st.columns(4, gap="medium")
     with m1:
@@ -85,7 +85,7 @@ def main() -> None:
         render_metric_card(
             "Base analítica",
             format_compact_number(len(reviews)),
-            "Filtrado ≥ 5 votos, sin duplicados",
+            "Con ≥ 5 votos, sin duplicados",
         )
     with m3:
         render_metric_card(
@@ -97,14 +97,14 @@ def main() -> None:
         render_metric_card(
             "Base operativa",
             format_compact_number(len(corporate_db)),
-            "Auditorías disponibles",
+            "Registros para auditoría",
         )
 
-    # ── KPIs del modelo — esto es lo que agrega valor en la portada ──────────
+    # ── KPIs del modelo ────────────────────────────────────────────────────────
     st.markdown("### Modelo activo")
 
     if not metrics_df.empty:
-        best = metrics_df.sort_values("roc_auc", ascending=False).iloc[0]
+        best     = metrics_df.sort_values("roc_auc", ascending=False).iloc[0]
         baseline = metrics_df[metrics_df["modelo"].str.contains("Logistic|logistic", na=False)]
         baseline_row = baseline.iloc[0] if not baseline.empty else None
 
@@ -140,22 +140,22 @@ def main() -> None:
     else:
         st.info("Entrena los modelos para ver métricas aquí.")
 
-    # ── Features del modelo ───────────────────────────────────────────────────
-    st.markdown("### ¿Qué predice la utilidad?")
+    # ── Features del modelo ────────────────────────────────────────────────────
+    st.markdown("### Variables predictoras")
     st.caption(
-        "El modelo usa solo 4 características derivadas del texto — ninguna requiere embeddings ni modelos de lenguaje."
+        "El modelo usa solo 4 características derivadas del texto — "
+        "sin embeddings ni modelos de lenguaje."
     )
 
     f1c, f2c, f3c, f4c = st.columns(4, gap="medium")
     features_info = [
-        ("review_len", "Longitud", "Palabras en la reseña", "Feature #1 más importante"),
-        ("sentiment_score", "Sentimiento VADER", "Score compuesto del texto", "Contribución media"),
-        ("incoherente", "Coherencia", "Tono vs. estrellas asignadas", "Penaliza incoherencias"),
-        ("Score", "Calificación", "Estrellas 1–5", "Feature de contexto"),
+        ("review_len",      "Longitud",          "Palabras en la reseña",              "Feature #1", "metric-badge-good"),
+        ("sentiment_score", "Sentimiento VADER",  "Score compuesto del texto",          "Feature #2", "metric-badge-info"),
+        ("incoherente",     "Coherencia",         "Tono vs. estrellas asignadas",       "Feature #3", "metric-badge-warn"),
+        ("Score",           "Calificación",       "Estrellas 1–5",                      "Contexto",   "metric-badge-info"),
     ]
-    badge_classes = ["metric-badge-good", "metric-badge-info", "metric-badge-warn", "metric-badge-info"]
-    for col, (_, label, caption, badge_text), badge_class in zip(
-        [f1c, f2c, f3c, f4c], features_info, badge_classes
+    for col, (_, label, caption, badge_text, badge_class) in zip(
+        [f1c, f2c, f3c, f4c], features_info
     ):
         with col:
             st.markdown(
@@ -164,6 +164,42 @@ def main() -> None:
                     <div class="metric-label">{label}</div>
                     <div class="metric-caption" style="margin-top:0.4rem">{caption}</div>
                     <span class="metric-badge {badge_class}">{badge_text}</span>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+    # ── Validación contra el caso ──────────────────────────────────────────────
+    st.markdown("### Cobertura del Caso 06")
+    st.caption("Verificación de los entregables requeridos por la rúbrica del seminario.")
+
+    entregables = [
+        ("Pipeline de datos",       "Filtro ≥ 5 votos + deduplicación por UserId-ProductId-Time",     True),
+        ("Variable objetivo",       "Tasa de utilidad ≥ 0.70 → binario útil / no útil",              True),
+        ("Features de texto",       "Longitud, sentimiento VADER, coherencia tono-estrellas",         True),
+        ("Modelo baseline",         "Regresión Logística con métricas F1 y ROC-AUC",                  True),
+        ("Modelo principal",        "LightGBM con importancia de variables interpretada",             True),
+        ("API FastAPI",             "POST /reviews/predict_helpfulness · GET /reviews/top_words",     True),
+        ("Dashboard Streamlit",     "Gauge de utilidad + desglose de features + tabla de métricas",   True),
+        ("Retroalimentación",       "Recomendaciones concretas para mejorar la reseña",               True),
+    ]
+
+    e1, e2 = st.columns(2, gap="medium")
+    for i, (titulo, descripcion, completo) in enumerate(entregables):
+        badge_class = "metric-badge-good" if completo else "metric-badge-warn"
+        badge_label = "Cubierto" if completo else "Pendiente"
+        col = e1 if i % 2 == 0 else e2
+        with col:
+            st.markdown(
+                f"""
+                <div class="metric-card" style="margin-bottom:0.6rem;min-height:auto">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:0.5rem">
+                        <div>
+                            <div class="metric-label" style="font-weight:700;color:var(--text)">{titulo}</div>
+                            <div class="metric-caption">{descripcion}</div>
+                        </div>
+                        <span class="metric-badge {badge_class}" style="white-space:nowrap;flex-shrink:0">{badge_label}</span>
+                    </div>
                 </div>
                 """,
                 unsafe_allow_html=True,
