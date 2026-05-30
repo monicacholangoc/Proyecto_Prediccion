@@ -1,4 +1,14 @@
 """Modelos y evaluación."""
+# ── Guard: redirige a main.py si se accede directamente sin sesión ──────────
+try:
+    import streamlit as _st
+    if not _st.session_state.get("app_initialized"):
+        _st.switch_page("main.py")
+except Exception:
+    pass
+# ────────────────────────────────────────────────────────────────────────────
+
+
 import plotly.express as px
 import streamlit as st
 from shared_sidebar import render_sidebar

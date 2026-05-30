@@ -1,4 +1,11 @@
 """Auditoría en tiempo real."""
+# ── Guard: redirige a main.py si se accede directamente sin sesión ──────────
+import streamlit as st
+if not st.session_state.get("app_initialized"):
+    st.switch_page("main.py")
+# ────────────────────────────────────────────────────────────────────────────
+
+
 import os, pandas as pd, requests, streamlit as st
 from shared_sidebar import render_sidebar
 from components.cards import render_metric_card, render_review_card

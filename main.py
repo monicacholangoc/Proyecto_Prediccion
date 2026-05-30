@@ -45,6 +45,9 @@ def main() -> None:
     st.set_page_config(**PAGE_CONFIG)
     _setup()
     initialize_state()
+    # Marca la sesión como iniciada; las páginas secundarias usan esto para
+    # redirigir a main.py si el usuario llega directamente (sin sesión).
+    st.session_state["app_initialized"] = True
 
     reviews      = add_basic_text_features(load_processed_reviews())
     catalog      = get_product_catalog()

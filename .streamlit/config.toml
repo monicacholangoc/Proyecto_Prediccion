@@ -1,7 +1,6 @@
 [theme]
 # Tema base CLARO — el modo oscuro/sistema lo maneja el JS de shared_sidebar.py
-# No pongas backgroundColor oscuro aquí; Streamlit lo inyecta como inline style
-# y pisa cualquier CSS, imposibilitando el cambio dinámico.
+# primaryColor define el azul nativo de Streamlit (botones, sliders, etc.)
 primaryColor       = "#1746a2"
 backgroundColor    = "#edf2f8"
 secondaryBackgroundColor = "#ffffff"
@@ -13,5 +12,5 @@ maxUploadSize  = 500
 maxMessageSize = 500
 
 [client]
-# Oculta la navegación automática de Streamlit (usamos la del sidebar custom)
+# Oculta la navegación automática de páginas de Streamlit
 showSidebarNavigation = false

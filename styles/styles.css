@@ -410,7 +410,7 @@ p, li, label { color: var(--muted); }
 
 [data-testid="stMetric"] { background: transparent; }
 
-/* Botones: solo ajuste de forma, el color lo gestiona Streamlit via primaryColor */
+/* Botones: solo forma — el color lo gestiona Streamlit via primaryColor en config.toml */
 .stButton > button,
 .stDownloadButton > button {
     border-radius: 12px;
