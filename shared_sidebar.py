@@ -1,19 +1,20 @@
 """
-Helper de sidebar: logo + navegación funcional con st.page_link().
-Las rutas deben coincidir exactamente con los nombres de archivo en pages/.
+Helper de sidebar: logo centrado + navegación funcional con st.page_link().
+El CSS del sidebar se inyecta aquí mismo para garantizar que se aplique
+antes de que se renderice cualquier elemento del sidebar.
 """
 
 import os
 import base64
 import streamlit as st
 
-# ── Logo ───────────────────────────────────────────────────────────────────────
+# ── Logo ────────────────────────────────────────────────────────────────────
 _LOGO_CANDIDATES = [
     "assets/Logo.jpg", "assets/Logo.jpeg", "assets/Logo.png",
     "assets/logo.jpg", "assets/logo.jpeg", "assets/logo.png",
     "assets/Logo.JPG", "assets/Logo.PNG",
 ]
-LOGO_URL = None  # Alternativa: URL pública "https://..."
+LOGO_URL = None
 
 
 def _find_logo() -> str | None:
@@ -23,57 +24,173 @@ def _find_logo() -> str | None:
     return None
 
 
-def _logo_html() -> str:
+def _logo_b64() -> tuple[str, str] | None:
+    """Devuelve (base64, mime) si el logo existe, None si no."""
     if LOGO_URL:
-        return f'<img src="{LOGO_URL}" style="width:44px;height:44px;border-radius:10px;object-fit:contain;background:#fff;padding:2px;" alt="Logo">'
+        return None
     path = _find_logo()
-    if path:
-        ext  = path.rsplit(".", 1)[-1].lower()
-        mime = {"png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg"}.get(ext, "image/png")
-        with open(path, "rb") as f:
-            b64 = base64.b64encode(f.read()).decode()
-        return f'<img src="data:{mime};base64,{b64}" style="width:44px;height:44px;border-radius:10px;object-fit:contain;background:#fff;padding:2px;" alt="Logo">'
-    return """<svg width="44" height="44" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect width="44" height="44" rx="10" fill="url(#lgfb2)"/>
-      <path d="M12 30 L22 14 L32 30 Z" fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.45)" stroke-width="1.2"/>
-      <path d="M17 30 L22 20 L27 30 Z" fill="rgba(255,255,255,0.92)"/>
-      <circle cx="22" cy="13" r="3" fill="#7dd3fc"/>
-      <defs><linearGradient id="lgfb2" x1="0" y1="0" x2="44" y2="44" gradientUnits="userSpaceOnUse">
-        <stop offset="0%" stop-color="#1e3a8a"/><stop offset="100%" stop-color="#0f4c5c"/>
-      </linearGradient></defs>
-    </svg>"""
+    if not path:
+        return None
+    ext  = path.rsplit(".", 1)[-1].lower()
+    mime = {"png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg"}.get(ext, "image/png")
+    with open(path, "rb") as f:
+        return base64.b64encode(f.read()).decode(), mime
 
 
-# ── Iconos SVG ─────────────────────────────────────────────────────────────────
-_I_HOME   = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>'
-_I_FILE   = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>'
-_I_SEARCH = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>'
-_I_CHART  = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>'
-_I_SHIELD = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>'
-_I_BAR    = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>'
+# ── Iconos SVG ──────────────────────────────────────────────────────────────
+_I_HOME   = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(248,250,252,0.85)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>'
+_I_FILE   = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(248,250,252,0.85)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>'
+_I_SEARCH = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(248,250,252,0.85)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>'
+_I_CHART  = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(248,250,252,0.85)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>'
+_I_SHIELD = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(248,250,252,0.85)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>'
+_I_BAR    = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(248,250,252,0.85)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>'
 
 
-def _detect_page_files() -> dict:
-    """
-    Detecta los nombres reales de los archivos en pages/.
-    Devuelve un dict con la ruta correcta para cada sección.
-    Soporta nombres con mayúsculas o minúsculas.
-    """
+# ── CSS del sidebar — se inyecta en <head> para que aplique siempre ─────────
+_SIDEBAR_CSS = """
+<style>
+/* ── Fondo oscuro del sidebar ─────────────────────────────────────────────── */
+[data-testid="stSidebar"],
+[data-testid="stSidebar"] > div,
+[data-testid="stSidebar"] > div > div,
+section[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, #18253f 0%, #111b31 100%) !important;
+    border-right: 1px solid rgba(255,255,255,0.06) !important;
+}
+[data-testid="stSidebar"] * { color: #f8fafc; }
+
+/* ── Ocultar nav automático de Streamlit ──────────────────────────────────── */
+[data-testid="stSidebarNav"] { display: none !important; }
+
+/* ── Logo centrado ───────────────────────────────────────────────────────── */
+.sb-logo-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1.2rem 0.5rem 0.9rem;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    margin-bottom: 0.7rem;
+    gap: 0.55rem;
+}
+.sb-logo-img {
+    width: 80px;
+    height: 80px;
+    border-radius: 14px;
+    object-fit: contain;
+    background: #ffffff;
+    padding: 5px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+}
+.sb-logo-svg {
+    width: 80px;
+    height: 80px;
+    border-radius: 14px;
+    display: block;
+}
+.sb-brand-name {
+    color: #f8fafc !important;
+    font-size: 0.9rem;
+    font-weight: 700;
+    text-align: center;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+}
+.sb-brand-sub {
+    color: rgba(248,250,252,0.5) !important;
+    font-size: 0.7rem;
+    text-align: center;
+    margin-top: 0.1rem;
+}
+
+/* ── Items de nav ─────────────────────────────────────────────────────────── */
+.sb-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.4rem 0.6rem;
+    border-radius: 9px;
+    margin-bottom: 0.06rem;
+    transition: background 0.15s;
+}
+.sb-nav-item:hover { background: rgba(255,255,255,0.08); }
+.sb-nav-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    background: rgba(255,255,255,0.1);
+    flex-shrink: 0;
+}
+
+/* ── Estilizar page_link ──────────────────────────────────────────────────── */
+[data-testid="stSidebar"] [data-testid="stPageLink"] {
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+[data-testid="stSidebar"] [data-testid="stPageLink"] a,
+[data-testid="stSidebar"] [data-testid="stPageLink"] p {
+    color: rgba(248,250,252,0.82) !important;
+    font-size: 0.82rem !important;
+    font-weight: 500 !important;
+    text-decoration: none !important;
+    padding: 0.3rem 0.5rem !important;
+    border-radius: 8px !important;
+    display: block !important;
+    transition: background 0.15s !important;
+    line-height: 1.25 !important;
+}
+[data-testid="stSidebar"] [data-testid="stPageLink"] a:hover,
+[data-testid="stSidebar"] [data-testid="stPageLink"] p:hover {
+    background: rgba(255,255,255,0.09) !important;
+    color: #fff !important;
+}
+[data-testid="stSidebar"] [data-testid="stPageLink"][aria-current="page"] a,
+[data-testid="stSidebar"] [data-testid="stPageLink"][aria-current="page"] p {
+    background: rgba(255,255,255,0.15) !important;
+    color: #fff !important;
+}
+
+/* ── Columnas del nav en sidebar (quitar gaps) ───────────────────────────── */
+[data-testid="stSidebar"] [data-testid="stHorizontalBlock"] {
+    gap: 0.15rem !important;
+    align-items: center !important;
+    margin-bottom: 0.04rem !important;
+}
+[data-testid="stSidebar"] [data-testid="stHorizontalBlock"] > div {
+    padding: 0 !important;
+    min-width: 0 !important;
+}
+
+/* ── Fondo del contenido principal (todas las páginas) ───────────────────── */
+.stApp,
+[data-testid="stAppViewContainer"],
+[data-testid="stAppViewContainer"] > section.main,
+[data-testid="stAppViewContainer"] > section.main > div {
+    background:
+        radial-gradient(circle at top right, rgba(23,70,162,0.08), transparent 22%),
+        radial-gradient(circle at top left,  rgba(15,76,92,0.08),  transparent 18%),
+        linear-gradient(180deg, #f8fbff 0%, #eef3f9 100%) !important;
+}
+</style>
+"""
+
+
+def _detect_pages() -> dict:
+    """Detecta los nombres reales de archivos en pages/."""
+    mapping = {"resumen": None, "exploracion": None,
+               "modelos": None, "auditoria": None, "ranking": None}
     pages_dir = "pages"
-    mapping = {
-        "resumen":    None,
-        "exploracion": None,
-        "modelos":    None,
-        "auditoria":  None,
-        "ranking":    None,
-    }
-
     if not os.path.isdir(pages_dir):
         return mapping
-
-    for fname in os.listdir(pages_dir):
+    for fname in sorted(os.listdir(pages_dir)):
         lower = fname.lower()
         fpath = os.path.join(pages_dir, fname)
+        if not fname.endswith(".py"):
+            continue
         if "resumen" in lower:
             mapping["resumen"] = fpath
         elif "explor" in lower:
@@ -84,44 +201,66 @@ def _detect_page_files() -> dict:
             mapping["auditoria"] = fpath
         elif "rank" in lower:
             mapping["ranking"] = fpath
-
     return mapping
 
 
 def render_sidebar() -> None:
-    """Renderiza logo + nav funcional en el sidebar."""
-    pages = _detect_page_files()
+    """Inyecta CSS y renderiza logo + nav funcional en el sidebar."""
+    # Inyectar CSS SIEMPRE — fuera del sidebar para que llegue al <head>
+    st.markdown(_SIDEBAR_CSS, unsafe_allow_html=True)
+
+    pages = _detect_pages()
+
+    # Construir HTML del logo
+    logo_result = _logo_b64()
+    if LOGO_URL:
+        logo_html = f'<img class="sb-logo-img" src="{LOGO_URL}" alt="Logo">'
+    elif logo_result:
+        b64, mime = logo_result
+        logo_html = f'<img class="sb-logo-img" src="data:{mime};base64,{b64}" alt="Logo">'
+    else:
+        # SVG de respaldo
+        logo_html = """<svg class="sb-logo-svg" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="80" height="80" rx="14" fill="url(#lgfb3)"/>
+          <path d="M22 58 L40 26 L58 58 Z" fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.45)" stroke-width="2"/>
+          <path d="M31 58 L40 38 L49 58 Z" fill="rgba(255,255,255,0.92)"/>
+          <circle cx="40" cy="24" r="5.5" fill="#7dd3fc"/>
+          <defs><linearGradient id="lgfb3" x1="0" y1="0" x2="80" y2="80" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#1e3a8a"/><stop offset="100%" stop-color="#0f4c5c"/>
+          </linearGradient></defs>
+        </svg>"""
 
     with st.sidebar:
+        # Logo centrado
         st.markdown(
             f"""
-            <div class="sidebar-logo-wrap">
-                {_logo_html()}
+            <div class="sb-logo-wrap">
+                {logo_html}
                 <div>
-                    <div class="sidebar-logo-text-main">Seminario<br>Predictivo</div>
-                    <div class="sidebar-logo-text-sub">Caso 06 · Amazon Reviews</div>
+                    <div class="sb-brand-name">Seminario Predictivo</div>
+                    <div class="sb-brand-sub">Caso 06 · Amazon Reviews</div>
                 </div>
             </div>
             """,
             unsafe_allow_html=True,
         )
 
-        _nav_item("main.py",                   _I_HOME,   "Inicio")
-        _nav_item(pages["resumen"],             _I_FILE,   "Resumen Ejecutivo")
-        _nav_item(pages["exploracion"],         _I_SEARCH, "Exploración de Datos")
-        _nav_item(pages["modelos"],             _I_CHART,  "Modelos y Evaluación")
-        _nav_item(pages["auditoria"],           _I_SHIELD, "Auditoría en Tiempo Real")
-        _nav_item(pages["ranking"],             _I_BAR,    "Ranking y Benchmark")
+        # Nav funcional
+        _nav_item("main.py",              _I_HOME,   "Inicio")
+        _nav_item(pages["resumen"],       _I_FILE,   "Resumen Ejecutivo")
+        _nav_item(pages["exploracion"],   _I_SEARCH, "Exploración de Datos")
+        _nav_item(pages["modelos"],       _I_CHART,  "Modelos y Evaluación")
+        _nav_item(pages["auditoria"],     _I_SHIELD, "Auditoría en Tiempo Real")
+        _nav_item(pages["ranking"],       _I_BAR,    "Ranking y Benchmark")
 
 
 def _nav_item(page: str | None, icon_svg: str, label: str) -> None:
-    """Un ítem de nav: icono SVG + st.page_link funcional."""
+    """Ítem de nav: columna icono + columna page_link."""
     if page is None:
-        # Página no encontrada — muestra solo el label como texto
         st.markdown(
-            f'<div style="display:flex;align-items:center;gap:0.5rem;padding:0.3rem 0.5rem;'
-            f'color:rgba(248,250,252,0.4);font-size:0.82rem">'
-            f'<div class="snav-link-icon">{icon_svg}</div>{label}</div>',
+            f'<div style="display:flex;align-items:center;gap:0.5rem;padding:0.3rem 0.6rem;'
+            f'color:rgba(248,250,252,0.35);font-size:0.8rem">'
+            f'<div class="sb-nav-icon">{icon_svg}</div>{label}</div>',
             unsafe_allow_html=True,
         )
         return
@@ -129,7 +268,7 @@ def _nav_item(page: str | None, icon_svg: str, label: str) -> None:
     col_icon, col_link = st.columns([0.18, 0.82], gap="small")
     with col_icon:
         st.markdown(
-            f'<div class="snav-link-icon">{icon_svg}</div>',
+            f'<div class="sb-nav-icon">{icon_svg}</div>',
             unsafe_allow_html=True,
         )
     with col_link:
