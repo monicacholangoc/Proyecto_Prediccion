@@ -34,8 +34,29 @@ def _call_predict(review_text, stars):
     except requests.exceptions.Timeout: return {"error": "Timeout — Render tarda ~30 s. Reintenta."}
     except Exception as exc: return {"error": str(exc)}
 
-st.title("Auditoría en Tiempo Real")
-st.caption("Ingresa una reseña para obtener su probabilidad de utilidad y el desglose de las 4 características calculadas.")
+st.markdown(
+    """
+    <div style="
+        background: linear-gradient(135deg, #16213b 0%, #1746a2 60%, #0f4c5c 100%);
+        border-radius: 16px;
+        padding: 1.4rem 2rem;
+        margin-bottom: 1.4rem;
+        color: #ffffff;
+    ">
+        <div style="font-size:0.72rem;font-weight:600;letter-spacing:0.08em;
+                    color:rgba(255,255,255,0.55);text-transform:uppercase;margin-bottom:0.35rem">
+            Seminario Predictivo 2026 · Caso 06
+        </div>
+        <div style="font-size:clamp(1.4rem,3vw,1.9rem);font-weight:800;
+                    letter-spacing:-0.02em;line-height:1.2;margin-bottom:0.3rem">
+            Auditoría en Tiempo Real
+        </div>
+        <div style="font-size:0.82rem;color:rgba(255,255,255,0.65)">Probabilidad de utilidad · Desglose de las 4 características calculadas</div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
 
 product_options = get_product_options()
 if not product_options:

@@ -22,8 +22,29 @@ with open("styles/styles.css", "r", encoding="utf-8") as _f:
     st.markdown(f"<style>{_f.read()}</style>", unsafe_allow_html=True)
 render_sidebar()
 
-st.title("Ranking y Benchmark")
-st.caption("Comparación de reseñas por producto. Analiza primero en Auditoría para ver tu posición.")
+st.markdown(
+    """
+    <div style="
+        background: linear-gradient(135deg, #16213b 0%, #1746a2 60%, #0f4c5c 100%);
+        border-radius: 16px;
+        padding: 1.4rem 2rem;
+        margin-bottom: 1.4rem;
+        color: #ffffff;
+    ">
+        <div style="font-size:0.72rem;font-weight:600;letter-spacing:0.08em;
+                    color:rgba(255,255,255,0.55);text-transform:uppercase;margin-bottom:0.35rem">
+            Seminario Predictivo 2026 · Caso 06
+        </div>
+        <div style="font-size:clamp(1.4rem,3vw,1.9rem);font-weight:800;
+                    letter-spacing:-0.02em;line-height:1.2;margin-bottom:0.3rem">
+            Ranking y Benchmark
+        </div>
+        <div style="font-size:0.82rem;color:rgba(255,255,255,0.65)">Comparación de reseñas por producto · Posición relativa en el histórico</div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
 
 product_options  = get_product_options()
 saved_reviews_df = get_audited_reviews_operational_table()

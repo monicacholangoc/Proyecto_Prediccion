@@ -386,9 +386,26 @@ _THEME_JS = """
         // 2. Sobrescribir el style inline que Streamlit inyecta desde config.toml
         SELS.forEach(function(s){
             document.querySelectorAll(s).forEach(function(el){
+                // NUNCA tocar el sidebar
+                if(el.closest('[data-testid="stSidebar"]')) return;
                 el.style.setProperty('background-color', bgMain, 'important');
                 el.style.setProperty('color', txtMain, 'important');
                 el.style.removeProperty('background-image');
+            });
+        });
+
+        // 2b. Forzar fondo azul del sidebar (Streamlit lo pisa con inline style)
+        var sbBg = dark ? 'linear-gradient(180deg,#1c2333 0%,#0d1117 100%)' 
+                        : 'linear-gradient(180deg,#1746a2 0%,#0f3380 100%)';
+        [
+            '[data-testid="stSidebar"]',
+            '[data-testid="stSidebar"] > div',
+            '[data-testid="stSidebar"] > div > div',
+            'section[data-testid="stSidebar"]'
+        ].forEach(function(s){
+            document.querySelectorAll(s).forEach(function(el){
+                el.style.setProperty('background', sbBg, 'important');
+                el.style.setProperty('background-color', 'transparent', 'important');
             });
         });
 
