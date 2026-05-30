@@ -204,10 +204,115 @@ def _detect_pages() -> dict:
     return mapping
 
 
+_THEME_JS = """
+<script>
+(function() {
+    // Lee el tema guardado o usa 'light' por defecto
+    var saved = localStorage.getItem('app_theme') || 'light';
+    document.documentElement.setAttribute('data-theme', saved);
+
+    // Aplica fondo CSS directo para cubrir páginas secundarias de Streamlit
+    function applyBg(theme) {
+        var isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        var bg = isDark
+            ? 'linear-gradient(180deg,#0d1117 0%,#161b22 100%)'
+            : 'radial-gradient(circle at top right,rgba(23,70,162,.08),transparent 22%),radial-gradient(circle at top left,rgba(15,76,92,.08),transparent 18%),linear-gradient(180deg,#f8fbff 0%,#eef3f9 100%)';
+        // Fuerza fondo en todos los contenedores de Streamlit
+        var selectors = [
+            '.stApp','[data-testid="stAppViewContainer"]',
+            '[data-testid="stAppViewContainer"] > section',
+            '[data-testid="stMain"]','[data-testid="block-container"]',
+            '.main','.block-container'
+        ];
+        selectors.forEach(function(sel) {
+            document.querySelectorAll(sel).forEach(function(el) {
+                el.style.setProperty('background', bg, 'important');
+                el.style.setProperty('background-attachment', 'fixed', 'important');
+            });
+        });
+    }
+
+    applyBg(saved);
+
+    // Observa cambios en el DOM (Streamlit re-renderiza)
+    var obs = new MutationObserver(function() {
+        var t = localStorage.getItem('app_theme') || 'light';
+        document.documentElement.setAttribute('data-theme', t);
+        applyBg(t);
+    });
+    obs.observe(document.body, { childList: true, subtree: true });
+
+    // Escucha mensajes del botón del sidebar
+    window.addEventListener('message', function(e) {
+        if (e.data && e.data.type === 'SET_THEME') {
+            localStorage.setItem('app_theme', e.data.theme);
+            document.documentElement.setAttribute('data-theme', e.data.theme);
+            applyBg(e.data.theme);
+        }
+    });
+
+    // Escucha cambio de preferencia del sistema
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function() {
+        var t = localStorage.getItem('app_theme') || 'light';
+        if (t === 'system') applyBg('system');
+    });
+})();
+</script>
+"""
+
+_THEME_BUTTONS_HTML = """
+<div class="theme-switcher" id="theme-switcher-wrap">
+    <button class="theme-btn" id="tb-light" onclick="setTheme('light')" title="Modo claro">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        Claro
+    </button>
+    <button class="theme-btn" id="tb-dark" onclick="setTheme('dark')" title="Modo oscuro">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z"/></svg>
+        Oscuro
+    </button>
+    <button class="theme-btn" id="tb-system" onclick="setTheme('system')" title="Tema del sistema">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        Sistema
+    </button>
+</div>
+<script>
+function setTheme(t) {
+    localStorage.setItem('app_theme', t);
+    document.documentElement.setAttribute('data-theme', t);
+    // Marca botón activo
+    ['light','dark','system'].forEach(function(id) {
+        var b = document.getElementById('tb-'+id);
+        if (b) b.classList.toggle('active', id === t);
+    });
+    // Aplica fondo inmediatamente
+    var isDark = t === 'dark' || (t === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    var bg = isDark
+        ? 'linear-gradient(180deg,#0d1117 0%,#161b22 100%)'
+        : 'radial-gradient(circle at top right,rgba(23,70,162,.08),transparent 22%),radial-gradient(circle at top left,rgba(15,76,92,.08),transparent 18%),linear-gradient(180deg,#f8fbff 0%,#eef3f9 100%)';
+    ['.stApp','[data-testid="stAppViewContainer"]','[data-testid="stAppViewContainer"] > section',
+     '[data-testid="stMain"]','[data-testid="block-container"]','.main','.block-container'
+    ].forEach(function(sel) {
+        document.querySelectorAll(sel).forEach(function(el) {
+            el.style.setProperty('background', bg, 'important');
+        });
+    });
+}
+// Marca el botón activo al cargar
+(function() {
+    var cur = localStorage.getItem('app_theme') || 'light';
+    var b = document.getElementById('tb-'+cur);
+    if (b) b.classList.add('active');
+})();
+</script>
+"""
+
+
 def render_sidebar() -> None:
     """Inyecta CSS y renderiza logo + nav funcional en el sidebar."""
     # Inyectar CSS SIEMPRE — fuera del sidebar para que llegue al <head>
     st.markdown(_SIDEBAR_CSS, unsafe_allow_html=True)
+    # Inyectar JS de tema (aplica fondo en todas las páginas)
+    st.markdown(_THEME_JS, unsafe_allow_html=True)
 
     pages = _detect_pages()
 
@@ -252,6 +357,9 @@ def render_sidebar() -> None:
         _nav_item(pages["modelos"],       _I_CHART,  "Modelos y Evaluación")
         _nav_item(pages["auditoria"],     _I_SHIELD, "Auditoría en Tiempo Real")
         _nav_item(pages["ranking"],       _I_BAR,    "Ranking y Benchmark")
+
+        # ── Selector de tema ────────────────────────────────────────────────
+        st.markdown(_THEME_BUTTONS_HTML, unsafe_allow_html=True)
 
 
 def _nav_item(page: str | None, icon_svg: str, label: str) -> None:
