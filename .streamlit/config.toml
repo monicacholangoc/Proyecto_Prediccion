@@ -2,7 +2,7 @@
 # Tema base CLARO — el modo oscuro/sistema lo maneja el JS de shared_sidebar.py
 # primaryColor define el azul nativo de Streamlit (botones, sliders, etc.)
 primaryColor       = "#1746a2"
-backgroundColor    = "#edf2f8"
+backgroundColor    = "#1746a2"
 secondaryBackgroundColor = "#ffffff"
 textColor          = "#0f172a"
 font               = "sans serif"
