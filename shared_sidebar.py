@@ -213,7 +213,7 @@ div[class*="main"] {
 [data-testid="stSidebar"] > div,
 [data-testid="stSidebar"] > div > div,
 section[data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #18253f 0%, #111b31 100%) !important;
+    background: linear-gradient(180deg, #1746a2 0%, #0f3380 100%) !important;
     border-right: 1px solid rgba(255,255,255,0.06) !important;
 }
 [data-testid="stSidebar"] * { color: #f8fafc; }
@@ -584,6 +584,32 @@ def render_sidebar() -> None:
         _nav_item(pages["modelos"],     _I_CHART,  "Modelos y Evaluación")
         _nav_item(pages["auditoria"],   _I_SHIELD, "Auditoría en Tiempo Real")
         _nav_item(pages["ranking"],     _I_BAR,    "Ranking y Benchmark")
+
+        # ── Autores ─────────────────────────────────────────────────────────
+        st.markdown(
+            """
+            <div style="
+                margin-top: 1.4rem;
+                padding: 0.75rem 0.6rem 0.6rem;
+                border-top: 1px solid rgba(255,255,255,0.12);
+            ">
+                <div style="
+                    color: rgba(248,250,252,0.40);
+                    font-size: 0.62rem;
+                    font-weight: 700;
+                    letter-spacing: 0.08em;
+                    text-transform: uppercase;
+                    margin-bottom: 0.45rem;
+                ">Autores</div>
+                <div style="color:rgba(248,250,252,0.82);font-size:0.78rem;line-height:1.9">
+                    Arévalo José<br>
+                    Cholango Mónica<br>
+                    Torres Byron
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
 
 def _nav_item(page: str | None, icon_svg: str, label: str) -> None:

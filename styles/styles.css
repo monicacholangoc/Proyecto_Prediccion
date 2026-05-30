@@ -43,7 +43,7 @@ html body .stApp {
 }
 
 [data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #18253f 0%, #111b31 100%);
+    background: linear-gradient(180deg, #1746a2 0%, #0f3380 100%);
     border-right: 1px solid rgba(255, 255, 255, 0.06);
 }
 
