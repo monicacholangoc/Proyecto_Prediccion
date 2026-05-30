@@ -22,6 +22,57 @@ from services.preprocessing_service import get_corporate_audit_db
 from utils.formatters import format_compact_number, format_percentage
 
 
+def load_css() -> None:
+    with open("styles/styles.css", "r", encoding="utf-8") as f:
+        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+
+
+def _render_logo() -> str:
+    return """
+    <svg class="sidebar-logo-svg" width="38" height="38" viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="38" height="38" rx="10" fill="url(#lg1e)"/>
+      <path d="M10 26 L19 12 L28 26 Z" fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.5)" stroke-width="1.2"/>
+      <path d="M14 26 L19 17 L24 26 Z" fill="rgba(255,255,255,0.9)"/>
+      <circle cx="19" cy="11" r="2.5" fill="#7dd3fc"/>
+      <defs>
+        <linearGradient id="lg1e" x1="0" y1="0" x2="38" y2="38" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#1e3a8a"/>
+          <stop offset="100%" stop-color="#0f4c5c"/>
+        </linearGradient>
+      </defs>
+    </svg>
+    """
+
+
+load_css()
+
+with st.sidebar:
+    st.markdown(
+        f"""
+        <div class="sidebar-logo-wrap">
+            {_render_logo()}
+            <div>
+                <div class="sidebar-logo-text-main">Seminario<br>Predictivo</div>
+                <div class="sidebar-logo-text-sub">Caso 06 · Amazon Reviews</div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        """
+        <div class="sidebar-panel">
+            <div class="sidebar-panel-title">Navegación</div>
+            <div class="sidebar-panel-item">1. Resumen Ejecutivo</div>
+            <div class="sidebar-panel-item">2. Exploración de Datos</div>
+            <div class="sidebar-panel-item">3. Modelos y Evaluación</div>
+            <div class="sidebar-panel-item">4. Auditoría en Tiempo Real</div>
+            <div class="sidebar-panel-item">5. Ranking y Benchmark</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
 st.title("Exploración de Datos")
 st.caption("Análisis exploratorio con filtros interactivos sobre las variables clave del modelo.")
 
@@ -44,7 +95,7 @@ category_col    = "Categoria_Real" if "Categoria_Real" in source.columns else No
 helpfulness_col = "Helpfulness" if "Helpfulness" in source.columns else None
 
 # ── Filtros ────────────────────────────────────────────────────────────────────
-st.markdown("### Filtros")
+st.markdown('<div class="section-label">Filtros</div>', unsafe_allow_html=True)
 f1, f2, f3, f4 = st.columns(4, gap="medium")
 with f1:
     score_opts = ["Todas"] + ([str(x) for x in sorted(source[score_col].dropna().astype(int).unique())] if score_col else [])
@@ -76,7 +127,7 @@ products = int(df["ProductId"].astype(str).nunique()) if "ProductId" in df.colum
 ratio    = float(df[helpfulness_col].ge(0.70).mean()) if helpfulness_col and n > 0 else 0.0
 avg_len  = int(df["review_len"].fillna(0).mean()) if "review_len" in df.columns and n > 0 else 0
 
-st.markdown("### Indicadores del corte")
+st.markdown('<div class="section-label">Indicadores del corte</div>', unsafe_allow_html=True)
 c1, c2, c3, c4 = st.columns(4, gap="medium")
 with c1:
     render_metric_card("Reseñas", format_compact_number(n), "Tras aplicar los filtros")
@@ -88,7 +139,7 @@ with c4:
     render_metric_card("Longitud media", f"{avg_len} palabras", "Feature #1 del modelo")
 
 # ── Distribuciones ─────────────────────────────────────────────────────────────
-st.markdown("### Distribuciones")
+st.markdown('<div class="section-label">Distribuciones</div>', unsafe_allow_html=True)
 d1, d2 = st.columns(2, gap="large")
 with d1:
     st.caption("**Calificaciones** — Concentración en 4–5 estrellas genera desbalance.")
@@ -106,7 +157,7 @@ with d4:
     st.plotly_chart(build_target_balance(df), use_container_width=True)
 
 # ── Relaciones ─────────────────────────────────────────────────────────────────
-st.markdown("### Relaciones con la utilidad")
+st.markdown('<div class="section-label">Relaciones con la utilidad</div>', unsafe_allow_html=True)
 r1, r2 = st.columns(2, gap="large")
 with r1:
     st.caption("**Estrellas vs. utilidad** — Las 3 estrellas tienen mayor dispersión.")
@@ -124,5 +175,5 @@ with r4:
     st.plotly_chart(build_incoherence_distribution(df), use_container_width=True)
 
 # ── Correlación ────────────────────────────────────────────────────────────────
-st.markdown("### Correlación entre variables")
+st.markdown('<div class="section-label">Correlación entre variables</div>', unsafe_allow_html=True)
 st.plotly_chart(build_correlation_heatmap(df), use_container_width=True)

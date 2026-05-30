@@ -21,6 +21,28 @@ from utils.formatters import format_percentage
 from utils.validators import is_non_empty_text
 
 
+def load_css() -> None:
+    with open("styles/styles.css", "r", encoding="utf-8") as f:
+        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+
+
+def _render_logo() -> str:
+    return """
+    <svg class="sidebar-logo-svg" width="38" height="38" viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="38" height="38" rx="10" fill="url(#lg1a)"/>
+      <path d="M10 26 L19 12 L28 26 Z" fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.5)" stroke-width="1.2"/>
+      <path d="M14 26 L19 17 L24 26 Z" fill="rgba(255,255,255,0.9)"/>
+      <circle cx="19" cy="11" r="2.5" fill="#7dd3fc"/>
+      <defs>
+        <linearGradient id="lg1a" x1="0" y1="0" x2="38" y2="38" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#1e3a8a"/>
+          <stop offset="100%" stop-color="#0f4c5c"/>
+        </linearGradient>
+      </defs>
+    </svg>
+    """
+
+
 def _api_url() -> str:
     try:
         return st.secrets["API_URL"].rstrip("/")
@@ -42,6 +64,35 @@ def _call_predict(review_text: str, stars: int) -> dict:
     except Exception as exc:
         return {"error": str(exc)}
 
+
+load_css()
+
+with st.sidebar:
+    st.markdown(
+        f"""
+        <div class="sidebar-logo-wrap">
+            {_render_logo()}
+            <div>
+                <div class="sidebar-logo-text-main">Seminario<br>Predictivo</div>
+                <div class="sidebar-logo-text-sub">Caso 06 · Amazon Reviews</div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        """
+        <div class="sidebar-panel">
+            <div class="sidebar-panel-title">Navegación</div>
+            <div class="sidebar-panel-item">1. Resumen Ejecutivo</div>
+            <div class="sidebar-panel-item">2. Exploración de Datos</div>
+            <div class="sidebar-panel-item">3. Modelos y Evaluación</div>
+            <div class="sidebar-panel-item">4. Auditoría en Tiempo Real</div>
+            <div class="sidebar-panel-item">5. Ranking y Benchmark</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 st.title("Auditoría en Tiempo Real")
 st.caption("Ingresa una reseña para obtener su probabilidad de utilidad y el desglose de las 4 características calculadas.")
@@ -83,7 +134,7 @@ with left_col:
             )
             st.session_state["latest_audit_result"] = audit_result
 
-    st.markdown("#### Carga masiva")
+    st.markdown('<div class="section-label">Carga masiva</div>', unsafe_allow_html=True)
     uploaded_file = st.file_uploader("CSV con ProductId, ProfileName, Score, Text", type=["csv"])
     if st.button("Procesar lote CSV"):
         if uploaded_file is None:
@@ -129,8 +180,8 @@ with right_col:
     else:
         st.info("Introduce una reseña y presiona Analizar.")
 
-# ── Características calculadas — tarjetas ──────────────────────────────────────
-st.markdown("### Características calculadas")
+# ── Características calculadas ─────────────────────────────────────────────────
+st.markdown('<div class="section-label">Características calculadas</div>', unsafe_allow_html=True)
 
 latest_result = st.session_state.get("latest_audit_result")
 api_result    = st.session_state.get("_api_result")
@@ -213,7 +264,7 @@ with f4:
     )
 
 # ── Benchmark ──────────────────────────────────────────────────────────────────
-st.markdown("### Benchmark del producto")
+st.markdown('<div class="section-label">Benchmark del producto</div>', unsafe_allow_html=True)
 product_benchmark = get_product_benchmark(selected_product)
 b1, b2, b3, b4 = st.columns(4, gap="medium")
 with b1:
@@ -229,9 +280,8 @@ with b4:
 
 # ── Recomendaciones ────────────────────────────────────────────────────────────
 if latest_result:
-    from services.ml_service import generate_review_recommendations
     recommendations = generate_review_recommendations(latest_result)
-    st.markdown("### Cómo mejorar esta reseña")
+    st.markdown('<div class="section-label">Cómo mejorar esta reseña</div>', unsafe_allow_html=True)
     r1, r2 = st.columns(2, gap="large")
     with r1:
         st.markdown(
@@ -259,7 +309,7 @@ if latest_result:
             ok, msg = save_latest_review_to_file(selected_product)
             (st.success if ok else st.warning)(msg)
 
-    st.markdown("### Vista previa")
+    st.markdown('<div class="section-label">Vista previa</div>', unsafe_allow_html=True)
     render_review_card(
         user_name=user_name, stars=stars, review_text=review_text,
         meta_line=f"{product_detail['ProductName']} | {product_detail['Categoria_Real']} | {pd.Timestamp.now().strftime('%d/%m/%Y')}",

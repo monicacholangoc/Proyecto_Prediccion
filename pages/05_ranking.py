@@ -16,6 +16,57 @@ from services.preprocessing_service import (
 from utils.formatters import format_compact_number, format_percentage
 
 
+def load_css() -> None:
+    with open("styles/styles.css", "r", encoding="utf-8") as f:
+        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+
+
+def _render_logo() -> str:
+    return """
+    <svg class="sidebar-logo-svg" width="38" height="38" viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="38" height="38" rx="10" fill="url(#lg1k)"/>
+      <path d="M10 26 L19 12 L28 26 Z" fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.5)" stroke-width="1.2"/>
+      <path d="M14 26 L19 17 L24 26 Z" fill="rgba(255,255,255,0.9)"/>
+      <circle cx="19" cy="11" r="2.5" fill="#7dd3fc"/>
+      <defs>
+        <linearGradient id="lg1k" x1="0" y1="0" x2="38" y2="38" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#1e3a8a"/>
+          <stop offset="100%" stop-color="#0f4c5c"/>
+        </linearGradient>
+      </defs>
+    </svg>
+    """
+
+
+load_css()
+
+with st.sidebar:
+    st.markdown(
+        f"""
+        <div class="sidebar-logo-wrap">
+            {_render_logo()}
+            <div>
+                <div class="sidebar-logo-text-main">Seminario<br>Predictivo</div>
+                <div class="sidebar-logo-text-sub">Caso 06 · Amazon Reviews</div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        """
+        <div class="sidebar-panel">
+            <div class="sidebar-panel-title">Navegación</div>
+            <div class="sidebar-panel-item">1. Resumen Ejecutivo</div>
+            <div class="sidebar-panel-item">2. Exploración de Datos</div>
+            <div class="sidebar-panel-item">3. Modelos y Evaluación</div>
+            <div class="sidebar-panel-item">4. Auditoría en Tiempo Real</div>
+            <div class="sidebar-panel-item">5. Ranking y Benchmark</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
 st.title("Ranking y Benchmark")
 st.caption("Comparación de reseñas por producto. Analiza primero en Auditoría para ver tu posición.")
 
@@ -27,6 +78,7 @@ if not product_options:
     st.stop()
 
 # ── Filtros ────────────────────────────────────────────────────────────────────
+st.markdown('<div class="section-label">Filtros</div>', unsafe_allow_html=True)
 f1, f2 = st.columns(2, gap="medium")
 with f1:
     selected_product = st.selectbox("Producto", options=product_options)
@@ -58,7 +110,7 @@ avg_score    = float(ranking_df["Helpfulness"].mean()) if not ranking_df.empty e
 review_count = len(ranking_df)
 top_user     = str(ranking_df.iloc[0]["User"]) if not ranking_df.empty else "Sin datos"
 
-st.markdown("### Indicadores del producto")
+st.markdown('<div class="section-label">Indicadores del producto</div>', unsafe_allow_html=True)
 m1, m2, m3, m4 = st.columns(4, gap="medium")
 with m1:
     render_metric_card("Reseñas", format_compact_number(review_count), "Base competitiva local")
@@ -70,7 +122,7 @@ with m4:
     render_metric_card("Líder actual", top_user[:22], "Usuario mejor posicionado")
 
 # ── Top 5 ──────────────────────────────────────────────────────────────────────
-st.markdown("### Top 5 del producto")
+st.markdown('<div class="section-label">Top 5 del producto</div>', unsafe_allow_html=True)
 position_labels = ["1er lugar", "2do lugar", "3er lugar", "4to lugar", "5to lugar"]
 top5 = ranking_df.head(5) if not ranking_df.empty else pd.DataFrame()
 
@@ -123,7 +175,7 @@ else:
     st.info("No hay reseñas disponibles para los filtros seleccionados.")
 
 # ── Tu posición ────────────────────────────────────────────────────────────────
-st.markdown("### Tu reseña en contexto")
+st.markdown('<div class="section-label">Tu reseña en contexto</div>', unsafe_allow_html=True)
 p1, p2, p3 = st.columns(3, gap="medium")
 with p1:
     render_metric_card(
@@ -157,7 +209,7 @@ else:
 
 # ── Historial ──────────────────────────────────────────────────────────────────
 st.markdown("---")
-st.subheader("Historial reciente del producto")
+st.markdown('<div class="section-label">Historial reciente del producto</div>', unsafe_allow_html=True)
 if not product_history_df.empty:
     preview = product_history_df.head(10).copy()
     preview["CreatedAt"] = preview["CreatedAt"].dt.strftime("%d/%m/%Y %H:%M")
@@ -166,8 +218,7 @@ else:
     st.info("No hay historial disponible para los filtros actuales.")
 
 # ── Reseñas guardadas ──────────────────────────────────────────────────────────
-st.markdown("---")
-st.subheader("Reseñas guardadas")
+st.markdown('<div class="section-label">Reseñas guardadas</div>', unsafe_allow_html=True)
 filtered_saved = saved_reviews_df.copy()
 if not filtered_saved.empty:
     if "ProductId" in filtered_saved.columns:
@@ -185,6 +236,5 @@ else:
     st.info("No hay reseñas guardadas para los filtros seleccionados.")
 
 # ── Top 20 global ──────────────────────────────────────────────────────────────
-st.markdown("---")
-st.subheader("Top 20 global por utilidad")
+st.markdown('<div class="section-label">Top 20 global por utilidad</div>', unsafe_allow_html=True)
 st.dataframe(global_ranking_df.head(20), use_container_width=True, hide_index=True)

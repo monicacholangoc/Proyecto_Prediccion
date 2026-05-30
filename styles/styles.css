@@ -475,3 +475,160 @@ p, li, label { color: var(--muted); }
     .metric-value { font-size: 1.25rem; }
     .highlight-value { font-size: 1.2rem; }
 }
+/* ── Logo sidebar (nuevo) ─────────────────────────────── */
+
+.sidebar-logo-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.5rem 0 1rem;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    margin-bottom: 0.9rem;
+}
+.sidebar-logo-svg { flex-shrink: 0; }
+.sidebar-logo-text-main {
+    color: #f8fafc;
+    font-size: 0.92rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+}
+.sidebar-logo-text-sub {
+    color: rgba(248,250,252,0.5);
+    font-size: 0.7rem;
+    letter-spacing: 0.02em;
+}
+
+/* ── Hero compacto (dashboard main) ──────────────────── */
+
+.hero-compact {
+    background: linear-gradient(135deg, #0f172a 0%, #1746a2 60%, #0f4c5c 100%);
+    border-radius: 16px;
+    padding: 1.1rem 1.5rem;
+    margin-bottom: 1.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    box-shadow: 0 16px 32px rgba(15,23,42,0.18);
+}
+.hero-compact-left h1 {
+    color: #fff;
+    font-size: clamp(1.05rem, 2.2vw, 1.45rem);
+    font-weight: 800;
+    margin: 0 0 0.2rem;
+    letter-spacing: -0.03em;
+}
+.hero-compact-left p {
+    color: rgba(255,255,255,0.68);
+    font-size: 0.8rem;
+    margin: 0;
+}
+.hero-compact-tag {
+    font-size: 0.7rem;
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 999px;
+    padding: 0.2rem 0.6rem;
+    color: rgba(255,255,255,0.82);
+    display: inline-block;
+    margin-bottom: 0.35rem;
+}
+.hero-compact-stats {
+    display: flex;
+    gap: 1.1rem;
+    align-items: center;
+    flex-shrink: 0;
+}
+.hero-stat { text-align: center; }
+.hero-stat-value {
+    color: #fff;
+    font-size: 1.35rem;
+    font-weight: 800;
+    line-height: 1;
+}
+.hero-stat-label {
+    color: rgba(255,255,255,0.58);
+    font-size: 0.7rem;
+    margin-top: 0.12rem;
+}
+.hero-stat-divider {
+    width: 1px;
+    height: 36px;
+    background: rgba(255,255,255,0.15);
+}
+
+/* ── Section label (mini-header) ─────────────────────── */
+
+.section-label {
+    color: var(--muted);
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    margin: 1rem 0 0.45rem;
+    border-left: 3px solid var(--primary);
+    padding-left: 0.5rem;
+}
+
+/* ── KPI card compacta (dashboard) ───────────────────── */
+
+.kpi-card {
+    background: var(--surface-soft);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 0.8rem 0.9rem;
+    box-shadow: var(--shadow-soft);
+    height: 100%;
+}
+.kpi-label {
+    color: var(--muted);
+    font-size: 0.74rem;
+    margin-bottom: 0.2rem;
+    line-height: 1.2;
+}
+.kpi-value {
+    color: var(--text);
+    font-size: clamp(1.2rem, 2.2vw, 1.55rem);
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 0.15rem;
+}
+.kpi-caption {
+    color: var(--muted);
+    font-size: 0.72rem;
+}
+
+/* ── API cards grid ──────────────────────────────────── */
+
+.api-status-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+}
+.api-card {
+    background: var(--surface-soft);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.65rem 0.8rem;
+    box-shadow: var(--shadow-soft);
+}
+.api-card-label {
+    color: var(--muted);
+    font-size: 0.72rem;
+    margin-bottom: 0.18rem;
+}
+.api-card-value {
+    color: var(--text);
+    font-size: 0.8rem;
+    font-weight: 600;
+    word-break: break-all;
+    margin-bottom: 0.2rem;
+}
+
+@media (max-width: 768px) {
+    .hero-compact { flex-direction: column; align-items: flex-start; }
+    .hero-compact-stats { flex-wrap: wrap; }
+    .api-status-grid { grid-template-columns: 1fr; }
+}

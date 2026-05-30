@@ -9,7 +9,59 @@ from services.feature_service import add_basic_text_features
 from plots.eda_charts import build_stars_distribution, build_review_length_distribution
 from services.preprocessing_service import get_corporate_audit_db
 from utils.formatters import format_compact_number, format_percentage
+import os
 
+
+def load_css() -> None:
+    with open("styles/styles.css", "r", encoding="utf-8") as f:
+        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+
+
+def _render_logo() -> str:
+    return """
+    <svg class="sidebar-logo-svg" width="38" height="38" viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="38" height="38" rx="10" fill="url(#lg1r)"/>
+      <path d="M10 26 L19 12 L28 26 Z" fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.5)" stroke-width="1.2"/>
+      <path d="M14 26 L19 17 L24 26 Z" fill="rgba(255,255,255,0.9)"/>
+      <circle cx="19" cy="11" r="2.5" fill="#7dd3fc"/>
+      <defs>
+        <linearGradient id="lg1r" x1="0" y1="0" x2="38" y2="38" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#1e3a8a"/>
+          <stop offset="100%" stop-color="#0f4c5c"/>
+        </linearGradient>
+      </defs>
+    </svg>
+    """
+
+
+load_css()
+
+with st.sidebar:
+    st.markdown(
+        f"""
+        <div class="sidebar-logo-wrap">
+            {_render_logo()}
+            <div>
+                <div class="sidebar-logo-text-main">Seminario<br>Predictivo</div>
+                <div class="sidebar-logo-text-sub">Caso 06 · Amazon Reviews</div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        """
+        <div class="sidebar-panel">
+            <div class="sidebar-panel-title">Navegación</div>
+            <div class="sidebar-panel-item">1. Resumen Ejecutivo</div>
+            <div class="sidebar-panel-item">2. Exploración de Datos</div>
+            <div class="sidebar-panel-item">3. Modelos y Evaluación</div>
+            <div class="sidebar-panel-item">4. Auditoría en Tiempo Real</div>
+            <div class="sidebar-panel-item">5. Ranking y Benchmark</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 st.title("Resumen Ejecutivo")
 st.caption("Indicadores del dataset, hipótesis verificadas y distribuciones clave.")
@@ -34,7 +86,7 @@ approved_ratio = (
 )
 
 # ── Dataset ────────────────────────────────────────────────────────────────────
-st.markdown("### Dataset")
+st.markdown('<div class="section-label">Dataset</div>', unsafe_allow_html=True)
 m1, m2, m3, m4 = st.columns(4, gap="medium")
 with m1:
     render_metric_card("Dataset original", "568.454", "Reseñas en bruto")
@@ -46,7 +98,7 @@ with m4:
     render_metric_card("Base operativa", format_compact_number(len(corporate_db)), "Registros para auditoría")
 
 # ── Indicadores clave ──────────────────────────────────────────────────────────
-st.markdown("### Indicadores clave")
+st.markdown('<div class="section-label">Indicadores clave</div>', unsafe_allow_html=True)
 k1, k2, k3 = st.columns(3, gap="medium")
 with k1:
     render_metric_card("Reseñas útiles (≥ 0.70)", format_percentage(useful_ratio), "Variable objetivo del modelo")
@@ -56,7 +108,7 @@ with k3:
     render_metric_card("Reseñas aprobadas", format_percentage(approved_ratio), "Clasificadas como publicadas")
 
 # ── Hipótesis ──────────────────────────────────────────────────────────────────
-st.markdown("### Hipótesis verificadas")
+st.markdown('<div class="section-label">Hipótesis verificadas</div>', unsafe_allow_html=True)
 h1, h2, h3 = st.columns(3, gap="medium")
 
 hypotheses = [
@@ -78,14 +130,15 @@ for col, (title, result, badge_class, body) in zip([h1, h2, h3], hypotheses):
         )
 
 # ── Distribuciones ─────────────────────────────────────────────────────────────
-st.markdown("### Distribuciones")
+st.markdown('<div class="section-label">Distribuciones</div>', unsafe_allow_html=True)
 left_col, right_col = st.columns(2, gap="large")
 with left_col:
     st.caption("**Calificaciones** — Concentración en 4–5 estrellas genera desbalance de clases.")
     st.plotly_chart(build_stars_distribution(reviews), use_container_width=True)
 with right_col:
     fig2 = build_review_length_distribution(reviews)
-    fig2.add_vline(x=avg_length, line_dash="dash", line_color="#0f9f74",
-                   annotation_text=f"Media: {avg_length} palabras", annotation_position="top right")
+    if avg_length > 0:
+        fig2.add_vline(x=avg_length, line_dash="dash", line_color="#0f9f74",
+                       annotation_text=f"Media: {avg_length} palabras", annotation_position="top right")
     st.caption("**Longitud** — Pocas reseñas son muy largas; suelen ser las más útiles.")
     st.plotly_chart(fig2, use_container_width=True)
