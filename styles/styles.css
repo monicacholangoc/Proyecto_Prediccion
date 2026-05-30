@@ -20,11 +20,20 @@
 
 /* ── Base ─────────────────────────────────────────────── */
 
-.stApp {
+.stApp,
+.stApp > div,
+[data-testid="stAppViewContainer"],
+[data-testid="stAppViewContainer"] > section,
+[data-testid="block-container"] {
     background:
         radial-gradient(circle at top right, rgba(23, 70, 162, 0.08), transparent 22%),
         radial-gradient(circle at top left, rgba(15, 76, 92, 0.08), transparent 18%),
-        linear-gradient(180deg, #f8fbff 0%, #eef3f9 100%);
+        linear-gradient(180deg, #f8fbff 0%, #eef3f9 100%) !important;
+}
+
+/* Fondo extra para páginas secundarias (pages/) */
+html body .stApp {
+    background-color: #eef3f9 !important;
 }
 
 [data-testid="stHeader"] {
@@ -728,4 +737,63 @@ p, li, label { color: var(--muted); }
 @media (max-width: 768px) {
     .stat-row { flex-direction: column; }
     .stat-pill { min-width: 100%; }
+}
+/* ── Nav funcional (st.page_link + icono) ─────────────── */
+
+/* Ocultar el nav automático de Streamlit */
+[data-testid="stSidebarNav"] { display: none !important; }
+
+/* Icono cuadrado junto al link */
+.snav-link-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.11);
+    flex-shrink: 0;
+    color: rgba(248,250,252,0.85);
+    margin-top: 0.22rem;
+}
+
+/* Estilizar page_link dentro del sidebar */
+[data-testid="stSidebar"] [data-testid="stPageLink"] {
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+[data-testid="stSidebar"] [data-testid="stPageLink"] a,
+[data-testid="stSidebar"] [data-testid="stPageLink"] p {
+    color: rgba(248,250,252,0.82) !important;
+    font-size: 0.82rem !important;
+    font-weight: 500 !important;
+    text-decoration: none !important;
+    padding: 0.28rem 0.45rem !important;
+    border-radius: 8px !important;
+    display: block !important;
+    transition: background 0.15s !important;
+    line-height: 1.3 !important;
+}
+[data-testid="stSidebar"] [data-testid="stPageLink"] a:hover,
+[data-testid="stSidebar"] [data-testid="stPageLink"] p:hover {
+    background: rgba(255,255,255,0.09) !important;
+    color: #ffffff !important;
+}
+[data-testid="stSidebar"] [data-testid="stPageLink"][aria-current="page"] a,
+[data-testid="stSidebar"] [data-testid="stPageLink"][aria-current="page"] p {
+    background: rgba(255,255,255,0.15) !important;
+    color: #ffffff !important;
+}
+
+/* Eliminar gap excesivo entre columnas del nav en sidebar */
+[data-testid="stSidebar"] [data-testid="stHorizontalBlock"] {
+    gap: 0.2rem !important;
+    align-items: center !important;
+    margin-bottom: 0.05rem !important;
+}
+[data-testid="stSidebar"] [data-testid="stHorizontalBlock"] > div {
+    padding: 0 !important;
+    min-width: 0 !important;
 }
