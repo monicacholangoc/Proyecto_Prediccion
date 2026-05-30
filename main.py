@@ -46,16 +46,7 @@ def main() -> None:
         tag="Seminario Predictivo 2026",
     )
 
-    st.markdown(
-        """
-        <div class="hero-note">
-            La app ya esta organizada por capas y paginas. Usa la barra lateral para
-            navegar entre la lectura ejecutiva, la exploracion del dataset, la
-            evaluacion de modelos y la auditoria en tiempo real.
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+
 
     with st.sidebar:
         st.markdown(
@@ -85,55 +76,31 @@ def main() -> None:
         )
 
     st.markdown("### Vista General")
-    intro_left, intro_right = st.columns([1.15, 0.85], gap="large")
-
-    with intro_left:
-        st.markdown(
-            """
-            <div class="section-panel">
-                <div class="section-kicker">Caso de negocio</div>
-                <h3>¿Qué intenta resolver este producto?</h3>
-                <p>
-                    El objetivo es predecir si una reseña sera percibida como util por otros
-                    compradores y transformar ese aprendizaje en recomendaciones accionables
-                    para redactar mejores reseñas.
-                </p>
-                <ul>
-                    <li>Usa señales textuales y de comportamiento.</li>
-                    <li>Permite comparar modelos clasicos de clasificacion.</li>
-                    <li>Convierte el analisis en una experiencia operativa en Streamlit.</li>
-                </ul>
-            </div>
-            """,
-            unsafe_allow_html=True,
+    m1, m2, m3, m4 = st.columns(4, gap="medium")
+    with m1:
+        render_metric_card(
+            "Dataset bruto",
+            format_compact_number(DEFAULT_METRICS["registros_iniciales"]),
+            "Registros historicos del caso",
         )
-
-    with intro_right:
-        metric_cols = st.columns(2)
-        with metric_cols[0]:
-            render_metric_card(
-                "Dataset bruto",
-                format_compact_number(DEFAULT_METRICS["registros_iniciales"]),
-                "Registros historicos del caso",
-            )
-        with metric_cols[1]:
-            render_metric_card(
-                "Datos procesados",
-                format_compact_number(len(reviews)),
-                "Base disponible para exploracion",
-            )
-        with metric_cols[0]:
-            render_metric_card(
-                "Catalogo",
-                format_compact_number(len(catalog)),
-                "Productos con contexto",
-            )
-        with metric_cols[1]:
-            render_metric_card(
-                "Auditorias activas",
-                format_compact_number(len(corporate_db)),
-                "Base operativa de la app",
-            )
+    with m2:
+        render_metric_card(
+            "Datos procesados",
+            format_compact_number(len(reviews)),
+            "Base disponible para exploracion",
+        )
+    with m3:
+        render_metric_card(
+            "Catalogo",
+            format_compact_number(len(catalog)),
+            "Productos con contexto",
+        )
+    with m4:
+        render_metric_card(
+            "Auditorias activas",
+            format_compact_number(len(corporate_db)),
+            "Base operativa de la app",
+        )
 
     st.markdown("### Mapa de la Aplicacion")
     card_cols = st.columns(4, gap="medium")
@@ -146,17 +113,7 @@ def main() -> None:
     with card_cols[3]:
         render_nav_card("Auditoria", "Prediccion en tiempo real con retroalimentacion para el usuario.")
 
-    st.markdown("### Siguiente Paso")
-    st.markdown(
-        """
-        <div class="section-band">
-            La arquitectura base ya esta activa. En la siguiente fase vamos a poblar
-            cada pagina con una narrativa mas fuerte, mejores componentes visuales y
-            una experiencia mas cercana a un producto analitico real.
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+
 
 
 if __name__ == "__main__":
