@@ -11,7 +11,7 @@ import requests
 import streamlit as st
 
 from components.cards import render_highlight_card, render_metric_card, render_review_card
-from components.feedback import render_bullet_panel, render_info_panel, render_status_panel
+from components.feedback import render_status_panel
 from plots.audit_charts import build_helpfulness_gauge
 from services.catalog_service import get_product_detail, get_product_options
 from services.ml_service import generate_review_recommendations
@@ -44,7 +44,7 @@ def _call_predict(review_text: str, stars: int) -> dict:
         r = requests.post(
             _api_url() + "/reviews/predict_helpfulness",
             json={"review_text": review_text, "stars": stars},
-            timeout=20,
+            timeout=35,
         )
         r.raise_for_status()
         return r.json()
@@ -56,7 +56,7 @@ def _call_predict(review_text: str, stars: int) -> dict:
 def _get_api_status() -> dict:
     """GET / — retorna estado de la API y modelos cargados."""
     try:
-        r = requests.get(_api_url() + "/", timeout=20)
+        r = requests.get(_api_url() + "/", timeout=35)
         r.raise_for_status()
         return r.json()
     except Exception as exc:
@@ -65,7 +65,7 @@ def _get_api_status() -> dict:
 def _call_top_words() -> dict:
     """GET /reviews/top_words — retorna palabras clave útiles vs no útiles."""
     try:
-        r = requests.get(_api_url() + "/reviews/top_words", timeout=20)
+        r = requests.get(_api_url() + "/reviews/top_words", timeout=35)
         r.raise_for_status()
         return r.json()
     except Exception as exc:
@@ -73,7 +73,7 @@ def _call_top_words() -> dict:
 
 
 st.title("Auditoría en Tiempo Real")
-st.caption("Espacio central del producto para evaluar reseñas y dar retroalimentación.")
+
 
 # ── Estado de la API en sidebar ───────────────────────────────────────────────
 with st.sidebar:
@@ -98,19 +98,6 @@ if not product_options:
 left_col, right_col = st.columns([1.1, 1], gap="large")
 
 with left_col:
-    st.markdown(
-        """
-        <div class="section-panel">
-            <div class="section-kicker">Entrada operativa</div>
-            <h3>Evalúa una reseña antes de publicarla</h3>
-            <p>
-                Esta herramienta simula el flujo de revisión de una reseña y estima
-                si será percibida como útil por otros compradores.
-            </p>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
     selected_product = st.selectbox("Producto", options=product_options)
     product_detail = get_product_detail(selected_product)
     if product_detail:
@@ -202,20 +189,13 @@ with right_col:
             tone=tone,
         )
         if latest_result.get("context_validation_enabled"):
-            render_info_panel(
-                "Validación de contexto",
-                (
-                    f"{latest_result['context_explanation']} "
-                    f"Coincidencias de contexto: {', '.join(latest_result['context_hits']) if latest_result['context_hits'] else 'ninguna clara'}. "
-                    f"Términos ajenos detectados: {', '.join(latest_result['tech_hits']) if latest_result['tech_hits'] else 'ninguno'}."
-                ),
-            )
+            ctx_hits = ", ".join(latest_result["context_hits"]) if latest_result["context_hits"] else "ninguna"
+            tech_hits = ", ".join(latest_result["tech_hits"]) if latest_result["tech_hits"] else "ninguno"
+            c1, c2 = st.columns(2)
+            c1.metric("Contexto detectado", ctx_hits[:30] if len(ctx_hits) > 30 else ctx_hits)
+            c2.metric("Términos ajenos", tech_hits[:30] if len(tech_hits) > 30 else tech_hits)
     else:
-        render_info_panel(
-            "Diagnóstico inicial",
-            "Aquí mostraremos la probabilidad de utilidad, la coherencia del texto con las estrellas "
-            "y recomendaciones accionables para mejorar la reseña.",
-        )
+        st.info("Introduce una reseña y presiona Analizar.")
 
 st.markdown("### Lectura del Resultado")
 result_cols = st.columns(4, gap="medium")
@@ -282,25 +262,18 @@ with advice_left:
             "Una vez analices una reseña, aquí aparecerá la recomendación más importante para mejorarla.",
         )
 with advice_right:
-    render_bullet_panel(
-        "Buenas prácticas para una reseña útil",
-        [
-            "Describe el contexto real de uso del producto.",
-            "Explica beneficios o problemas concretos, no solo opinión general.",
-            "Mantén coherencia entre el texto escrito y la calificación en estrellas.",
-        ],
-    )
+    if latest_result:
+        recs = generate_review_recommendations(latest_result)
+        render_highlight_card("Sugerencia 1", "→", recs[0] if len(recs) > 0 else "")
+        if len(recs) > 1:
+            render_highlight_card("Sugerencia 2", "→", recs[1])
 
 benchmark_left, benchmark_right = st.columns(2, gap="large")
 with benchmark_left:
-    render_bullet_panel(
-        "Comparación contra el histórico",
-        [
-            f"Promedio del producto: {format_percentage(product_benchmark['avg_helpfulness'])}.",
-            f"Mejor score del producto: {format_percentage(product_benchmark['top_helpfulness'])}.",
-            f"Volumen histórico visible: {product_benchmark['count']} reseñas.",
-        ],
-    )
+    b1, b2, b3 = st.columns(3)
+    b1.metric("Promedio producto", format_percentage(product_benchmark["avg_helpfulness"]))
+    b2.metric("Top producto",      format_percentage(product_benchmark["top_helpfulness"]))
+    b3.metric("Total reseñas",     str(product_benchmark["count"]))
 with benchmark_right:
     if latest_result:
         delta_vs_avg = latest_result["probability"] - product_benchmark["avg_helpfulness"]
@@ -322,15 +295,6 @@ with benchmark_right:
         )
 
 if latest_result:
-    st.markdown("### Explicación para el usuario")
-    render_info_panel(
-        "Cómo interpretar este score",
-        f"El sistema estimó una utilidad de {format_percentage(probability)}. "
-        f"Esto se apoya en señales como longitud textual, coherencia general y estructura de la reseña. "
-        f"Si el score no es alto, la estrategia correcta no es cambiar la nota, sino mejorar la calidad del contenido escrito.",
-    )
-    render_bullet_panel("Sugerencias automáticas", recommendations)
-
     save_left, save_right = st.columns([0.7, 1.3], gap="large")
     with save_left:
         save_review = st.button("Grabar reseña", use_container_width=True)
@@ -356,10 +320,7 @@ if latest_result:
 
     st.markdown("### Tu reseña en contexto del producto")
     if review_window_df.empty:
-        render_info_panel(
-            "Ventana contextual no disponible",
-            "Todavía no fue posible ubicar la reseña dentro del ranking local del producto.",
-        )
+        pass
     else:
         for _, row in review_window_df.iterrows():
             meta_line = (
