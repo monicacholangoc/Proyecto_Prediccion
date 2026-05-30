@@ -4,7 +4,10 @@ Recibe una reseña, consulta la capa de servicios y devuelve una salida
 lista para usuario final: score, estado y diagnostico resumido.
 """
 
+import os
+
 import pandas as pd
+import requests
 import streamlit as st
 
 from components.cards import render_highlight_card, render_metric_card, render_review_card
@@ -25,9 +28,66 @@ from services.preprocessing_service import (
 from utils.formatters import format_percentage
 from utils.validators import is_non_empty_text
 
+# ── Funciones de conexión a la API de Render ──────────────────────────────────
+# La URL se lee desde st.secrets en Streamlit Cloud, o desde variable de entorno local.
+# No se necesita un archivo separado — todo vive aquí.
+
+def _api_url() -> str:
+    try:
+        return st.secrets["API_URL"].rstrip("/")
+    except Exception:
+        return os.getenv("API_URL", "https://proyecto-prediccion-v9qk.onrender.com").rstrip("/")
+
+def _call_predict(review_text: str, stars: int) -> dict:
+    """POST /reviews/predict_helpfulness — retorna dict con probability o {"error": ...}"""
+    try:
+        r = requests.post(
+            _api_url() + "/reviews/predict_helpfulness",
+            json={"review_text": review_text, "stars": stars},
+            timeout=20,
+        )
+        r.raise_for_status()
+        return r.json()
+    except requests.exceptions.Timeout:
+        return {"error": "La API tardó demasiado. Render free puede tardar ~30 s en arrancar. Reintenta."}
+    except Exception as exc:
+        return {"error": str(exc)}
+
+def _get_api_status() -> dict:
+    """GET / — retorna estado de la API y modelos cargados."""
+    try:
+        r = requests.get(_api_url() + "/", timeout=20)
+        r.raise_for_status()
+        return r.json()
+    except Exception as exc:
+        return {"status": "error", "detalle": str(exc)}
+
+def _call_top_words() -> dict:
+    """GET /reviews/top_words — retorna palabras clave útiles vs no útiles."""
+    try:
+        r = requests.get(_api_url() + "/reviews/top_words", timeout=20)
+        r.raise_for_status()
+        return r.json()
+    except Exception as exc:
+        return {"error": str(exc)}
+
 
 st.title("Auditoría en Tiempo Real")
 st.caption("Espacio central del producto para evaluar reseñas y dar retroalimentación.")
+
+# ── Estado de la API en sidebar ───────────────────────────────────────────────
+with st.sidebar:
+    st.markdown("#### Estado API (Render)")
+    with st.spinner("Verificando..."):
+        api_status = _get_api_status()
+    if api_status.get("status") == "ok":
+        lgb_ok = "✓" in api_status.get("modelos", {}).get("lgb_model", "")
+        st.success("API activa ✓")
+        st.caption(f"LightGBM: {'✅ cargado' if lgb_ok else '⚠️ heurística'}")
+    else:
+        st.warning("⚠️ API no responde")
+        st.caption(api_status.get("detalle", "Error desconocido"))
+    st.caption("proyecto-prediccion-v9qk.onrender.com")
 
 product_options = get_product_options()
 
@@ -71,16 +131,24 @@ with left_col:
     review_text = st.text_area("Texto de la reseña", height=200)
     analyze_review = st.button("Analizar reseña", type="primary")
 
-    # La accion principal se delega al service para no mezclar UI con negocio.
+    # Llama primero a la API de Render; si falla usa ml_service local como fallback.
     if analyze_review:
         if not is_non_empty_text(review_text):
             st.warning("Ingresa una reseña antes de analizar.")
         else:
+            with st.spinner("Consultando API en Render..."):
+                api_result = _call_predict(review_text.strip(), stars)
+            if "error" not in api_result:
+                st.session_state["_api_result"] = api_result
+            else:
+                st.error(f"API no disponible: {api_result['error']}")
+                st.info("Usando cálculo local como fallback...")
+                st.session_state["_api_result"] = None
             audit_result = append_audited_review(
                 selected_product,
                 user_name,
                 stars,
-                review_text,
+                review_text.strip(),
                 validate_context=validate_context,
             )
             st.session_state["latest_audit_result"] = audit_result
@@ -105,7 +173,12 @@ with left_col:
 
 with right_col:
     latest_result = st.session_state.get("latest_audit_result")
-    probability = latest_result["probability"] if latest_result else 0.0
+    api_result    = st.session_state.get("_api_result")
+    probability = (
+        api_result["probability"]
+        if api_result and "error" not in api_result
+        else (latest_result["probability"] if latest_result else 0.0)
+    )
     st.plotly_chart(build_helpfulness_gauge(probability), use_container_width=True)
 
     if latest_result:
@@ -147,7 +220,12 @@ with right_col:
 st.markdown("### Lectura del Resultado")
 result_cols = st.columns(4, gap="medium")
 latest_result = st.session_state.get("latest_audit_result")
-probability = latest_result["probability"] if latest_result else 0.0
+api_result    = st.session_state.get("_api_result")
+probability = (
+    api_result["probability"]
+    if api_result and "error" not in api_result
+    else (latest_result["probability"] if latest_result else 0.0)
+)
 review_len = latest_result["review_len"] if latest_result else 0
 incoherence = latest_result["incoherente"] if latest_result else False
 product_benchmark = get_product_benchmark(selected_product)

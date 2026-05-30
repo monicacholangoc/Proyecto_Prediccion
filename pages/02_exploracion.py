@@ -7,8 +7,7 @@ siguiente fase creceremos esta vista con mas analisis y narrativa.
 import pandas as pd
 import streamlit as st
 
-from components.cards import render_highlight_card, render_metric_card
-from components.feedback import render_bullet_panel, render_info_panel
+from components.cards import render_metric_card
 from plots.eda_charts import (
     build_category_distribution,
     build_correlation_heatmap,
@@ -127,37 +126,6 @@ with metric_cols[2]:
 with metric_cols[3]:
     render_metric_card("Longitud media", f"{avg_length} palabras", "Promedio del subconjunto actual")
 
-top_left, top_right = st.columns([1.15, 0.85], gap="large")
-with top_left:
-    st.markdown(
-        """
-        <div class="section-panel">
-            <div class="section-kicker">Lectura analítica</div>
-            <h3>Cómo interpretar esta exploración</h3>
-            <p>
-                Esta página está pensada para navegar el comportamiento del dataset
-                desde tres ángulos: distribución, relación entre variables y señales
-                operativas que luego alimentan la auditoría en tiempo real.
-            </p>
-            <p>
-                El objetivo no es solo "ver gráficos", sino identificar patrones que
-                expliquen por qué algunas reseñas resultan más útiles que otras.
-            </p>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-with top_right:
-    render_highlight_card(
-        "Filtro activo",
-        selected_usefulness if selected_usefulness != "Todas" else "Vista global",
-        "Resume la vista actual para que el análisis sea reproducible y fácil de defender.",
-    )
-    render_highlight_card(
-        "Categoría actual",
-        selected_category,
-        "Permite aislar comportamiento por tipo de producto cuando el contexto está disponible.",
-    )
 
 st.markdown("### Distribuciones Principales")
 dist_left, dist_right = st.columns(2, gap="large")
@@ -201,32 +169,3 @@ st.plotly_chart(build_metric_summary_bar(summary_items), use_container_width=Tru
 
 st.markdown("### Correlaciones y Lectura de Features")
 st.plotly_chart(build_correlation_heatmap(filtered_reviews), use_container_width=True)
-
-insight_cols = st.columns(2, gap="large")
-with insight_cols[0]:
-    render_bullet_panel(
-        "Qué estamos leyendo aquí",
-        [
-            "La distribución de estrellas ayuda a ver sesgo positivo o negativo.",
-            "La longitud textual suele ser una señal clave en la utilidad percibida.",
-            "La categoría permite detectar si el comportamiento cambia por tipo de producto.",
-            "Sentimiento e incoherencia conectan directamente con las features del modelo.",
-        ],
-    )
-with insight_cols[1]:
-    render_bullet_panel(
-        "Cómo usar esta vista en la defensa",
-        [
-            "Explica primero el tamaño de la muestra filtrada.",
-            "Conecta luego longitud y utilidad como hipótesis de negocio.",
-            "Cierra con cómo estos patrones justifican las features del modelo.",
-            "Usa la correlación como apoyo, no como única prueba de causalidad.",
-        ],
-    )
-
-render_info_panel(
-    "Lectura de esta fase",
-    "La página de exploración ya tiene estructura de EDA moderno: filtros, métricas de corte, "
-    "gráficos agrupados por bloque y contexto interpretativo. En la siguiente fase podremos "
-    "sumar más análisis específicos como correlaciones, sentimiento y palabras clave.",
-)

@@ -7,7 +7,7 @@ visual del proyecto antes de entrar al detalle.
 import streamlit as st
 
 from components.cards import render_highlight_card, render_metric_card
-from components.feedback import render_bullet_panel, render_info_panel
+
 from services.catalog_service import get_product_catalog
 from services.data_loader import load_processed_reviews
 from services.feature_service import add_basic_text_features
@@ -47,26 +47,8 @@ with metric_cols[2]:
 with metric_cols[3]:
     render_metric_card("Modelo principal", "LightGBM", "Artefacto cargado desde /modelos")
 
-hero_left, hero_right = st.columns([1.25, 0.75], gap="large")
-with hero_left:
-    st.markdown(
-        """
-        <div class="section-panel">
-            <div class="section-kicker">Lectura ejecutiva</div>
-            <h3>Estado actual del producto analitico</h3>
-            <p>
-                Esta vista resume el estado del caso, el volumen de informacion disponible
-                y la base operativa que alimenta la auditoria de reseñas en tiempo real.
-            </p>
-            <p>
-                La idea de esta pagina es que un profesor o evaluador entienda rapido
-                la escala del proyecto, la direccion tecnica y el valor del dashboard.
-            </p>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-with hero_right:
+hero_right_col1, hero_right_col2, hero_right_col3 = st.columns(3, gap="medium")
+with hero_right_col1:
     render_highlight_card(
         "Reseñas útiles",
         format_percentage(useful_ratio),
@@ -90,29 +72,3 @@ with left_col:
 with right_col:
     st.subheader("Distribución de Longitud")
     st.plotly_chart(build_review_length_distribution(reviews), use_container_width=True)
-
-insight_left, insight_right = st.columns([1, 1], gap="large")
-with insight_left:
-    render_bullet_panel(
-        "Hallazgos rápidos",
-        [
-            "La nueva arquitectura ya separa interfaz, servicios, configuración y gráficos.",
-            "La base corporativa en memoria permite simular el flujo operativo del producto.",
-            "El resumen ejecutivo sirve como entrada para usuarios técnicos y no técnicos.",
-        ],
-    )
-with insight_right:
-    render_bullet_panel(
-        "Qué sigue en la evolución",
-        [
-            "Completar el EDA con narrativa analítica y filtros globales.",
-            "Conectar métricas reales de modelos en la página de evaluación.",
-            "Convertir auditoría en una experiencia con feedback accionable más fuerte.",
-        ],
-    )
-
-render_info_panel(
-    "Lectura ejecutiva",
-    "Este resumen ya funciona como una portada ejecutiva del producto. En la siguiente fase "
-    "seguiremos fortaleciendo las páginas internas para que la navegación tenga una historia analítica completa.",
-)

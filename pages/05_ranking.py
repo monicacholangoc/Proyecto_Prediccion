@@ -7,8 +7,7 @@ y preparar una narrativa de competencia por producto.
 import pandas as pd
 import streamlit as st
 
-from components.cards import render_highlight_card, render_metric_card, render_review_card
-from components.feedback import render_bullet_panel, render_info_panel
+from components.cards import render_metric_card, render_review_card
 from services.catalog_service import get_product_detail, get_product_options
 from services.preprocessing_service import (
     get_audited_reviews_operational_table,
@@ -95,37 +94,6 @@ with metric_cols[2]:
 with metric_cols[3]:
     render_metric_card("Líder actual", top_user, "Usuario mejor posicionado")
 
-hero_left, hero_right = st.columns([1.15, 0.85], gap="large")
-with hero_left:
-    st.markdown(
-        """
-        <div class="section-panel">
-            <div class="section-kicker">Benchmark local</div>
-            <h3>Cómo leer este ranking</h3>
-            <p>
-                Esta vista compara la posición relativa de las reseñas dentro del mismo
-                producto para entender qué tan competitiva resulta una nueva entrada.
-            </p>
-            <p>
-                Es útil para demos, storytelling y para mostrar cómo el score del modelo
-                se traduce en una jerarquía operativa fácil de interpretar.
-            </p>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-with hero_right:
-    render_highlight_card(
-        "Producto activo",
-        detail["ProductName"],
-        "La comparación se hace dentro del contexto del mismo artículo para que el benchmark sea justo.",
-    )
-    render_highlight_card(
-        "Categoría",
-        detail["Categoria_Real"],
-        "Ayuda a conectar el ranking con el contexto semántico del catálogo entrenado.",
-    )
-
 left_col, right_col = st.columns(2, gap="large")
 with left_col:
     st.subheader("Top 5 histórico del producto")
@@ -166,26 +134,6 @@ with summary_cols[2]:
         "Historial por fecha",
         format_compact_number(len(filtered_history)),
         "Cantidad de reseñas visibles del producto",
-    )
-
-insight_left, insight_right = st.columns(2, gap="large")
-with insight_left:
-    render_bullet_panel(
-        "Qué demuestra esta vista",
-        [
-            "Una reseña no se interpreta aislada, sino frente al histórico del mismo producto.",
-            "El score de utilidad se vuelve más comprensible cuando se transforma en ranking.",
-            "La comparación local ayuda a explicar decisiones de publicación o mejora.",
-        ],
-    )
-with insight_right:
-    render_bullet_panel(
-        "Cómo presentarlo en la defensa",
-        [
-            "Muestra primero el top histórico para dar contexto.",
-            "Luego enseña la posición relativa de una reseña nueva.",
-            "Cierra explicando cómo el benchmark conecta modelo y decisión operativa.",
-        ],
     )
 
 st.markdown("---")
@@ -229,9 +177,3 @@ st.dataframe(global_ranking_df.head(20), use_container_width=True)
 st.markdown("---")
 st.subheader("Base global enriquecida")
 st.dataframe(global_df.tail(100), use_container_width=True)
-
-render_info_panel(
-    "Lectura de esta fase",
-    "La página de ranking ya funciona como una vista de benchmark clara y presentable. "
-    "Más adelante podemos agregar búsqueda de usuario, resaltado de reseña propia y descarga filtrada.",
-)
