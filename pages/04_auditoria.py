@@ -1,9 +1,4 @@
-"""Auditoría en tiempo real.
-
-Desglose visual de los 4 features, gauge de probabilidad,
-recomendaciones y vista previa de la reseña.
-Sin emojis, indicadores compactos.
-"""
+"""Auditoría en tiempo real — características en tarjetas, sin texto de relleno."""
 
 import os
 
@@ -25,8 +20,6 @@ from services.preprocessing_service import (
 from utils.formatters import format_percentage
 from utils.validators import is_non_empty_text
 
-
-# ── API helpers ────────────────────────────────────────────────────────────────
 
 def _api_url() -> str:
     try:
@@ -50,32 +43,8 @@ def _call_predict(review_text: str, stars: int) -> dict:
         return {"error": str(exc)}
 
 
-def _get_api_status() -> dict:
-    try:
-        r = requests.get(_api_url() + "/", timeout=35)
-        r.raise_for_status()
-        return r.json()
-    except Exception as exc:
-        return {"status": "error", "detalle": str(exc)}
-
-
-# ── App ────────────────────────────────────────────────────────────────────────
-
 st.title("Auditoría en Tiempo Real")
-st.caption("Ingresa una reseña para obtener su probabilidad de utilidad y el desglose de las características calculadas.")
-
-with st.sidebar:
-    st.markdown("#### Estado API")
-    with st.spinner("Verificando..."):
-        api_status = _get_api_status()
-    if api_status.get("status") == "ok":
-        lgb_ok = "✓" in api_status.get("modelos", {}).get("lgb_model", "")
-        st.success("API activa")
-        st.caption(f"LightGBM: {'cargado' if lgb_ok else 'modo heurística'}")
-    else:
-        st.warning("API sin respuesta")
-        st.caption(api_status.get("detalle", "")[:80])
-    st.caption("proyecto-prediccion-v9qk.onrender.com")
+st.caption("Ingresa una reseña para obtener su probabilidad de utilidad y el desglose de las 4 características calculadas.")
 
 product_options = get_product_options()
 if not product_options:
@@ -91,21 +60,17 @@ with left_col:
     pd1.metric("Producto",  product_detail["ProductName"][:28])
     pd2.metric("Categoría", product_detail["Categoria_Real"][:22])
 
-    validate_context = st.toggle(
-        "Validación de contexto / punto ciego",
-        value=True,
-        help="Revisa si la reseña habla del producto o categoría seleccionados.",
-    )
-    stars       = st.slider("Calificación en estrellas", min_value=1, max_value=5, value=5)
-    user_name   = st.text_input("Perfil de usuario", value="Auditor_Seminario")
-    review_text = st.text_area("Texto de la reseña", height=200)
-    analyze_btn = st.button("Analizar reseña", type="primary")
+    validate_context = st.toggle("Validación de contexto / punto ciego", value=True)
+    stars            = st.slider("Calificación en estrellas", min_value=1, max_value=5, value=5)
+    user_name        = st.text_input("Perfil de usuario", value="Auditor_Seminario")
+    review_text      = st.text_area("Texto de la reseña", height=200)
+    analyze_btn      = st.button("Analizar reseña", type="primary")
 
     if analyze_btn:
         if not is_non_empty_text(review_text):
             st.warning("Ingresa una reseña antes de analizar.")
         else:
-            with st.spinner("Consultando API en Render..."):
+            with st.spinner("Consultando API..."):
                 api_result = _call_predict(review_text.strip(), stars)
             if "error" not in api_result:
                 st.session_state["_api_result"] = api_result
@@ -135,8 +100,7 @@ with right_col:
     latest_result = st.session_state.get("latest_audit_result")
     api_result    = st.session_state.get("_api_result")
     probability   = (
-        api_result["probability"]
-        if api_result and "error" not in api_result
+        api_result["probability"] if api_result and "error" not in api_result
         else (latest_result["probability"] if latest_result else 0.0)
     )
 
@@ -151,8 +115,7 @@ with right_col:
             tone, decision = "warning", "Conviene mejorarla"
 
         render_status_panel(
-            "Diagnóstico",
-            decision,
+            "Diagnóstico", decision,
             f"Estado: {latest_result['status']} · Utilidad: {format_percentage(probability)}",
             tone=tone,
         )
@@ -162,23 +125,17 @@ with right_col:
             tech = ", ".join(latest_result["tech_hits"])    or "ninguno"
             c1, c2 = st.columns(2)
             c1.metric("Contexto detectado", ctx[:30])
-            c2.metric("Términos ajenos",    tech[:30])
+            c2.metric("Términos ajenos", tech[:30])
     else:
         st.info("Introduce una reseña y presiona Analizar.")
 
-# ── Desglose de características ────────────────────────────────────────────────
-
+# ── Características calculadas — tarjetas ──────────────────────────────────────
 st.markdown("### Características calculadas")
-st.caption(
-    "Las 4 variables que el modelo usa para predecir la utilidad, "
-    "derivadas directamente del texto sin modelos de lenguaje."
-)
 
 latest_result = st.session_state.get("latest_audit_result")
 api_result    = st.session_state.get("_api_result")
 probability   = (
-    api_result["probability"]
-    if api_result and "error" not in api_result
+    api_result["probability"] if api_result and "error" not in api_result
     else (latest_result["probability"] if latest_result else 0.0)
 )
 
@@ -191,37 +148,35 @@ if api_result and "features" in api_result:
 elif api_result and "sentiment_score" in api_result:
     sentiment_val = api_result["sentiment_score"]
 
+stars_val = st.session_state.get("latest_stars", 5)
 f1, f2, f3, f4 = st.columns(4, gap="medium")
 
 with f1:
     len_badge = "metric-badge-good" if review_len > 60 else "metric-badge-warn"
-    len_label = "Longitud adecuada" if review_len > 60 else "Muy corta"
+    len_label = "Adecuada" if review_len > 60 else "Muy corta"
     st.markdown(
         f"""
         <div class="metric-card">
             <div class="metric-label">Longitud</div>
             <div class="metric-value">{review_len} palabras</div>
-            <div class="metric-caption">Umbral recomendado: ≥ 80 palabras.</div>
+            <div class="metric-caption">Umbral recomendado: ≥ 80 palabras</div>
             <span class="metric-badge {len_badge}">{len_label}</span>
         </div>
-        """,
-        unsafe_allow_html=True,
+        """, unsafe_allow_html=True,
     )
 
 with f2:
-    stars_val = st.session_state.get("latest_stars", 5)
-    filled    = "&#9733;" * int(stars_val)
-    empty     = "&#9734;" * max(0, 5 - int(stars_val))
+    filled = "&#9733;" * int(stars_val)
+    empty  = "&#9734;" * max(0, 5 - int(stars_val))
     st.markdown(
         f"""
         <div class="metric-card">
             <div class="metric-label">Calificación</div>
             <div class="metric-value" style="font-size:1.4rem;color:#f59e0b">{filled}{empty}</div>
-            <div class="metric-caption">Estrellas asignadas por el usuario.</div>
+            <div class="metric-caption">Estrellas asignadas por el usuario</div>
             <span class="metric-badge metric-badge-info">{stars_val} de 5</span>
         </div>
-        """,
-        unsafe_allow_html=True,
+        """, unsafe_allow_html=True,
     )
 
 with f3:
@@ -231,50 +186,50 @@ with f3:
         s_display = f"{sentiment_val:.2f}"
     else:
         s_label, s_badge, s_display = "Pendiente", "metric-badge-info", "—"
-
     st.markdown(
         f"""
         <div class="metric-card">
             <div class="metric-label">Sentimiento VADER</div>
             <div class="metric-value">{s_display}</div>
-            <div class="metric-caption">Score compuesto (−1 a +1). Sin entrenamiento previo.</div>
+            <div class="metric-caption">Score compuesto (−1 a +1)</div>
             <span class="metric-badge {s_badge}">{s_label}</span>
         </div>
-        """,
-        unsafe_allow_html=True,
+        """, unsafe_allow_html=True,
     )
 
 with f4:
     inc_badge = "metric-badge-warn" if incoherence else "metric-badge-good"
-    inc_label = "Incoherente — penaliza" if incoherence else "Coherente"
+    inc_label = "Incoherente" if incoherence else "Coherente"
     inc_val   = "Sí" if incoherence else "No"
     st.markdown(
         f"""
         <div class="metric-card">
             <div class="metric-label">Coherencia</div>
             <div class="metric-value">{inc_val}</div>
-            <div class="metric-caption">¿El tono del texto contradice las estrellas?</div>
+            <div class="metric-caption">¿El tono contradice las estrellas?</div>
             <span class="metric-badge {inc_badge}">{inc_label}</span>
         </div>
-        """,
-        unsafe_allow_html=True,
+        """, unsafe_allow_html=True,
     )
 
-# ── Benchmark del producto ─────────────────────────────────────────────────────
-
+# ── Benchmark ──────────────────────────────────────────────────────────────────
 st.markdown("### Benchmark del producto")
 product_benchmark = get_product_benchmark(selected_product)
 b1, b2, b3, b4 = st.columns(4, gap="medium")
-b1.metric("Promedio del producto", format_percentage(product_benchmark["avg_helpfulness"]))
-b2.metric("Top del producto",      format_percentage(product_benchmark["top_helpfulness"]))
-b3.metric("Total reseñas",         str(product_benchmark["count"]))
-if latest_result:
-    delta = latest_result["probability"] - product_benchmark["avg_helpfulness"]
-    b4.metric("vs. promedio", f"{delta:+.1%}", delta_color="normal")
+with b1:
+    render_metric_card("Promedio del producto", format_percentage(product_benchmark["avg_helpfulness"]), "Utilidad media")
+with b2:
+    render_metric_card("Top del producto", format_percentage(product_benchmark["top_helpfulness"]), "Mejor score observado")
+with b3:
+    render_metric_card("Total reseñas", str(product_benchmark["count"]), "Historial del producto")
+with b4:
+    if latest_result:
+        delta = latest_result["probability"] - product_benchmark["avg_helpfulness"]
+        render_metric_card("vs. promedio", f"{delta:+.1%}", "Tu reseña vs. media del producto")
 
 # ── Recomendaciones ────────────────────────────────────────────────────────────
-
 if latest_result:
+    from services.ml_service import generate_review_recommendations
     recommendations = generate_review_recommendations(latest_result)
     st.markdown("### Cómo mejorar esta reseña")
     r1, r2 = st.columns(2, gap="large")
@@ -285,8 +240,7 @@ if latest_result:
                 <div class="highlight-title">Acción principal</div>
                 <div class="highlight-body">{recommendations[0]}</div>
             </div>
-            """,
-            unsafe_allow_html=True,
+            """, unsafe_allow_html=True,
         )
     with r2:
         if len(recommendations) > 1:
@@ -296,11 +250,10 @@ if latest_result:
                     <div class="highlight-title">Acción adicional</div>
                     <div class="highlight-body">{recommendations[1]}</div>
                 </div>
-                """,
-                unsafe_allow_html=True,
+                """, unsafe_allow_html=True,
             )
 
-    sv1, sv2 = st.columns([0.35, 0.65])
+    sv1, _ = st.columns([0.35, 0.65])
     with sv1:
         if st.button("Guardar reseña", use_container_width=True):
             ok, msg = save_latest_review_to_file(selected_product)
@@ -308,16 +261,13 @@ if latest_result:
 
     st.markdown("### Vista previa")
     render_review_card(
-        user_name=user_name,
-        stars=stars,
-        review_text=review_text,
+        user_name=user_name, stars=stars, review_text=review_text,
         meta_line=f"{product_detail['ProductName']} | {product_detail['Categoria_Real']} | {pd.Timestamp.now().strftime('%d/%m/%Y')}",
         badge=latest_result["status"],
         helpfulness=format_percentage(probability),
         highlighted=True,
     )
 
-# Guardar estado para la página de ranking
 st.session_state["selected_product_id"] = selected_product
 st.session_state["latest_stars"]        = stars
 st.session_state["latest_review_text"]  = review_text

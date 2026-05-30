@@ -1,8 +1,4 @@
-"""Ranking y benchmark de reseñas.
-
-Comparación por producto, posición del usuario y top 5.
-Sin emojis, indicadores compactos.
-"""
+"""Ranking y benchmark — indicadores en tarjetas, sin texto de relleno."""
 
 import pandas as pd
 import streamlit as st
@@ -21,7 +17,7 @@ from utils.formatters import format_compact_number, format_percentage
 
 
 st.title("Ranking y Benchmark")
-st.caption("Comparación de reseñas por producto. Analiza una reseña en Auditoría para ver tu posición.")
+st.caption("Comparación de reseñas por producto. Analiza primero en Auditoría para ver tu posición.")
 
 product_options  = get_product_options()
 saved_reviews_df = get_audited_reviews_operational_table()
@@ -31,7 +27,6 @@ if not product_options:
     st.stop()
 
 # ── Filtros ────────────────────────────────────────────────────────────────────
-
 f1, f2 = st.columns(2, gap="medium")
 with f1:
     selected_product = st.selectbox("Producto", options=product_options)
@@ -42,11 +37,7 @@ with f2:
     )
 
 detail = get_product_detail(selected_product)
-st.info(
-    f"**{detail['ProductName']}** · `{detail['ProductId']}` · Categoría: {detail['Categoria_Real']}"
-)
-
-# ── Datos ──────────────────────────────────────────────────────────────────────
+st.info(f"**{detail['ProductName']}** · `{detail['ProductId']}` · Categoría: {detail['Categoria_Real']}")
 
 ranking_df         = get_local_product_ranking(selected_product)
 global_ranking_df  = get_global_ranking()
@@ -62,7 +53,6 @@ if selected_status != "Todos":
         product_history_df = product_history_df[product_history_df["Estado"] == selected_status]
 
 # ── Indicadores del producto ───────────────────────────────────────────────────
-
 top_score    = float(ranking_df["Helpfulness"].max())  if not ranking_df.empty else 0.0
 avg_score    = float(ranking_df["Helpfulness"].mean()) if not ranking_df.empty else 0.0
 review_count = len(ranking_df)
@@ -75,14 +65,12 @@ with m1:
 with m2:
     render_metric_card("Utilidad máxima", format_percentage(top_score), "Mejor score observado")
 with m3:
-    render_metric_card("Utilidad media", format_percentage(avg_score), "Promedio local del producto")
+    render_metric_card("Utilidad media", format_percentage(avg_score), "Promedio local")
 with m4:
     render_metric_card("Líder actual", top_user[:22], "Usuario mejor posicionado")
 
 # ── Top 5 ──────────────────────────────────────────────────────────────────────
-
 st.markdown("### Top 5 del producto")
-
 position_labels = ["1er lugar", "2do lugar", "3er lugar", "4to lugar", "5to lugar"]
 top5 = ranking_df.head(5) if not ranking_df.empty else pd.DataFrame()
 
@@ -94,33 +82,48 @@ if not top5.empty:
         score     = float(row.get("Helpfulness", 0))
         estado    = str(row.get("Estado", "—"))
         is_top    = i == 0
+        filled    = "&#9733;" * stars
+        empty     = "&#9734;" * max(0, 5 - stars)
 
-        filled = "&#9733;" * stars
-        empty  = "&#9734;" * max(0, 5 - stars)
-
-        st.markdown(
-            f"""
-            <div class="review-card{'  review-card-highlighted' if is_top else ''}">
-                <div class="review-card-header">
-                    <div class="review-user">
-                        <span class="metric-badge metric-badge-info" style="margin-right:0.4rem">{pos_label}</span>
-                        {user}
+        c1, c2, c3, c4 = st.columns([2, 1, 1, 1], gap="medium")
+        with c1:
+            st.markdown(
+                f"""
+                <div class="metric-card" style="{'border:2px solid var(--primary);' if is_top else ''}">
+                    <div class="metric-label">
+                        <span class="metric-badge {'metric-badge-good' if is_top else 'metric-badge-info'}">{pos_label}</span>
                     </div>
-                    <div class="review-badge">{estado}</div>
+                    <div class="metric-value" style="font-size:1rem;margin-top:0.3rem">{user}</div>
                 </div>
-                <div class="review-stars" style="color:#f59e0b">{filled}{empty}</div>
-                <div class="review-helpfulness">Utilidad: <strong>{format_percentage(score)}</strong></div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+                """, unsafe_allow_html=True,
+            )
+        with c2:
+            render_metric_card("Utilidad", format_percentage(score), "Score de helpfulness")
+        with c3:
+            st.markdown(
+                f"""
+                <div class="metric-card">
+                    <div class="metric-label">Estrellas</div>
+                    <div class="metric-value" style="font-size:1.1rem;color:#f59e0b">{filled}{empty}</div>
+                </div>
+                """, unsafe_allow_html=True,
+            )
+        with c4:
+            badge_class = "metric-badge-good" if "APROBADA" in estado else "metric-badge-warn"
+            st.markdown(
+                f"""
+                <div class="metric-card">
+                    <div class="metric-label">Estado</div>
+                    <div class="metric-caption" style="margin-top:0.3rem">{estado}</div>
+                    <span class="metric-badge {badge_class}">{'Publicada' if 'APROBADA' in estado else 'Rechazada'}</span>
+                </div>
+                """, unsafe_allow_html=True,
+            )
 else:
     st.info("No hay reseñas disponibles para los filtros seleccionados.")
 
-# ── Posición del usuario ───────────────────────────────────────────────────────
-
+# ── Tu posición ────────────────────────────────────────────────────────────────
 st.markdown("### Tu reseña en contexto")
-
 p1, p2, p3 = st.columns(3, gap="medium")
 with p1:
     render_metric_card(
@@ -137,49 +140,34 @@ with p2:
         "Lugar en toda la base",
     )
 with p3:
-    render_metric_card(
-        "Total del producto",
-        format_compact_number(position_summary["product_count"]),
-        "Volumen histórico de reseñas",
-    )
+    render_metric_card("Total del producto", format_compact_number(position_summary["product_count"]), "Volumen histórico")
 
 if latest_review_id and not review_window_df.empty:
     for _, row in review_window_df.iterrows():
-        meta_line = f"Puesto local {int(row['Puesto Local'])}"
-        badge     = "Tu reseña" if row["EsActual"] else row["Estado"]
         render_review_card(
-            user_name=str(row["User"]),
-            stars=int(row["Stars"]),
+            user_name=str(row["User"]), stars=int(row["Stars"]),
             review_text=str(row["Text"]),
-            meta_line=meta_line,
-            badge=badge,
+            meta_line=f"Puesto local {int(row['Puesto Local'])}",
+            badge="Tu reseña" if row["EsActual"] else row["Estado"],
             helpfulness=format_percentage(float(row["Helpfulness"])),
             highlighted=bool(row["EsActual"]),
         )
 else:
     st.info("Analiza una reseña en Auditoría para ver tu posición aquí.")
 
-# ── Historial reciente ─────────────────────────────────────────────────────────
-
+# ── Historial ──────────────────────────────────────────────────────────────────
 st.markdown("---")
 st.subheader("Historial reciente del producto")
-
 if not product_history_df.empty:
     preview = product_history_df.head(10).copy()
     preview["CreatedAt"] = preview["CreatedAt"].dt.strftime("%d/%m/%Y %H:%M")
-    st.dataframe(
-        preview[["CreatedAt", "User", "Stars", "Helpfulness", "Estado", "Text"]],
-        use_container_width=True,
-        hide_index=True,
-    )
+    st.dataframe(preview[["CreatedAt", "User", "Stars", "Helpfulness", "Estado", "Text"]], use_container_width=True, hide_index=True)
 else:
     st.info("No hay historial disponible para los filtros actuales.")
 
 # ── Reseñas guardadas ──────────────────────────────────────────────────────────
-
 st.markdown("---")
 st.subheader("Reseñas guardadas")
-
 filtered_saved = saved_reviews_df.copy()
 if not filtered_saved.empty:
     if "ProductId" in filtered_saved.columns:
@@ -189,23 +177,14 @@ if not filtered_saved.empty:
 
 if not filtered_saved.empty:
     if "CreatedAt" in filtered_saved.columns:
-        filtered_saved["CreatedAt"] = pd.to_datetime(
-            filtered_saved["CreatedAt"], errors="coerce"
-        ).dt.strftime("%d/%m/%Y %H:%M")
+        filtered_saved["CreatedAt"] = pd.to_datetime(filtered_saved["CreatedAt"], errors="coerce").dt.strftime("%d/%m/%Y %H:%M")
     st.dataframe(filtered_saved, use_container_width=True, hide_index=True)
     csv_bytes = filtered_saved.to_csv(index=False).encode("utf-8-sig")
-    st.download_button(
-        label="Descargar reseñas filtradas (CSV)",
-        data=csv_bytes,
-        file_name="reseñas_filtradas.csv",
-        mime="text/csv",
-        use_container_width=True,
-    )
+    st.download_button("Descargar CSV", data=csv_bytes, file_name="resenas_filtradas.csv", mime="text/csv", use_container_width=True)
 else:
     st.info("No hay reseñas guardadas para los filtros seleccionados.")
 
 # ── Top 20 global ──────────────────────────────────────────────────────────────
-
 st.markdown("---")
 st.subheader("Top 20 global por utilidad")
 st.dataframe(global_ranking_df.head(20), use_container_width=True, hide_index=True)
