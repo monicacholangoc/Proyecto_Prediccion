@@ -632,3 +632,100 @@ p, li, label { color: var(--muted); }
     .hero-compact-stats { flex-wrap: wrap; }
     .api-status-grid { grid-template-columns: 1fr; }
 }
+/* ── Fondo forzado en todas las páginas ───────────────── */
+
+.stApp {
+    background:
+        radial-gradient(circle at top right, rgba(23,70,162,0.08), transparent 22%),
+        radial-gradient(circle at top left,  rgba(15,76,92,0.08),  transparent 18%),
+        linear-gradient(180deg, #f8fbff 0%, #eef3f9 100%) !important;
+    background-attachment: fixed !important;
+}
+
+/* ── Ocultar nav automático de Streamlit ──────────────── */
+
+[data-testid="stSidebarNav"] { display: none !important; }
+
+/* ── Nav con iconos SVG ───────────────────────────────── */
+
+.snav-panel { margin-top: 0.4rem; }
+
+.snav-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.42rem 0.55rem;
+    border-radius: 10px;
+    margin-bottom: 0.12rem;
+    transition: background 0.15s;
+}
+.snav-item:hover { background: rgba(255,255,255,0.08); }
+
+.snav-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    background: rgba(255,255,255,0.1);
+    flex-shrink: 0;
+}
+.snav-icon svg { display: block; }
+
+.snav-label {
+    color: rgba(248,250,252,0.82);
+    font-size: 0.82rem;
+    font-weight: 500;
+    line-height: 1.2;
+}
+
+/* ── Stat pills (indicadores con icono) ───────────────── */
+
+.stat-row {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.5rem;
+}
+.stat-pill {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: var(--surface-soft);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.55rem 0.9rem;
+    box-shadow: var(--shadow-soft);
+    flex: 1;
+    min-width: 130px;
+}
+.stat-pill-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.stat-pill-icon-blue  { background: #dbeafe; }
+.stat-pill-icon-green { background: #dcfce7; }
+.stat-pill-icon-amber { background: #fef3c7; }
+.stat-pill-icon-teal  { background: #ccfbf1; }
+.stat-pill-value {
+    color: var(--text);
+    font-size: 1.1rem;
+    font-weight: 800;
+    line-height: 1;
+}
+.stat-pill-label {
+    color: var(--muted);
+    font-size: 0.7rem;
+    margin-top: 0.1rem;
+}
+
+@media (max-width: 768px) {
+    .stat-row { flex-direction: column; }
+    .stat-pill { min-width: 100%; }
+}
