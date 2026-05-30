@@ -11,3 +11,7 @@ font               = "sans serif"
 [server]
 maxUploadSize  = 500
 maxMessageSize = 500
+
+[client]
+# Oculta la navegación automática de Streamlit (usamos la del sidebar custom)
+showSidebarNavigation = false

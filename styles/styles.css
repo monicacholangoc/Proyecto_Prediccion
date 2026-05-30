@@ -410,20 +410,12 @@ p, li, label { color: var(--muted); }
 
 [data-testid="stMetric"] { background: transparent; }
 
+/* Botones: solo ajuste de forma, el color lo gestiona Streamlit via primaryColor */
 .stButton > button,
 .stDownloadButton > button {
     border-radius: 12px;
-    border: 1px solid rgba(23, 70, 162, 0.18);
-    background: linear-gradient(180deg, #1c4db7 0%, #1746a2 100%);
-    color: white;
     min-height: 2.6rem;
     font-size: 0.9rem;
-    box-shadow: 0 8px 16px rgba(23, 70, 162, 0.18);
-}
-.stButton > button:hover,
-.stDownloadButton > button:hover {
-    border-color: rgba(23, 70, 162, 0.28);
-    background: linear-gradient(180deg, #255acb 0%, #1c4db7 100%);
 }
 
 .stTextInput input,
