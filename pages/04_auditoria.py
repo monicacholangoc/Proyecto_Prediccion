@@ -34,16 +34,52 @@ render_sidebar()
 
 st.markdown("""
 <style>
-.feat-grid { display:grid; grid-template-columns:1fr 1fr; gap:0.3rem; margin-bottom:0.5rem; }
-.feat-card { background:#fff; border:1px solid #e5e9f2; border-radius:8px; padding:0.4rem 0.55rem; }
-.feat-lbl { font-size:0.58rem; font-weight:700; color:#7a8499; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:0.05rem; }
-.feat-val { font-size:0.88rem; font-weight:700; color:#1a2236; line-height:1.2; margin-bottom:0.05rem; }
-.feat-cap { font-size:0.56rem; color:#9aa5b8; margin-bottom:0.1rem; }
-.feat-badge { display:inline-block; font-size:0.56rem !important; font-weight:600; padding:0.06rem 0.35rem !important; border-radius:4px; color:#fff !important; }
+.feat-grid { display:grid; grid-template-columns:1fr 1fr; gap:0.5rem; margin-bottom:0.6rem; }
+.feat-card {
+    background:#fff; border:1px solid #e2e8f0; border-radius:12px;
+    padding:0.7rem 0.8rem; position:relative; overflow:hidden;
+    box-shadow:0 1px 3px rgba(0,0,0,0.04);
+}
+.feat-card::before {
+    content:""; position:absolute; left:0; top:0; bottom:0;
+    width:3px; border-radius:3px 0 0 3px;
+}
+.feat-card-green::before { background:#15803d; }
+.feat-card-amber::before { background:#b45309; }
+.feat-card-blue::before  { background:#1d4ed8; }
+.feat-card-gray::before  { background:#94a3b8; }
+.feat-card-red::before   { background:#dc2626; }
+.feat-lbl { font-size:0.6rem; font-weight:700; color:#94a3b8; text-transform:uppercase;
+            letter-spacing:0.07em; margin-bottom:0.2rem; }
+.feat-val { font-size:1rem; font-weight:800; color:#0f172a; line-height:1.2; margin-bottom:0.15rem; }
+.feat-cap { font-size:0.62rem; color:#94a3b8; margin-bottom:0.25rem; }
+.feat-badge { display:inline-block; font-size:0.6rem !important; font-weight:700;
+              padding:0.12rem 0.45rem !important; border-radius:999px; color:#fff !important; }
 .feat-green { background:#15803d; }
 .feat-amber { background:#b45309; }
 .feat-blue  { background:#1d4ed8; }
 .feat-gray  { background:#64748b; }
+.feat-red   { background:#dc2626; }
+
+.diag-card {
+    border-radius:14px; padding:1rem 1.1rem; margin-top:0.5rem;
+    border:1px solid; position:relative;
+}
+.diag-success { background:#f0fdf4; border-color:#86efac; }
+.diag-warning { background:#fffbeb; border-color:#fcd34d; }
+.diag-danger  { background:#fef2f2; border-color:#fca5a5; }
+.diag-title { font-size:0.65rem; font-weight:800; text-transform:uppercase;
+              letter-spacing:0.08em; margin-bottom:0.3rem; }
+.diag-success .diag-title { color:#15803d; }
+.diag-warning .diag-title { color:#b45309; }
+.diag-danger  .diag-title { color:#dc2626; }
+.diag-decision { font-size:1.05rem; font-weight:800; color:#0f172a; margin-bottom:0.3rem; }
+.diag-reason   { font-size:0.75rem; color:#475569; line-height:1.5; }
+.diag-prob { font-size:1.6rem; font-weight:900; position:absolute; right:1rem; top:50%;
+             transform:translateY(-50%); }
+.diag-success .diag-prob { color:#15803d; }
+.diag-warning .diag-prob { color:#b45309; }
+.diag-danger  .diag-prob { color:#dc2626; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -274,29 +310,45 @@ with tab1:
         cl = "Coherente" if not incoh else "Incoherente"
         cb = "feat-green" if not incoh else "feat-amber"
 
+        # Barra de progreso de longitud
+        len_pct = min(int(rl / 80 * 100), 100)
+        len_color = "#15803d" if rl > 80 else ("#b45309" if rl > 40 else "#dc2626")
+
         st.markdown(f"""
         <div class="feat-grid">
-            <div class="feat-card">
+            <div class="feat-card feat-card-{'green' if rl > 60 else 'amber'}">
                 <div class="feat-lbl">Longitud</div>
                 <div class="feat-val">{rl} palabras</div>
+                <div style="background:#f1f5f9;border-radius:999px;height:4px;margin:0.25rem 0;overflow:hidden">
+                    <div style="width:{len_pct}%;height:100%;background:{len_color};border-radius:999px"></div>
+                </div>
                 <div class="feat-cap">Umbral: 80 palabras</div>
-                <span class="feat-badge {lb}">{ll}</span>
+                <span class="feat-badge {'feat-green' if rl > 60 else 'feat-amber'}">{ll}</span>
             </div>
-            <div class="feat-card">
+            <div class="feat-card feat-card-{'green' if sent is not None and sent > 0.05 else ('red' if sent is not None and sent < -0.05 else 'blue')}">
                 <div class="feat-lbl">Sentimiento</div>
                 <div class="feat-val">{ss}</div>
+                <div style="background:#f1f5f9;border-radius:999px;height:4px;margin:0.25rem 0;overflow:hidden">
+                    <div style="width:{min(int((float(ss) + 1) / 2 * 100), 100) if ss != '-' else 50}%;height:100%;background:{'#15803d' if sent is not None and sent > 0.05 else '#dc2626'};border-radius:999px"></div>
+                </div>
                 <div class="feat-cap">VADER (-1 a +1)</div>
                 <span class="feat-badge {sb}">{sl}</span>
             </div>
-            <div class="feat-card">
+            <div class="feat-card feat-card-blue">
                 <div class="feat-lbl">Calificacion</div>
-                <div class="feat-val" style="color:#f59e0b">{filled}{empty}</div>
+                <div class="feat-val" style="color:#f59e0b;letter-spacing:2px">{"★" * int(sv) + "☆" * (5 - int(sv))}</div>
+                <div style="background:#f1f5f9;border-radius:999px;height:4px;margin:0.25rem 0;overflow:hidden">
+                    <div style="width:{int(sv/5*100)}%;height:100%;background:#f59e0b;border-radius:999px"></div>
+                </div>
                 <div class="feat-cap">{sv} de 5 estrellas</div>
-                <span class="feat-badge feat-blue">{sv}/5</span>
+                <span class="feat-badge feat-blue">{sv} / 5</span>
             </div>
-            <div class="feat-card">
+            <div class="feat-card feat-card-{'green' if not incoh else 'amber'}">
                 <div class="feat-lbl">Coherencia</div>
                 <div class="feat-val">{cl}</div>
+                <div style="background:#f1f5f9;border-radius:999px;height:4px;margin:0.25rem 0;overflow:hidden">
+                    <div style="width:{'100' if not incoh else '30'}%;height:100%;background:{'#15803d' if not incoh else '#b45309'};border-radius:999px"></div>
+                </div>
                 <div class="feat-cap">Tono vs. estrellas</div>
                 <span class="feat-badge {cb}">{cl}</span>
             </div>
@@ -310,45 +362,53 @@ with tab1:
         )
         if lr:
             is_blind = "Punto Ciego" in lr["status"]
-            tone     = "danger" if is_blind else ("success" if prob >= 0.70 else "warning")
+            diag_cls = "diag-danger" if is_blind else ("diag-success" if prob >= 0.70 else "diag-warning")
             decision = "Revision obligatoria" if is_blind else ("Lista para publicar" if prob >= 0.70 else "Conviene mejorarla")
 
             if is_blind:
-                razon = "La resena no tiene contexto alimenticio."
+                razon = "La resena no menciona contexto alimenticio relevante."
             elif prob >= 0.70:
-                razon = "La resena supera el umbral de utilidad."
+                razon = "La resena supera el umbral de utilidad del 70%."
             elif rl < 60:
-                razon = "La resena es muy corta (menos de 60 palabras)."
+                razon = "La resena es muy corta. Se recomienda superar las 80 palabras."
             elif sent is not None and sent < -0.05:
-                razon = "El sentimiento del texto es negativo."
+                razon = "El sentimiento del texto es negativo. Revisa la coherencia con las estrellas."
             else:
-                razon = f"Utilidad {format_percentage(prob)} bajo umbral del 70%."
+                razon = f"Utilidad estimada de {format_percentage(prob)}, por debajo del umbral del 70%."
 
-            render_status_panel(
-                "Diagnostico", decision,
-                (
-                    f"Estado: {lr['status']} | "
-                    f"Utilidad: {format_percentage(prob)} | "
-                    f"Punto ciego: {'Si' if is_blind else 'No'} | "
-                    f"Validacion: {'Activa' if lr.get('context_validation_enabled') else 'Desactivada'} | "
-                    f"Razon: {razon}"
-                ),
-                tone=tone,
-            )
+            st.markdown(f"""
+            <div class="diag-card {diag_cls}">
+                <div class="diag-title">Resultado del analisis</div>
+                <div class="diag-decision">{decision}</div>
+                <div class="diag-reason">{razon}</div>
+                <div class="diag-prob">{format_percentage(prob)}</div>
+            </div>
+            """, unsafe_allow_html=True)
+
             if lr.get("context_validation_enabled"):
                 ctx  = ", ".join(lr.get("context_hits", [])) or "ninguna"
                 tech = ", ".join(lr.get("tech_hits", []))    or "ninguno"
                 st.markdown(
-                    f'<div class="highlight-card" style="margin-top:0.4rem;padding:0.5rem 0.7rem">'
-                    f'<div class="highlight-title" style="font-size:0.68rem">Contexto alimenticio</div>'
-                    f'<div class="highlight-body" style="font-size:0.7rem">'
-                    f'{lr.get("context_explanation","")}<br>'
-                    f'<b>Detectadas:</b> {ctx} | <b>Ajenas:</b> {tech}'
+                    f'<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;'
+                    f'padding:0.55rem 0.8rem;margin-top:0.4rem">'
+                    f'<div style="font-size:0.6rem;font-weight:700;color:#94a3b8;text-transform:uppercase;'
+                    f'letter-spacing:.07em;margin-bottom:0.2rem">Contexto alimenticio</div>'
+                    f'<div style="font-size:0.72rem;color:#475569;line-height:1.5">'
+                    f'{lr.get("context_explanation","")}</div>'
+                    f'<div style="margin-top:0.3rem;font-size:0.68rem;color:#64748b">'
+                    f'<b>Detectadas:</b> {ctx} &nbsp;·&nbsp; <b>Ajenas:</b> {tech}'
                     f'</div></div>',
                     unsafe_allow_html=True,
                 )
         else:
-            st.info("Introduce una resena y presiona Analizar.")
+            st.markdown("""
+            <div style="background:#f8fafc;border:1px dashed #cbd5e1;border-radius:12px;
+                        padding:1.2rem;text-align:center;margin-top:0.5rem">
+                <div style="font-size:0.8rem;color:#94a3b8">
+                    Escribe una resena y presiona Analizar para ver el diagnostico
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
 
     st.markdown("---")
 
