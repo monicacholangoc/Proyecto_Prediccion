@@ -11,7 +11,7 @@ import pandas as pd
 import numpy as np
 import streamlit as st
 
-from services.supabase_service import save_review_to_supabase, clear_supabase_cache, load_reviews_from_supabase
+from services.supabase_service import save_review_to_supabase, clear_supabase_cache
 from services.catalog_service import get_product_catalog, get_product_detail, map_product_metadata
 from services.data_loader import ensure_generated_data_dirs, load_audited_reviews_file, load_processed_reviews, read_uploaded_csv
 from services.ml_service import audit_review_text
@@ -107,43 +107,9 @@ def initialize_corporate_audit_db() -> pd.DataFrame:
 
 
 def get_corporate_audit_db() -> pd.DataFrame:
-    """Expone la base unificada: histórico + reseñas nuevas de Supabase.
-    
-    Las reseñas de Supabase (nuevas) aparecen primero, luego las históricas.
-    Los indicadores globales reflejan el total combinado.
-    """
-    db_historico = initialize_corporate_audit_db().copy()
-
-    # Cargar reseñas nuevas desde Supabase
-    try:
-        sb_df = load_reviews_from_supabase()
-    except Exception:
-        sb_df = pd.DataFrame()
-
-    if sb_df.empty:
-        return db_historico
-
-    # Normalizar columnas de Supabase al esquema interno
-    sb_norm = pd.DataFrame({
-        "ID_Transaccion": sb_df.get("id_transaccion", range(len(sb_df))),
-        "ProductId":      sb_df.get("product_id", "").astype(str),
-        "User":           sb_df.get("usuario", "Nuevo"),
-        "Stars":          pd.to_numeric(sb_df.get("stars", 5), errors="coerce").fillna(5).astype(int),
-        "Helpfulness":    pd.to_numeric(sb_df.get("helpfulness", 0), errors="coerce").fillna(0),
-        "Text":           sb_df.get("texto", ""),
-        "Estado":         sb_df.get("status", ""),
-        "CreatedAt":      pd.to_datetime(sb_df.get("created_at"), errors="coerce"),
-    })
-    sb_norm["_es_nueva"] = True
-
-    # Marcar históricas y evitar duplicar IDs que ya estén en Supabase
-    db_historico["_es_nueva"] = False
-    ids_supabase = set(sb_norm["ID_Transaccion"].dropna().astype(int).tolist())
-    db_sin_dup = db_historico[~db_historico["ID_Transaccion"].isin(ids_supabase)]
-
-    # Unir: nuevas primero, históricas después
-    unified = pd.concat([sb_norm, db_sin_dup], ignore_index=True)
-    return unified
+    """Expone una copia segura de la base corporativa en memoria."""
+    db = initialize_corporate_audit_db()
+    return db.copy()
 
 
 def append_audited_review(
@@ -271,7 +237,36 @@ def process_uploaded_audit_batch(df_input: pd.DataFrame) -> tuple[pd.DataFrame, 
 
     batch_df = pd.DataFrame(processed_rows)
     st.session_state["db_central_corporativa"] = pd.concat([db, batch_df], ignore_index=True)
-    return batch_df, None
+
+    # ── Guardar cada fila en Supabase ────────────────────────────────────────
+    sb_ok = 0
+    sb_fail = 0
+    for i, proc_row in enumerate(processed_rows):
+        audit_r = {
+            "probability":          proc_row["Helpfulness"],
+            "status":               proc_row["Estado"],
+            "review_len":           len(str(proc_row.get("Text", "")).split()),
+            "sentiment_score":      0.0,
+            "incoherente":          False,
+            "context_blind_spot":   False,
+            "context_hits":         [],
+            "context_explanation":  "",
+        }
+        ok, _ = save_review_to_supabase(audit_r, {
+            "ID_Transaccion": proc_row["ID_Transaccion"],
+            "ProductId":      proc_row["ProductId"],
+            "User":           proc_row["User"],
+            "Stars":          proc_row["Stars"],
+            "Text":           proc_row["Text"],
+        })
+        if ok:
+            sb_ok += 1
+        else:
+            sb_fail += 1
+
+    clear_supabase_cache()
+    msg_extra = f" ({sb_ok} guardadas en Supabase" + (f", {sb_fail} fallaron" if sb_fail else "") + ")"
+    return batch_df, None if sb_fail == 0 else f"Lote procesado con {sb_fail} errores en Supabase."
 
 
 def process_uploaded_audit_file(uploaded_file) -> tuple[pd.DataFrame, str | None]:
