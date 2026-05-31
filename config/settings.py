@@ -14,7 +14,7 @@ DATA_GENERATED_DIR = ROOT_DIR / "datos_generados"
 REPORTS_DIR = DATA_GENERATED_DIR / "reportes"
 MODELS_DIR = ROOT_DIR / "modelos"
 STYLES_DIR = ROOT_DIR / "styles"
-
+REVIEWS_WITH_CATEGORY_PATH = DATA_DIR / "reviews_con_categoria.parquet"
 REVIEWS_RAW_PATH = DATA_RAW_DIR / "Reviews.csv"
 REVIEWS_PROCESSED_PATH = DATA_PROCESSED_DIR / "reviews_limpias.parquet"
 PRODUCT_CONTEXT_PATH = DATA_PROCESSED_DIR / "productos_contexto.parquet"

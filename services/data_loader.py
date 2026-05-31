@@ -46,3 +46,12 @@ def load_audited_reviews_file() -> pd.DataFrame:
     if AUDITED_REVIEWS_PATH.exists():
         return pd.read_csv(AUDITED_REVIEWS_PATH)
     return pd.DataFrame()
+
+@st.cache_data(show_spinner=False)
+def load_reviews_with_category() -> pd.DataFrame:
+    """Carga las reseñas enriquecidas con categoria de alimento."""
+    path = REVIEWS_PROCESSED_PATH.parent / "reviews_con_categoria.parquet"
+    if path.exists():
+        return pd.read_parquet(path)
+    # Fallback: carga las reviews normales sin categoria
+    return load_processed_reviews()
