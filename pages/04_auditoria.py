@@ -14,7 +14,7 @@ from shared_sidebar import render_sidebar
 from components.cards import render_metric_card, render_review_card
 from components.feedback import render_status_panel
 from plots.audit_charts import build_helpfulness_gauge
-from services.catalog_service import get_product_detail, get_product_options
+from services.catalog_service import get_product_detail, get_product_options, get_product_catalog
 from services.ml_service import generate_review_recommendations, audit_review_text
 from services.preprocessing_service import (
     append_audited_review,
@@ -86,20 +86,66 @@ st.markdown("""
     </div>
 </div>""", unsafe_allow_html=True)
 
-product_options = get_product_options()
+# ── Catálogo y filtro por categoría ──────────────────────────────────────────
+catalog = get_product_catalog()
+
+st.markdown('<div class="section-label">Selecciona categoría y producto a auditar</div>', unsafe_allow_html=True)
+
+# Obtener categorías disponibles
+if not catalog.empty and "Categoria_Real" in catalog.columns:
+    categorias = ["Todas las categorías"] + sorted(catalog["Categoria_Real"].dropna().unique().tolist())
+else:
+    categorias = ["Todas las categorías"]
+
+cat_col, prod_col = st.columns([1, 2], gap="medium")
+
+with cat_col:
+    selected_cat = st.selectbox(
+        "Categoría",
+        options=categorias,
+        help="Filtra los productos por categoría de alimento"
+    )
+
+# Filtrar productos según categoría seleccionada
+if not catalog.empty and selected_cat != "Todas las categorías" and "Categoria_Real" in catalog.columns:
+    filtered_catalog = catalog[catalog["Categoria_Real"] == selected_cat]
+    product_options = sorted(filtered_catalog["ProductId"].dropna().astype(str).unique().tolist())
+else:
+    product_options = get_product_options()
+
 if not product_options:
-    st.warning("No hay productos disponibles.")
+    st.warning("No hay productos disponibles para esta categoría.")
     st.stop()
 
-st.markdown('<div class="section-label">Producto a auditar</div>', unsafe_allow_html=True)
-sc1, sc2, sc3 = st.columns([2, 1, 1], gap="medium")
-with sc1:
-    selected_product = st.selectbox("Producto", options=product_options, label_visibility="collapsed")
+with prod_col:
+    selected_product = st.selectbox(
+        "Producto",
+        options=product_options,
+        help="Selecciona el producto sobre el que harás la reseña"
+    )
+
 product_detail = get_product_detail(selected_product)
-with sc2:
-    st.metric("Producto", product_detail["ProductName"][:28])
-with sc3:
-    st.metric("Categoria", product_detail["Categoria_Real"][:22])
+
+# Info del producto seleccionado
+st.markdown(
+    f"""<div class="highlight-card" style="padding:0.6rem 1rem;margin-bottom:0.5rem">
+        <div style="display:flex;gap:2rem;flex-wrap:wrap;align-items:center">
+            <div>
+                <div class="highlight-title" style="font-size:0.65rem">Producto</div>
+                <div style="font-size:0.88rem;font-weight:700;color:var(--text)">{product_detail['ProductName']}</div>
+            </div>
+            <div>
+                <div class="highlight-title" style="font-size:0.65rem">Categoría</div>
+                <div style="font-size:0.88rem;font-weight:700;color:var(--primary)">{product_detail['Categoria_Real']}</div>
+            </div>
+            <div>
+                <div class="highlight-title" style="font-size:0.65rem">ID Producto</div>
+                <div style="font-size:0.78rem;color:var(--muted);font-family:monospace">{product_detail['ProductId']}</div>
+            </div>
+        </div>
+    </div>""",
+    unsafe_allow_html=True,
+)
 
 st.markdown("---")
 tab1, tab2 = st.tabs(["Resena individual", "Carga masiva CSV"])
