@@ -11,7 +11,7 @@ import pandas as pd
 import numpy as np
 import streamlit as st
 
-from services.supabase_service import save_review_to_supabase, clear_supabase_cache
+from services.supabase_service import save_review_to_supabase, clear_supabase_cache, load_reviews_from_supabase
 from services.catalog_service import get_product_catalog, get_product_detail, map_product_metadata
 from services.data_loader import ensure_generated_data_dirs, load_audited_reviews_file, load_processed_reviews, read_uploaded_csv
 from services.ml_service import audit_review_text
@@ -107,9 +107,43 @@ def initialize_corporate_audit_db() -> pd.DataFrame:
 
 
 def get_corporate_audit_db() -> pd.DataFrame:
-    """Expone una copia segura de la base corporativa en memoria."""
-    db = initialize_corporate_audit_db()
-    return db.copy()
+    """Expone la base unificada: histórico + reseñas nuevas de Supabase.
+    
+    Las reseñas de Supabase (nuevas) aparecen primero, luego las históricas.
+    Los indicadores globales reflejan el total combinado.
+    """
+    db_historico = initialize_corporate_audit_db().copy()
+
+    # Cargar reseñas nuevas desde Supabase
+    try:
+        sb_df = load_reviews_from_supabase()
+    except Exception:
+        sb_df = pd.DataFrame()
+
+    if sb_df.empty:
+        return db_historico
+
+    # Normalizar columnas de Supabase al esquema interno
+    sb_norm = pd.DataFrame({
+        "ID_Transaccion": sb_df.get("id_transaccion", range(len(sb_df))),
+        "ProductId":      sb_df.get("product_id", "").astype(str),
+        "User":           sb_df.get("usuario", "Nuevo"),
+        "Stars":          pd.to_numeric(sb_df.get("stars", 5), errors="coerce").fillna(5).astype(int),
+        "Helpfulness":    pd.to_numeric(sb_df.get("helpfulness", 0), errors="coerce").fillna(0),
+        "Text":           sb_df.get("texto", ""),
+        "Estado":         sb_df.get("status", ""),
+        "CreatedAt":      pd.to_datetime(sb_df.get("created_at"), errors="coerce"),
+    })
+    sb_norm["_es_nueva"] = True
+
+    # Marcar históricas y evitar duplicar IDs que ya estén en Supabase
+    db_historico["_es_nueva"] = False
+    ids_supabase = set(sb_norm["ID_Transaccion"].dropna().astype(int).tolist())
+    db_sin_dup = db_historico[~db_historico["ID_Transaccion"].isin(ids_supabase)]
+
+    # Unir: nuevas primero, históricas después
+    unified = pd.concat([sb_norm, db_sin_dup], ignore_index=True)
+    return unified
 
 
 def append_audited_review(
