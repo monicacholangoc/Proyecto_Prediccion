@@ -34,95 +34,128 @@ render_sidebar()
 
 st.markdown("""
 <style>
-/* ── KPI Feature Cards ───────────────────────────────────── */
+/* ══ KPI CARDS — estilo dashboard ejecutivo ════════════════ */
 .feat-grid {
-    display:grid; grid-template-columns:1fr 1fr; gap:0.65rem;
-    margin-bottom:0.75rem;
+    display:grid; grid-template-columns:1fr 1fr; gap:0.7rem;
+    margin-bottom:0.8rem;
 }
 .feat-card {
-    background:#fff; border:0.5px solid #e2e8f0; border-radius:14px;
-    padding:0.9rem 1rem; position:relative; overflow:hidden;
+    background:#fff;
+    border:1px solid #e8edf4;
+    border-radius:12px;
+    display:flex; flex-direction:row; align-items:stretch;
+    overflow:hidden; min-height:88px;
 }
-.feat-card-top {
-    position:absolute; top:0; left:0; right:0; height:3px;
-    border-radius:14px 14px 0 0;
+/* Franja lateral de color sólido */
+.feat-stripe {
+    width:6px; flex-shrink:0;
 }
-.feat-top-green { background:#1D9E75; }
-.feat-top-amber { background:#EF9F27; }
-.feat-top-blue  { background:#378ADD; }
-.feat-top-red   { background:#E24B4A; }
+.stripe-green { background:#1D9E75; }
+.stripe-amber { background:#EF9F27; }
+.stripe-blue  { background:#378ADD; }
+.stripe-red   { background:#E24B4A; }
 
-.feat-ico {
-    width:32px; height:32px; border-radius:8px;
+/* Icono cuadrado con fondo del color del acento */
+.feat-icon-wrap {
     display:flex; align-items:center; justify-content:center;
-    margin-bottom:0.55rem; font-size:15px;
+    width:44px; flex-shrink:0; padding:0 0.1rem;
 }
-.feat-ico-green { background:#EAF3DE; color:#3B6D11; }
-.feat-ico-amber { background:#FAEEDA; color:#854F0B; }
-.feat-ico-blue  { background:#E6F1FB; color:#185FA5; }
-.feat-ico-red   { background:#FCEBEB; color:#A32D2D; }
+.icon-sq {
+    width:32px; height:32px; border-radius:7px;
+    display:flex; align-items:center; justify-content:center;
+}
+.icon-green { background:#e6f4ee; }
+.icon-amber { background:#fef3dc; }
+.icon-blue  { background:#e3f0fb; }
+.icon-red   { background:#fdeaea; }
 
+/* Contenido */
+.feat-body {
+    flex:1; padding:0.62rem 0.7rem 0.62rem 0.3rem;
+    display:flex; flex-direction:column; justify-content:space-between;
+    min-width:0;
+}
 .feat-lbl {
-    font-size:0.6rem; font-weight:600; color:#94a3b8;
-    text-transform:uppercase; letter-spacing:0.07em; margin-bottom:0.2rem;
+    font-size:0.58rem; font-weight:700; color:#94a3b8;
+    text-transform:uppercase; letter-spacing:0.08em;
+    margin-bottom:0.12rem; white-space:nowrap;
 }
 .feat-val {
-    font-size:1.1rem; font-weight:700; color:#0f172a;
-    line-height:1.15; margin-bottom:0.12rem;
+    font-size:1.25rem; font-weight:800; color:#0f172a;
+    line-height:1.1; margin-bottom:0.06rem;
 }
-.feat-cap { font-size:0.62rem; color:#94a3b8; margin-bottom:0.35rem; }
+.feat-val-stars { font-size:1rem; letter-spacing:1px; }
+.feat-cap { font-size:0.6rem; color:#94a3b8; margin-bottom:0.3rem; }
+
+/* Barra de progreso con % flotante */
+.feat-bar-wrap { position:relative; }
 .feat-bar-bg {
-    background:#f1f5f9; border-radius:999px; height:3px;
-    overflow:hidden; margin-bottom:0.45rem;
+    background:#edf0f5; border-radius:3px; height:5px; overflow:visible;
 }
-.feat-bar-fg { height:100%; border-radius:999px; }
+.feat-bar-fg {
+    height:100%; border-radius:3px;
+    transition:width .35s ease;
+}
+.feat-bar-pct {
+    font-size:0.58rem; font-weight:700; color:#64748b;
+    position:absolute; right:0; top:-14px;
+}
+
+/* Status badge */
 .feat-badge {
-    display:inline-flex; align-items:center; gap:3px;
-    font-size:0.58rem; font-weight:600;
-    padding:0.13rem 0.5rem; border-radius:999px;
+    display:inline-block; font-size:0.58rem; font-weight:700;
+    padding:0.1rem 0.48rem; border-radius:4px; margin-top:0.32rem;
+    letter-spacing:0.03em;
 }
-.badge-green { background:#EAF3DE; color:#3B6D11; }
-.badge-amber { background:#FAEEDA; color:#854F0B; }
-.badge-blue  { background:#E6F1FB; color:#185FA5; }
-.badge-red   { background:#FCEBEB; color:#A32D2D; }
+.badge-green { background:#d1f0e2; color:#0F6E56; }
+.badge-amber { background:#fdedc7; color:#7C4A00; }
+.badge-blue  { background:#d6eaf7; color:#0C447C; }
+.badge-red   { background:#fdd8d8; color:#791F1F; }
 
-/* ── Diagnostic Card ─────────────────────────────────────── */
+/* ══ DIAGNOSTIC CARD ═══════════════════════════════════════ */
 .diag-card {
-    border-radius:14px; padding:1rem 1.15rem; margin-top:0.5rem;
-    border:0.5px solid; position:relative;
+    border-radius:12px; padding:0.9rem 1rem; margin-top:0.5rem;
+    border:1px solid; position:relative; overflow:hidden;
 }
-.diag-success { background:#EAF3DE; border-color:#C0DD97; }
-.diag-warning { background:#FAEEDA; border-color:#FAC775; }
-.diag-danger  { background:#FCEBEB; border-color:#F7C1C1; }
-
-.diag-badge {
-    display:inline-flex; align-items:center; gap:5px;
-    font-size:0.6rem; font-weight:600;
-    padding:0.18rem 0.6rem; border-radius:999px; margin-bottom:0.45rem;
+.diag-card::before {
+    content:""; position:absolute; left:0; top:0; bottom:0; width:5px;
 }
-.diag-badge-success { background:#C0DD97; color:#27500A; }
-.diag-badge-warning { background:#FAC775; color:#633806; }
-.diag-badge-danger  { background:#F7C1C1; color:#791F1F; }
+.diag-success { background:#f3fdf7; border-color:#a8dfbc; }
+.diag-warning { background:#fffbf0; border-color:#f7d87a; }
+.diag-danger  { background:#fff5f5; border-color:#f5b3b3; }
+.diag-success::before { background:#1D9E75; }
+.diag-warning::before { background:#EF9F27; }
+.diag-danger::before  { background:#E24B4A; }
 
-.diag-decision { font-size:1.05rem; font-weight:700; color:#0f172a; margin-bottom:0.28rem; }
-.diag-reason   { font-size:0.75rem; color:#475569; line-height:1.5; max-width:78%; }
+.diag-eyebrow {
+    font-size:0.58rem; font-weight:700; text-transform:uppercase;
+    letter-spacing:0.08em; margin-bottom:0.3rem;
+}
+.diag-success .diag-eyebrow { color:#0F6E56; }
+.diag-warning .diag-eyebrow { color:#7C4A00; }
+.diag-danger  .diag-eyebrow { color:#791F1F; }
+
+.diag-decision { font-size:1rem; font-weight:800; color:#0f172a; margin-bottom:0.22rem; }
+.diag-reason   { font-size:0.73rem; color:#475569; line-height:1.5; padding-right:5rem; }
 .diag-prob {
-    font-size:1.7rem; font-weight:700;
-    position:absolute; right:1.1rem; top:50%; transform:translateY(-50%);
+    font-size:1.8rem; font-weight:900;
+    position:absolute; right:1rem; top:50%; transform:translateY(-50%);
+    letter-spacing:-0.03em;
 }
 .diag-success .diag-prob { color:#0F6E56; }
-.diag-warning .diag-prob { color:#854F0B; }
+.diag-warning .diag-prob { color:#7C4A00; }
 .diag-danger  .diag-prob { color:#A32D2D; }
 
+/* Contexto */
 .ctx-box {
-    background:#f8fafc; border:0.5px solid #e2e8f0; border-radius:10px;
+    background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px;
     padding:0.6rem 0.85rem; margin-top:0.45rem;
 }
 .ctx-lbl {
-    font-size:0.58rem; font-weight:600; color:#94a3b8;
-    text-transform:uppercase; letter-spacing:.07em; margin-bottom:0.22rem;
+    font-size:0.58rem; font-weight:700; color:#94a3b8;
+    text-transform:uppercase; letter-spacing:.07em; margin-bottom:0.2rem;
 }
-.ctx-txt { font-size:0.72rem; color:#475569; line-height:1.5; }
+.ctx-txt  { font-size:0.72rem; color:#475569; line-height:1.5; }
 .ctx-meta { margin-top:0.28rem; font-size:0.66rem; color:#64748b; }
 </style>
 """, unsafe_allow_html=True)
@@ -382,47 +415,82 @@ with tab1:
         coh_bar_pct  = 100              if not incoh else 30
         coh_bar_clr  = "#1D9E75"        if not incoh else "#EF9F27"
 
-        stars_filled = "★" * int(sv)
-        stars_empty  = "☆" * (5 - int(sv))
+        # SVG icons (sin emojis)
+        _ico_ruler = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18M3 3v10l10 10h8V3H3z"/><line x1="7" y1="7" x2="7" y2="11"/><line x1="11" y1="7" x2="11" y2="9"/></svg>'
+        _ico_wave  = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>'
+        _ico_star  = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>'
+        _ico_check = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
 
         st.markdown(f"""
         <div class="feat-grid">
-            <div class="feat-card">
-                <div class="feat-card-top feat-top-{len_top}"></div>
-                <div class="feat-ico {len_ico_cls}">📏</div>
-                <div class="feat-lbl">Longitud</div>
-                <div class="feat-val">{rl} palabras</div>
-                <div class="feat-cap">Umbral: 80 palabras</div>
+
+          <div class="feat-card">
+            <div class="feat-stripe stripe-{len_top}"></div>
+            <div class="feat-icon-wrap">
+              <div class="icon-sq icon-{'green' if len_top=='green' else 'amber'}"
+                   style="color:{'#1D9E75' if len_top=='green' else '#EF9F27'}">{_ico_ruler}</div>
+            </div>
+            <div class="feat-body">
+              <div class="feat-lbl">Longitud</div>
+              <div class="feat-val">{rl} <span style="font-size:0.75rem;font-weight:500;color:#64748b">palabras</span></div>
+              <div class="feat-bar-wrap">
+                <div class="feat-bar-pct">{len_pct}%</div>
                 <div class="feat-bar-bg"><div class="feat-bar-fg" style="width:{len_pct}%;background:{len_color}"></div></div>
-                <span class="feat-badge {len_badge}">{len_ico_lbl}</span>
+              </div>
+              <span class="feat-badge {len_badge}">{len_ico_lbl} · umbral 80 p.</span>
             </div>
-            <div class="feat-card">
-                <div class="feat-card-top feat-top-{sent_top}"></div>
-                <div class="feat-ico {sent_ico_cls}">💬</div>
-                <div class="feat-lbl">Sentimiento</div>
-                <div class="feat-val">{ss}</div>
-                <div class="feat-cap">VADER (−1 a +1)</div>
+          </div>
+
+          <div class="feat-card">
+            <div class="feat-stripe stripe-{sent_top}"></div>
+            <div class="feat-icon-wrap">
+              <div class="icon-sq icon-{sent_top}"
+                   style="color:{'#1D9E75' if sent_top=='green' else ('#E24B4A' if sent_top=='red' else '#378ADD')}">{_ico_wave}</div>
+            </div>
+            <div class="feat-body">
+              <div class="feat-lbl">Sentimiento</div>
+              <div class="feat-val">{ss}</div>
+              <div class="feat-bar-wrap">
+                <div class="feat-bar-pct">{sent_bar_pct}%</div>
                 <div class="feat-bar-bg"><div class="feat-bar-fg" style="width:{sent_bar_pct}%;background:{sent_bar_clr}"></div></div>
-                <span class="feat-badge {sent_badge}">{sl}</span>
+              </div>
+              <span class="feat-badge {sent_badge}">{sl} · VADER</span>
             </div>
-            <div class="feat-card">
-                <div class="feat-card-top feat-top-amber"></div>
-                <div class="feat-ico feat-ico-amber">⭐</div>
-                <div class="feat-lbl">Calificación</div>
-                <div class="feat-val" style="color:#EF9F27;letter-spacing:2px">{stars_filled}{stars_empty}</div>
-                <div class="feat-cap">{sv} de 5 estrellas</div>
+          </div>
+
+          <div class="feat-card">
+            <div class="feat-stripe stripe-amber"></div>
+            <div class="feat-icon-wrap">
+              <div class="icon-sq icon-amber" style="color:#EF9F27">{_ico_star}</div>
+            </div>
+            <div class="feat-body">
+              <div class="feat-lbl">Calificación</div>
+              <div class="feat-val feat-val-stars" style="color:#d97706">{"★" * int(sv)}{"☆" * (5-int(sv))}</div>
+              <div class="feat-bar-wrap">
+                <div class="feat-bar-pct">{int(sv/5*100)}%</div>
                 <div class="feat-bar-bg"><div class="feat-bar-fg" style="width:{int(sv/5*100)}%;background:#EF9F27"></div></div>
-                <span class="feat-badge badge-amber">{sv} / 5</span>
+              </div>
+              <span class="feat-badge badge-amber">{sv} / 5 estrellas</span>
             </div>
-            <div class="feat-card">
-                <div class="feat-card-top feat-top-{coh_top}"></div>
-                <div class="feat-ico {coh_ico_cls}">🔗</div>
-                <div class="feat-lbl">Coherencia</div>
-                <div class="feat-val">{cl}</div>
-                <div class="feat-cap">Tono vs. estrellas</div>
+          </div>
+
+          <div class="feat-card">
+            <div class="feat-stripe stripe-{coh_top}"></div>
+            <div class="feat-icon-wrap">
+              <div class="icon-sq icon-{'green' if coh_top=='green' else 'amber'}"
+                   style="color:{'#1D9E75' if coh_top=='green' else '#EF9F27'}">{_ico_check}</div>
+            </div>
+            <div class="feat-body">
+              <div class="feat-lbl">Coherencia</div>
+              <div class="feat-val" style="font-size:1rem">{cl}</div>
+              <div class="feat-bar-wrap">
+                <div class="feat-bar-pct">{coh_bar_pct}%</div>
                 <div class="feat-bar-bg"><div class="feat-bar-fg" style="width:{coh_bar_pct}%;background:{coh_bar_clr}"></div></div>
-                <span class="feat-badge {coh_badge}">{cl}</span>
+              </div>
+              <span class="feat-badge {coh_badge}">Tono vs. estrellas</span>
             </div>
+          </div>
+
         </div>
         """, unsafe_allow_html=True)
 
@@ -448,12 +516,11 @@ with tab1:
                 razon = f"Utilidad estimada de {format_percentage(prob)}, por debajo del umbral del 70%."
 
             # Badge e icono del diagnóstico
-            _diag_badge_cls  = "diag-badge-danger"  if is_blind else ("diag-badge-success" if prob >= 0.70 else "diag-badge-warning")
-            _diag_badge_icon = "🛑"                  if is_blind else ("✅"                  if prob >= 0.70 else "⚠️")
+            _diag_eyebrow = "RESULTADO DEL ANÁLISIS"
 
             st.markdown(f"""
             <div class="diag-card {diag_cls}">
-                <span class="diag-badge {_diag_badge_cls}">{_diag_badge_icon} Resultado del análisis</span>
+                <div class="diag-eyebrow">{_diag_eyebrow}</div>
                 <div class="diag-decision">{decision}</div>
                 <div class="diag-reason">{razon}</div>
                 <div class="diag-prob">{format_percentage(prob)}</div>
