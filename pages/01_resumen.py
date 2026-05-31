@@ -65,53 +65,47 @@ _CHART_LAYOUT = dict(
 st.markdown('<div class="section-label">Pipeline de datos — de 568 K a la base analítica final</div>', unsafe_allow_html=True)
 
 base_final = len(reviews) if has_reviews else 100_000
-funnel_vals   = [568_454, 568_454 - 174_918, base_final]
-funnel_labels = ["568 K  Dataset original", "394 K  Sin duplicados", f"{format_compact_number(base_final)}  Base analítica (≥ 5 votos)"]
-funnel_colors = ["#1d4ed8", "#0d9488", "#15803d"]
+pct_kept   = round(base_final / 568_454 * 100, 1)
 
-fig_funnel = go.Figure(go.Funnel(
-    y=funnel_labels,
-    x=funnel_vals,
-    textinfo="value+percent initial",
-    marker=dict(color=funnel_colors, line=dict(width=0)),
-    connector=dict(line=dict(color="rgba(0,0,0,0)")),
-    textfont=dict(size=12, color="#1e293b"),
-))
-fig_funnel.update_layout(
-    **_CHART_LAYOUT,
-    height=180,
-    margin=dict(l=10, r=10, t=10, b=10),
+_ARROW = (
+    '<div style="display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0 0.2rem">' +
+    '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2.5" ' +
+    'stroke-linecap="round" stroke-linejoin="round">' +
+    '<line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>'
 )
-st.plotly_chart(fig_funnel, use_container_width=True, config={"displayModeBar": False})
 
-# ── Pill stats complementarias ────────────────────────────────────────────────
 st.markdown(
     f"""
-    <div class="stat-row">
-        <div class="stat-pill">
-            <div class="stat-pill-icon stat-pill-icon-amber">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
-            </div>
-            <div><div class="stat-pill-value">174.918</div><div class="stat-pill-label">Duplicados eliminados</div></div>
-        </div>
-        <div class="stat-pill">
-            <div class="stat-pill-icon stat-pill-icon-amber">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
-            </div>
-            <div><div class="stat-pill-value">~290 K</div><div class="stat-pill-label">Filtradas (votos &lt; 5)</div></div>
-        </div>
-        <div class="stat-pill">
-            <div class="stat-pill-icon stat-pill-icon-green">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#15803d" stroke-width="2" stroke-linecap="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-            </div>
-            <div><div class="stat-pill-value">14</div><div class="stat-pill-label">Nulos eliminados</div></div>
-        </div>
-        <div class="stat-pill">
-            <div class="stat-pill-icon stat-pill-icon-blue">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" stroke-width="2" stroke-linecap="round"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/></svg>
-            </div>
-            <div><div class="stat-pill-value">4 features</div><div class="stat-pill-label">Derivadas del texto</div></div>
-        </div>
+    <div style="display:flex;align-items:stretch;gap:0;margin-bottom:1rem;flex-wrap:nowrap;overflow-x:auto">
+      <div style="flex:1;min-width:120px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:0.9rem 0.7rem;text-align:center">
+        <div style="font-size:1.4rem;font-weight:900;color:#1d4ed8;line-height:1">568.454</div>
+        <div style="font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#3b82f6;margin:0.25rem 0">Dataset original</div>
+        <div style="font-size:0.7rem;color:#64748b">Amazon Fine Food Reviews completo</div>
+      </div>
+      {_ARROW}
+      <div style="flex:1;min-width:120px;background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;padding:0.9rem 0.7rem;text-align:center">
+        <div style="font-size:1.4rem;font-weight:900;color:#b45309;line-height:1">−174.918</div>
+        <div style="font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#f59e0b;margin:0.25rem 0">Duplicados eliminados</div>
+        <div style="font-size:0.7rem;color:#64748b">Mismo usuario · producto · fecha</div>
+      </div>
+      {_ARROW}
+      <div style="flex:1;min-width:120px;background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;padding:0.9rem 0.7rem;text-align:center">
+        <div style="font-size:1.4rem;font-weight:900;color:#b45309;line-height:1">~−290 K</div>
+        <div style="font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#f59e0b;margin:0.25rem 0">Filtradas (&lt; 5 votos)</div>
+        <div style="font-size:0.7rem;color:#64748b">Tasas de utilidad no representativas</div>
+      </div>
+      {_ARROW}
+      <div style="flex:1;min-width:100px;background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;padding:0.9rem 0.7rem;text-align:center">
+        <div style="font-size:1.4rem;font-weight:900;color:#b45309;line-height:1">−14</div>
+        <div style="font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#f59e0b;margin:0.25rem 0">Nulos eliminados</div>
+        <div style="font-size:0.7rem;color:#64748b">Filas sin texto o score</div>
+      </div>
+      {_ARROW}
+      <div style="flex:1;min-width:130px;background:#f0fdf4;border:2px solid #86efac;border-radius:12px;padding:0.9rem 0.7rem;text-align:center">
+        <div style="font-size:1.4rem;font-weight:900;color:#15803d;line-height:1">{format_compact_number(base_final)}</div>
+        <div style="font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#22c55e;margin:0.25rem 0">Base analítica final</div>
+        <div style="font-size:0.7rem;color:#64748b">{pct_kept}% del dataset · 4 features derivadas</div>
+      </div>
     </div>
     """, unsafe_allow_html=True,
 )
