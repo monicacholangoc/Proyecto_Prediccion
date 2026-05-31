@@ -344,16 +344,30 @@ html[data-theme="dark"] .accuracy-warning p { color: #fcd34d !important; }
 
 .stButton > button, .stDownloadButton > button {
     border-radius: 12px;
-    border: 1px solid rgba(23,70,162,0.18);
-    background: linear-gradient(180deg, #1c4db7 0%, #1746a2 100%);
-    color: white;
+    border: 1px solid #cbd5e1;
+    background: #f1f5f9;
+    color: #1a2236 !important;
     min-height: 2.6rem;
     font-size: 0.9rem;
-    box-shadow: 0 8px 16px rgba(23,70,162,0.18);
+    font-weight: 500;
+    box-shadow: none;
 }
 .stButton > button:hover, .stDownloadButton > button:hover {
-    border-color: rgba(23,70,162,0.28);
-    background: linear-gradient(180deg, #255acb 0%, #1c4db7 100%);
+    border-color: #94a3b8;
+    background: #e2e8f0;
+    color: #1a2236 !important;
+}
+/* Botón primario — azul con texto blanco */
+.stButton > button[kind="primary"] {
+    background: linear-gradient(180deg, #1c4db7 0%, #1746a2 100%) !important;
+    color: #ffffff !important;
+    border: none !important;
+    font-weight: 600 !important;
+    box-shadow: 0 4px 12px rgba(23,70,162,0.22) !important;
+}
+.stButton > button[kind="primary"]:hover {
+    background: linear-gradient(180deg, #255acb 0%, #1c4db7 100%) !important;
+    color: #ffffff !important;
 }
 .stTextInput input, .stTextArea textarea,
 .stSelectbox div[data-baseweb="select"] > div { border-radius: 12px; }
