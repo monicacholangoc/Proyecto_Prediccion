@@ -56,24 +56,95 @@ st.markdown(
     </div>""", unsafe_allow_html=True,
 )
 
-st.markdown('<div class="section-label">Comparación de modelos</div>', unsafe_allow_html=True)
-for _, row in metrics_df.iterrows():
-    is_best = str(row["modelo"]) == best_name
-    mc1, mc2, mc3, mc4, mc5 = st.columns([2,1,1,1,1], gap="medium")
-    with mc1:
-        st.markdown(
-            f"""<div class="metric-card" style="{'border:2px solid var(--primary);' if is_best else ''}">
-                <div class="metric-label">Modelo</div>
-                <div class="metric-value" style="font-size:1.1rem">{row['modelo']}</div>
-                <span class="metric-badge {'metric-badge-good' if is_best else 'metric-badge-info'}">{'Modelo ganador' if is_best else 'Referencia'}</span>
-            </div>""", unsafe_allow_html=True,
-        )
-    with mc2: render_metric_card("Precisión", f"{float(row['precision']):.1%}", "De cada 100 reseñas que el modelo dice que son útiles, ¿cuántas realmente lo son?")
-    with mc3: render_metric_card("Recall (Cobertura)", f"{float(row['recall']):.1%}", "De todas las reseñas útiles reales, ¿cuántas logra detectar el modelo?")
-    with mc4: render_metric_card("F1-Score", f"{float(row['f1']):.1%}", "Promedio balanceado entre Precisión y Cobertura. Más alto = mejor.")
-    with mc5: render_metric_card("ROC-AUC", f"{float(row['roc_auc']):.1%}", "Capacidad general de separar reseñas útiles de no útiles. 100% = perfecto, 50% = azar.")
+import plotly.graph_objects as go
 
-st.plotly_chart(build_model_metrics_chart(metrics_df), use_container_width=True)
+st.markdown('<div class="section-label">Comparación de modelos</div>', unsafe_allow_html=True)
+
+MODEL_CONFIG = {
+    "Logistic Regression": {"color": "#1d4ed8", "icon": "📐"},
+    "LightGBM":            {"color": "#15803d", "icon": "⚡"},
+    "XGBoost":             {"color": "#b45309", "icon": "🚀"},
+    "CatBoost":            {"color": "#7c3aed", "icon": "🐱"},
+}
+
+cols = st.columns(len(metrics_df), gap="medium")
+for col, (_, row) in zip(cols, metrics_df.iterrows()):
+    model_name = str(row["modelo"])
+    is_best    = model_name == best_name
+    cfg        = MODEL_CONFIG.get(model_name, {"color": "#64748b", "icon": "🤖"})
+    color      = cfg["color"]
+    icon       = cfg["icon"]
+    prec, rec, f1, auc = float(row["precision"]), float(row["recall"]), float(row["f1"]), float(row["roc_auc"])
+
+    def bar(val, c):
+        pct = int(val * 100)
+        return (f'<div style="margin:0.25rem 0 0.1rem">'
+                f'<div style="background:#e2e8f0;border-radius:999px;height:5px;overflow:hidden">'
+                f'<div style="width:{pct}%;height:100%;background:{c};border-radius:999px"></div>'
+                f'</div></div>')
+
+    winner = (f'<div style="background:{color};color:#fff;font-size:0.6rem;font-weight:800;'
+              f'padding:0.2rem 0.5rem;border-radius:999px;display:inline-block;margin-bottom:0.4rem">'
+              f'🏆 GANADOR</div>' if is_best else
+              f'<div style="background:#f1f5f9;color:#64748b;font-size:0.6rem;font-weight:700;'
+              f'padding:0.2rem 0.5rem;border-radius:999px;display:inline-block;margin-bottom:0.4rem">'
+              f'Referencia</div>')
+
+    with col:
+        st.markdown(
+            f'''<div style="background:{"linear-gradient(135deg,"+color+"12,#fff)" if is_best else "#fff"};
+                border:{"2px solid "+color if is_best else "1px solid #e2e8f0"};
+                border-radius:16px;padding:1rem 0.9rem;
+                box-shadow:{"0 4px 20px "+color+"30" if is_best else "0 1px 4px rgba(0,0,0,0.06)"}">
+                <div style="font-size:1.5rem;margin-bottom:0.2rem">{icon}</div>
+                {winner}
+                <div style="font-size:0.9rem;font-weight:800;color:#0f172a;margin-bottom:0.6rem">{model_name}</div>
+                <div style="font-size:0.62rem;font-weight:700;color:#94a3b8;text-transform:uppercase">Precisión {prec:.1%}</div>{bar(prec,color)}
+                <div style="font-size:0.62rem;font-weight:700;color:#94a3b8;text-transform:uppercase;margin-top:0.3rem">Recall {rec:.1%}</div>{bar(rec,color)}
+                <div style="font-size:0.62rem;font-weight:700;color:#94a3b8;text-transform:uppercase;margin-top:0.3rem">F1-Score {f1:.1%}</div>{bar(f1,color)}
+                <div style="font-size:0.62rem;font-weight:700;color:#94a3b8;text-transform:uppercase;margin-top:0.3rem">ROC-AUC {auc:.1%}</div>{bar(auc,color)}
+                <div style="margin-top:0.7rem;padding-top:0.6rem;border-top:1px solid #f1f5f9;
+                            display:grid;grid-template-columns:1fr 1fr;gap:0.3rem;text-align:center">
+                    <div><div style="font-size:1rem;font-weight:800;color:{color}">{f1:.1%}</div>
+                         <div style="font-size:0.55rem;color:#94a3b8">F1</div></div>
+                    <div><div style="font-size:1rem;font-weight:800;color:{color}">{auc:.1%}</div>
+                         <div style="font-size:0.55rem;color:#94a3b8">ROC-AUC</div></div>
+                </div>
+            </div>''',
+            unsafe_allow_html=True,
+        )
+
+st.markdown("<br>", unsafe_allow_html=True)
+
+# ── Radar comparativo ─────────────────────────────────────────────────────────
+st.markdown('<div class="section-label">Radar comparativo — los 4 modelos</div>', unsafe_allow_html=True)
+categories  = ["Precisión", "Recall", "F1-Score", "ROC-AUC"]
+metric_keys = ["precision", "recall", "f1", "roc_auc"]
+fig_radar   = go.Figure()
+for _, row in metrics_df.iterrows():
+    model_name = str(row["modelo"])
+    cfg        = MODEL_CONFIG.get(model_name, {"color": "#64748b"})
+    vals       = [float(row[k]) for k in metric_keys]
+    fig_radar.add_trace(go.Scatterpolar(
+        r=vals + [vals[0]], theta=categories + [categories[0]],
+        fill="toself", name=model_name,
+        line=dict(color=cfg["color"], width=2.5),
+        fillcolor=cfg["color"], opacity=0.15,
+        marker=dict(size=6, color=cfg["color"]),
+    ))
+fig_radar.update_layout(
+    polar=dict(
+        radialaxis=dict(visible=True, range=[0.7, 1.0], tickformat=".0%",
+                        gridcolor="#e2e8f0", tickfont=dict(size=9)),
+        angularaxis=dict(gridcolor="#e2e8f0", tickfont=dict(size=11, color="#475569")),
+        bgcolor="rgba(0,0,0,0)",
+    ),
+    showlegend=True,
+    legend=dict(orientation="h", y=-0.18, font=dict(size=11)),
+    height=400, margin=dict(l=40, r=40, t=20, b=60),
+    paper_bgcolor="rgba(0,0,0,0)",
+)
+st.plotly_chart(fig_radar, use_container_width=True)
 
 st.markdown('<div class="section-label">¿Qué variables influyen más en la predicción?</div>', unsafe_allow_html=True)
 st.caption("Importancia relativa de cada variable según el modelo LightGBM. Una variable con mayor importancia tiene más peso en la decisión del modelo.")
