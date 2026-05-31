@@ -86,12 +86,14 @@ if not feature_imp_df.empty:
     fig_imp.update_layout(height=320, margin=dict(r=260))
     st.plotly_chart(fig_imp, use_container_width=True)
 
+    total_imp = ordered["importancia"].sum()
     imp_cols = st.columns(len(ordered), gap="medium")
     for col, (_, row) in zip(imp_cols, ordered.iterrows()):
         with col:
+            pct = float(row["importancia"]) / total_imp if total_imp > 0 else 0
             render_metric_card(
                 feature_names.get(str(row["feature"]), str(row["feature"])),
-                f"{float(row['importancia']):.1%}",
+                f"{pct:.1%}",
                 feature_labels.get(row["feature"], "")
             )
 else:
