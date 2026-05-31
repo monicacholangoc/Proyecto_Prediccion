@@ -19,6 +19,7 @@ def save_review_to_supabase(audit_result: dict, row_data: dict) -> tuple[bool, s
             "context_blind_spot": bool(audit_result.get("context_blind_spot", False)),
             "context_hits":      ", ".join(audit_result.get("context_hits", [])),
             "context_explanation": str(audit_result.get("context_explanation", "")),
+            "categoria":         str(row_data.get("Categoria_Real", "Alimentos generales")),
         }
         get_supabase().table("auditoria_reviews").insert(payload).execute()
         return True, "Guardado en Supabase."

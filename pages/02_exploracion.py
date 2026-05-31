@@ -78,6 +78,15 @@ else:
 
 años_disponibles = sorted([y for y in source["Año"].unique() if y > 2000])
 
+# Agregar años de Supabase (reseñas nuevas)
+try:
+    _sb_years_df = load_reviews_from_supabase()
+    if not _sb_years_df.empty and "created_at" in _sb_years_df.columns:
+        sb_years = pd.to_datetime(_sb_years_df["created_at"], errors="coerce").dt.year.dropna().astype(int).unique().tolist()
+        años_disponibles = sorted(set(años_disponibles + sb_years))
+except Exception:
+    pass
+
 # ══════════════════════════════════════════════════════════════════════════════
 # FILTROS — multiselect
 # ══════════════════════════════════════════════════════════════════════════════
@@ -147,13 +156,12 @@ pct_filtro = round(n_base / len(source) * 100, 1) if len(source) > 0 else 100.0
 
 st.markdown('<div class="section-label">Indicadores del corte actual</div>', unsafe_allow_html=True)
 
-i1, i2, i3, i4, i5 = st.columns(5, gap="medium")
-for col, valor, label, sublabel, color, icon in [
-    (i1, format_compact_number(n_total),    "Reseñas totales",   f"{pct_filtro}% del dataset",       "#1d4ed8", "M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"),
-    (i2, format_compact_number(n_base),     "En el corte",       "Con los filtros activos",           "#0d9488", "M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"),
-    (i3, format_compact_number(products),   "Productos únicos",  "IDs distintos en el corte",         "#7c3aed", "M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"),
-    (i4, format_percentage(ratio),          "Ratio de útiles",   "Reseñas con Helpfulness ≥ 0.70",   "#15803d", "M22 12h-4l-3 9L9 3l-3 9H2"),
-    (i5, f"{avg_len} palabras",             "Longitud media",    "Promedio del corte filtrado",       "#b45309", "M8 6h13M8 12h13M8 18h13"),
+i1, i2, i3, i4 = st.columns(4, gap="medium")
+for col, valor, label, sublabel, color in [
+    (i1, format_compact_number(n_total),    "Reseñas totales",   f"{pct_filtro}% del dataset",       "#1d4ed8"),
+    (i2, format_compact_number(products),   "Productos únicos",  "IDs distintos en el corte",         "#7c3aed"),
+    (i3, format_percentage(ratio),          "Ratio de útiles",   "Reseñas con Helpfulness ≥ 0.70",   "#15803d"),
+    (i4, f"{avg_len} palabras",             "Longitud media",    "Promedio del corte filtrado",       "#b45309"),
 ]:
     with col:
         st.markdown(f"""

@@ -11,7 +11,6 @@ import pandas as pd
 import numpy as np
 import streamlit as st
 
-from services.supabase_service import save_review_to_supabase, clear_supabase_cache
 from services.catalog_service import get_product_catalog, get_product_detail, map_product_metadata
 from services.data_loader import ensure_generated_data_dirs, load_audited_reviews_file, load_processed_reviews, read_uploaded_csv
 from services.ml_service import audit_review_text
@@ -119,37 +118,44 @@ def append_audited_review(
     text: str,
     validate_context: bool = True,
 ) -> dict:
+    """Audita una nueva reseña y la agrega a la base operativa."""
     db = initialize_corporate_audit_db()
     product_detail = get_product_detail(product_id)
     audit_result = audit_review_text(
-        text, stars, product_id,
+        text,
+        stars,
+        product_id,
         product_name=product_detail.get("ProductName"),
         category_name=product_detail.get("Categoria_Real"),
         validate_context=validate_context,
     )
     new_id = int(db["ID_Transaccion"].max()) + 1 if not db.empty else 10001
 
-    new_row = pd.DataFrame([{
-        "ID_Transaccion": new_id,
-        "ProductId":      str(product_id),
-        "User":           user_name,
-        "Stars":          int(stars),
-        "Helpfulness":    audit_result["probability"],
-        "Text":           text,
-        "Estado":         audit_result["status"],
-        "CreatedAt":      pd.Timestamp.now(),
-    }])
+    new_row = pd.DataFrame(
+        [
+            {
+                "ID_Transaccion": new_id,
+                "ProductId":      str(product_id),
+                "User":           user_name,
+                "Stars":          int(stars),
+                "Helpfulness":    audit_result["probability"],
+                "Text":           text,
+                "Estado":         audit_result["status"],
+                "CreatedAt":      pd.Timestamp.now(),
+                "Categoria_Real": product_detail.get("Categoria_Real", "Alimentos generales"),
+            }
+        ]
+    )
 
-    # Memoria sesión actual
     updated_db = pd.concat([db, new_row], ignore_index=True)
     st.session_state["db_central_corporativa"] = updated_db
     st.session_state["latest_review_id"]       = new_id
     st.session_state["latest_audit_result"]    = audit_result
 
-    # Persistencia Supabase
+    # Guardar en Supabase con categoría
+    from services.supabase_service import save_review_to_supabase, clear_supabase_cache
     save_review_to_supabase(audit_result, new_row.iloc[0].to_dict())
     clear_supabase_cache()
-
     return audit_result
 
 
@@ -237,39 +243,6 @@ def process_uploaded_audit_batch(df_input: pd.DataFrame) -> tuple[pd.DataFrame, 
 
     batch_df = pd.DataFrame(processed_rows)
     st.session_state["db_central_corporativa"] = pd.concat([db, batch_df], ignore_index=True)
-
-    # ── Guardar cada fila del lote en Supabase ───────────────────────────────
-    # Usamos los audit_results ya calculados en el loop anterior
-    sb_errors = 0
-    for proc_row in processed_rows:
-        # Reconstruir audit_result mínimo desde los datos procesados
-        audit_r = {
-            "probability":         proc_row["Helpfulness"],
-            "status":              proc_row["Estado"],
-            "review_len":          len(str(proc_row["Text"]).split()),
-            "sentiment_score":     0.0,
-            "incoherente":         False,
-            "context_blind_spot":  False,
-            "context_hits":        [],
-            "context_explanation": "",
-        }
-        row_data = {
-            "ID_Transaccion": proc_row["ID_Transaccion"],
-            "ProductId":      proc_row["ProductId"],
-            "User":           proc_row["User"],
-            "Stars":          proc_row["Stars"],
-            "Text":           proc_row["Text"],
-        }
-        try:
-            ok, msg = save_review_to_supabase(audit_r, row_data)
-            if not ok:
-                sb_errors += 1
-        except Exception:
-            sb_errors += 1
-
-    clear_supabase_cache()
-    if sb_errors > 0:
-        return batch_df, f"{sb_errors} filas no pudieron guardarse en Supabase."
     return batch_df, None
 
 
