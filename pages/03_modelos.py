@@ -11,8 +11,28 @@ with open("styles/styles.css", "r", encoding="utf-8") as _f:
     st.markdown(f"<style>{_f.read()}</style>", unsafe_allow_html=True)
 render_sidebar()
 
-st.title("Modelos y Evaluación")
-st.caption("Comparamos tres clasificadores para predecir si una reseña de Amazon será útil o no. Usamos métricas pensadas para datos desbalanceados (donde una clase es mucho más frecuente que la otra).")
+st.markdown(
+    """
+    <div style="
+        background: linear-gradient(135deg, #16213b 0%, #1746a2 60%, #0f4c5c 100%);
+        border-radius: 16px;
+        padding: 1.4rem 2rem;
+        margin-bottom: 1.4rem;
+        color: #ffffff;
+    ">
+        <div style="font-size:0.72rem;font-weight:600;letter-spacing:0.08em;
+                    color:rgba(255,255,255,0.55);text-transform:uppercase;margin-bottom:0.35rem">
+            Seminario Predictivo 2026 · Caso 06
+        </div>
+        <div style="font-size:clamp(1.4rem,3vw,1.9rem);font-weight:800;
+                    letter-spacing:-0.02em;line-height:1.2;margin-bottom:0.3rem">
+            Modelos y Evaluación
+        </div>
+        <div style="font-size:0.82rem;color:rgba(255,255,255,0.65)">Comparación de clasificadores · Métricas para datos desbalanceados · Importancia de variables</div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
 evaluation         = compute_model_evaluation()
 metrics_df         = evaluation["metrics"]
@@ -116,3 +136,70 @@ st.plotly_chart(build_roc_chart(metrics_df, roc_curves), use_container_width=Tru
 st.markdown(f'<div class="section-label">Matriz de Confusión — {best_name}</div>', unsafe_allow_html=True)
 st.caption("Cada celda muestra cuántas reseñas clasificó el modelo. La diagonal principal (↘) son los aciertos. Los **Falsos Negativos** (reseñas útiles clasificadas como no útiles) son el error más costoso: el modelo pierde contenido de valor que nunca llega a los compradores.")
 st.plotly_chart(build_confusion_matrix_chart(confusion_matrices.get(best_name), best_name), use_container_width=True)
+
+# ── Palabras más asociadas a utilidad ─────────────────────────────────────
+import os, requests as _req
+import plotly.graph_objects as go
+
+st.markdown('<div class="section-label">Palabras más asociadas a reseñas útiles vs. no útiles</div>', unsafe_allow_html=True)
+
+@st.cache_data(ttl=3600)
+def _fetch_top_words():
+    try:
+        base = st.secrets.get("API_URL", os.getenv("API_URL", "https://proyecto-prediccion-v9qk.onrender.com")).rstrip("/")
+        r = _req.get(base + "/reviews/top_words", timeout=20)
+        r.raise_for_status()
+        return r.json()
+    except Exception:
+        return None
+
+tw = _fetch_top_words()
+
+if tw:
+    useful_words    = tw.get("useful", tw.get("utiles", []))
+    not_useful_words = tw.get("not_useful", tw.get("no_utiles", []))
+
+    # Normalizar: acepta lista de dicts {word, score} o lista de [word, score]
+    def _parse(lst):
+        out = []
+        for item in lst:
+            if isinstance(item, dict):
+                out.append((str(item.get("word", item.get("palabra", ""))), float(item.get("score", item.get("peso", 0)))))
+            elif isinstance(item, (list, tuple)) and len(item) >= 2:
+                out.append((str(item[0]), float(item[1])))
+        return out
+
+    u_pairs  = _parse(useful_words)[:15]
+    nu_pairs = _parse(not_useful_words)[:15]
+
+    tw1, tw2 = st.columns(2, gap="large")
+    with tw1:
+        if u_pairs:
+            words, scores = zip(*u_pairs)
+            fig_u = go.Figure(go.Bar(
+                x=list(scores), y=list(words), orientation="h",
+                marker_color="#15803d", marker_opacity=0.85,
+            ))
+            fig_u.update_layout(
+                title="Reseñas útiles", height=380,
+                margin=dict(l=10, r=20, t=40, b=10),
+                xaxis_title="Peso relativo", yaxis=dict(autorange="reversed"),
+                template="plotly_white", title_font_size=13,
+            )
+            st.plotly_chart(fig_u, use_container_width=True, config={"displayModeBar": False})
+    with tw2:
+        if nu_pairs:
+            words, scores = zip(*nu_pairs)
+            fig_nu = go.Figure(go.Bar(
+                x=list(scores), y=list(words), orientation="h",
+                marker_color="#b45309", marker_opacity=0.85,
+            ))
+            fig_nu.update_layout(
+                title="Reseñas no útiles", height=380,
+                margin=dict(l=10, r=20, t=40, b=10),
+                xaxis_title="Peso relativo", yaxis=dict(autorange="reversed"),
+                template="plotly_white", title_font_size=13,
+            )
+            st.plotly_chart(fig_nu, use_container_width=True, config={"displayModeBar": False})
+else:
+    st.info("La API de palabras clave no está disponible en este momento. Verifica que el servicio en Render esté activo.")
