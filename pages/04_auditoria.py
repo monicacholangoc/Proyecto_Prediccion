@@ -15,7 +15,7 @@ from components.cards import render_metric_card, render_review_card
 from components.feedback import render_status_panel
 from plots.audit_charts import build_helpfulness_gauge
 from services.catalog_service import get_product_detail, get_product_options, get_product_catalog
-from services.ml_service import generate_review_recommendations, audit_review_text
+from services.ml_service import generate_review_recommendations, audit_review_text, load_trained_model
 from services.preprocessing_service import (
     append_audited_review,
     get_product_benchmark,
@@ -55,11 +55,11 @@ def _api_url():
         return os.getenv("API_URL", "https://proyecto-prediccion-v9qk.onrender.com").rstrip("/")
 
 
-def _call_predict(review_text, stars):
+def _call_predict(review_text, stars, model_name="lgbm"):
     try:
         r = requests.post(
             _api_url() + "/reviews/predict_helpfulness",
-            json={"review_text": review_text, "stars": stars},
+            json={"review_text": review_text, "stars": stars, "model": model_name},
             timeout=35,
         )
         r.raise_for_status()
@@ -159,6 +159,29 @@ with tab1:
     with left_col:
         st.markdown('<div class="section-label">Configuracion</div>', unsafe_allow_html=True)
 
+        # ── Selector de modelo ────────────────────────────────────────────
+        MODEL_OPTIONS = {
+            "LightGBM (Principal)":        "lgbm",
+            "Logistic Regression":         "logistic",
+            "Heurística (sin modelo)":     "heuristic",
+        }
+        selected_model_label = st.selectbox(
+            "Modelo de predicción",
+            options=list(MODEL_OPTIONS.keys()),
+            help="Selecciona el modelo que evaluará la utilidad de la reseña. LightGBM es el modelo ganador del proyecto.",
+        )
+        selected_model = MODEL_OPTIONS[selected_model_label]
+
+        # Badge visual del modelo seleccionado
+        model_colors = {"lgbm": "#15803d", "logistic": "#1d4ed8", "heuristic": "#b45309"}
+        model_color  = model_colors.get(selected_model, "#64748b")
+        st.markdown(
+            f'<span style="background:{model_color};color:#fff;font-size:0.7rem;'
+            f'font-weight:700;padding:0.2rem 0.6rem;border-radius:999px">'
+            f'✓ {selected_model_label}</span>',
+            unsafe_allow_html=True,
+        )
+
         # Leer valor previo ANTES de renderizar el toggle
         _prev_val = st.session_state.get("_toggle_prev_val", False)
 
@@ -186,7 +209,7 @@ with tab1:
                 st.warning("Ingresa una resena antes de analizar.")
             else:
                 with st.spinner("Analizando..."):
-                    api_r = _call_predict(review_text.strip(), stars)
+                    api_r = _call_predict(review_text.strip(), stars, selected_model)
                 st.session_state["_api_result"]       = api_r if "error" not in api_r else None
                 st.session_state["_last_review_text"] = review_text.strip()
                 st.session_state["_last_stars"]       = stars
