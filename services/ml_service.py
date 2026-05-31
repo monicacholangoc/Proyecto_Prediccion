@@ -40,28 +40,34 @@ TECH_KEYWORDS = {
 }
 
 FOOD_CONTEXT_KEYWORDS = {
-    "alimento",
-    "comida",
-    "sabor",
-    "ingrediente",
-    "snack",
-    "sopa",
-    "caldo",
-    "te",
-    "té",
-    "cafe",
-    "café",
-    "galleta",
-    "chocolate",
-    "dulce",
-    "mascota",
-    "perro",
-    "gato",
-    "organico",
-    "orgánico",
-    "suplemento",
-    "condimento",
-    "bebida",
+    # Ingles — terminos alimenticios generales
+    "food", "taste", "flavor", "flavour", "ingredient", "ingredients",
+    "texture", "smell", "aroma", "fresh", "delicious", "yummy", "tasty",
+    "eating", "meal", "snack", "recipe", "cook", "cooking",
+    "organic", "natural", "healthy", "nutrition", "calories", "diet",
+    "sweet", "salty", "spicy", "bitter", "sour", "savory",
+    # Ingles — bebidas
+    "coffee", "tea", "drink", "beverage", "juice", "milk",
+    "brew", "brewing", "steep", "steeping",
+    # Ingles — categorias especificas
+    "chocolate", "candy", "cookie", "chips", "cereal", "pasta", "rice",
+    "soup", "broth", "sauce", "oil", "butter", "cheese", "yogurt",
+    "protein", "supplement", "vitamin",
+    # Ingles — mascotas
+    "dog", "cat", "pet", "puppy", "kitten", "treats", "kibble",
+    # Espanol — terminos alimenticios generales
+    "alimento", "comida", "sabor", "ingrediente", "textura",
+    "delicioso", "rico", "comer", "cocinar", "receta",
+    "organico", "natural", "saludable",
+    "dulce", "salado", "picante", "amargo",
+    # Espanol — bebidas
+    "cafe", "te", "bebida", "jugo", "leche",
+    # Espanol — categorias
+    "galleta", "sopa", "caldo", "salsa", "aceite",
+    "mantequilla", "queso", "yogur", "suplemento",
+    # Espanol — mascotas y otros
+    "mascota", "perro", "gato", "cachorro",
+    "condimento", "porcion", "empaque",
 }
 
 
@@ -115,42 +121,47 @@ def detect_context_blind_spot(
     product_name: str | None = None,
     category_name: str | None = None,
 ) -> dict:
-    """Valida si la reseña parece hablar del contexto correcto del producto.
+    """Valida si la reseña menciona contexto alimenticio relevante.
 
-    La lógica es intencionalmente interpretable: busca menciones de tecnología
-    y contrasta algunas palabras del nombre/categoría del producto con el texto.
+    Toda la plataforma trabaja con alimentos. El punto ciego se activa cuando
+    el texto NO contiene ninguna referencia a comida, sabor, ingredientes u otros
+    términos alimenticios — lo que indica que la reseña está fuera de contexto.
     """
     tokens = _normalize_tokens(text)
-    product_tokens = _normalize_tokens(product_name or "")
+    product_tokens  = _normalize_tokens(product_name or "")
     category_tokens = _normalize_tokens(category_name or "")
 
+    # Construir vocabulario de contexto: keywords globales de alimento +
+    # palabras del nombre y categoría del producto seleccionado.
     product_context_tokens = {
         token
         for token in product_tokens.union(category_tokens).union(FOOD_CONTEXT_KEYWORDS)
         if token not in {"productos", "producto", "categoria", "modelo", "real", "food"}
     }
 
-    tech_hits = sorted(tokens.intersection(TECH_KEYWORDS))
     context_hits = sorted(tokens.intersection(product_context_tokens))
-    is_food_context = any(token in product_context_tokens for token in FOOD_CONTEXT_KEYWORDS)
+    tech_hits    = sorted(tokens.intersection(TECH_KEYWORDS))
 
-    # Si detectamos lenguaje tecnológico en un producto alimenticio, marcamos punto ciego.
-    blind_spot_detected = bool(tech_hits) and is_food_context
+    # Punto ciego: la reseña no menciona NINGUNA palabra del universo alimenticio.
+    # Esto cubre reseñas genéricas, fuera de tema o claramente equivocadas.
+    blind_spot_detected = len(context_hits) == 0
 
     if blind_spot_detected:
         explanation = (
-            "La reseña parece hablar de un contexto tecnológico que no coincide con "
-            "el producto o categoría alimenticia seleccionados."
+            "La reseña no menciona ningún término relacionado con alimentos, "
+            "sabor, ingredientes, textura ni el producto seleccionado. "
+            "Parece estar fuera de contexto para este catálogo."
         )
-    elif not context_hits and is_food_context:
+    elif len(context_hits) < 3:
         explanation = (
-            "No se detectaron referencias claras al producto o a su categoría. "
-            "La reseña podría ser útil, pero su contexto es ambiguo."
+            "La reseña menciona pocas referencias alimenticias. "
+            "Agregar más detalles sobre sabor, ingredientes o experiencia "
+            "de uso fortalecería su contexto."
         )
     else:
         explanation = (
-            "El texto mantiene una relación razonable con el producto o categoría "
-            "seleccionados."
+            "El texto tiene una relación clara con el producto o categoría "
+            "alimenticia seleccionados."
         )
 
     return {
