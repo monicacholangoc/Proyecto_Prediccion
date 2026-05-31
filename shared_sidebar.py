@@ -1,24 +1,18 @@
 ﻿"""
-shared_sidebar.py — Sidebar oscuro + nav funcional + logo + equipo + temas.
+shared_sidebar.py — Sidebar oscuro + nav funcional + logo + equipo al final.
 
-RESPONSABILIDADES de este archivo:
-  - CSS del sidebar (fondo oscuro, siempre, independiente del tema de la app)
-  - CSS del fondo del área de contenido (via data-theme en <html>)
-  - Logo centrado (detecta assets/Logo.jpg automáticamente)
-  - Equipo del proyecto
-  - Navegación funcional con st.page_link()
-  - Botones de tema (Claro / Oscuro / Sistema)
-
-NO duplica nada de styles.css. Ese archivo maneja los componentes de contenido.
+Cambios:
+- Equipo movido al FINAL del sidebar (después del nav)
+- Eliminados los botones de tema (Streamlit lo maneja nativamente en la toolbar)
+- CSS del sidebar limpio sin duplicados
 """
 
 import os
 import base64
 import streamlit as st
 
-# ── Configuración ────────────────────────────────────────────────────────────
-
-LOGO_URL  = None   # URL pública del logo, o None para usar archivo local
+# ── Configuración ─────────────────────────────────────────────────────────────
+LOGO_URL  = None
 LOGO_CANDIDATES = [
     "assets/Logo.jpg", "assets/Logo.jpeg", "assets/Logo.png",
     "assets/logo.jpg", "assets/logo.jpeg", "assets/logo.png",
@@ -27,8 +21,7 @@ LOGO_CANDIDATES = [
 TEAM = ["Arévalo José", "Cholango Mónica", "Torres Byron"]
 
 
-# ── Logo ─────────────────────────────────────────────────────────────────────
-
+# ── Logo ──────────────────────────────────────────────────────────────────────
 def _find_logo():
     for p in LOGO_CANDIDATES:
         if os.path.exists(p):
@@ -46,7 +39,6 @@ def _logo_tag() -> str:
         with open(path, "rb") as f:
             b64 = base64.b64encode(f.read()).decode()
         return f'<img class="sb-logo" src="data:{mime};base64,{b64}" alt="Logo">'
-    # Respaldo SVG
     return """<svg class="sb-logo" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
       <rect width="80" height="80" rx="14" fill="url(#gfb)"/>
       <path d="M22 58L40 26l18 32Z" fill="rgba(255,255,255,.15)" stroke="rgba(255,255,255,.4)" stroke-width="2"/>
@@ -57,8 +49,7 @@ def _logo_tag() -> str:
       </linearGradient></defs></svg>"""
 
 
-# ── Iconos ───────────────────────────────────────────────────────────────────
-
+# ── Iconos ─────────────────────────────────────────────────────────────────────
 def _ico(d: str) -> str:
     return f'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(248,250,252,.85)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">{d}</svg>'
 
@@ -72,9 +63,7 @@ ICONS = {
 }
 
 
-# ── CSS del sidebar — TODO aquí, nada en styles.css ──────────────────────────
-# El sidebar es SIEMPRE oscuro, sin importar el tema de la app.
-
+# ── CSS del sidebar ────────────────────────────────────────────────────────────
 _SB_CSS = """
 <style>
 /* ══ SIDEBAR — siempre oscuro ══════════════════════════════════════════════ */
@@ -82,10 +71,9 @@ _SB_CSS = """
 [data-testid="stSidebar"] > div,
 [data-testid="stSidebar"] > div > div,
 section[data-testid="stSidebar"] {
-    background: linear-gradient(180deg,#18253f 0%,#111b31 100%) !important;
+    background: linear-gradient(180deg, #18253f 0%, #111b31 100%) !important;
     border-right: 1px solid rgba(255,255,255,.06) !important;
 }
-/* Todo el texto del sidebar blanco */
 [data-testid="stSidebar"],
 [data-testid="stSidebar"] p,
 [data-testid="stSidebar"] span,
@@ -100,35 +88,24 @@ section[data-testid="stSidebar"] {
     display: flex; flex-direction: column; align-items: center;
     padding: 1.1rem 0.5rem 0.8rem;
     border-bottom: 1px solid rgba(255,255,255,.1);
-    margin-bottom: 0.4rem; gap: 0.45rem;
+    margin-bottom: 0.5rem; gap: 0.45rem;
 }
 .sb-logo {
     width: 80px; height: 80px; border-radius: 12px;
     object-fit: contain; background: #fff;
-    padding: 4px; box-shadow: 0 4px 14px rgba(0,0,0,.3);
-    display: block;
+    padding: 4px; box-shadow: 0 4px 14px rgba(0,0,0,.3); display: block;
 }
 .sb-name { color:#f8fafc!important; font-size:.88rem; font-weight:700; text-align:center; line-height:1.2; }
 .sb-sub  { color:rgba(248,250,252,.48)!important; font-size:.68rem; text-align:center; }
 
-/* ══ Equipo ════════════════════════════════════════════════════════════════ */
-.sb-team {
-    padding: .45rem .6rem .55rem;
-    border-bottom: 1px solid rgba(255,255,255,.07);
-    margin-bottom: .4rem;
-}
-.sb-team-t { color:rgba(248,250,252,.42)!important; font-size:.63rem; font-weight:700; text-transform:uppercase; letter-spacing:.07em; margin-bottom:.25rem; }
-.sb-member { color:rgba(248,250,252,.78)!important; font-size:.77rem; padding:.1rem 0; display:flex; align-items:center; gap:.35rem; }
-.sb-member::before { content:""; width:5px; height:5px; border-radius:50%; background:rgba(125,211,252,.7); flex-shrink:0; }
-
-/* ══ Nav icono ═════════════════════════════════════════════════════════════ */
+/* ══ Icono nav ══════════════════════════════════════════════════════════════ */
 .sb-ico {
     display:flex; align-items:center; justify-content:center;
     width:26px; height:26px; border-radius:6px;
     background:rgba(255,255,255,.1); flex-shrink:0; margin-top:.2rem;
 }
 
-/* ══ page_link styling ═════════════════════════════════════════════════════ */
+/* ══ page_link styling ══════════════════════════════════════════════════════ */
 [data-testid="stSidebar"] [data-testid="stPageLink"] {
     background:transparent!important; border:none!important; padding:0!important; margin:0!important;
 }
@@ -153,23 +130,26 @@ section[data-testid="stSidebar"] {
     padding:0!important; min-width:0!important;
 }
 
-/* ══ Botones de tema ════════════════════════════════════════════════════════ */
-.sb-theme-t {
+/* ══ Equipo al final ════════════════════════════════════════════════════════ */
+.sb-team {
+    padding: .5rem .6rem .6rem;
+    border-top: 1px solid rgba(255,255,255,.08);
+    margin-top: .6rem;
+}
+.sb-team-t {
     color:rgba(248,250,252,.4)!important; font-size:.63rem; font-weight:700;
-    text-transform:uppercase; letter-spacing:.07em;
-    padding: .45rem .6rem .1rem; display:block;
+    text-transform:uppercase; letter-spacing:.07em; margin-bottom:.28rem;
+}
+.sb-member {
+    color:rgba(248,250,252,.72)!important; font-size:.76rem;
+    padding:.1rem 0; display:flex; align-items:center; gap:.35rem;
+}
+.sb-member::before {
+    content:""; width:4px; height:4px; border-radius:50%;
+    background:rgba(125,211,252,.65); flex-shrink:0;
 }
 
-/* ══ Fondo del área de contenido — tema claro (default) ════════════════════ */
-html, html[data-theme="light"], html[data-theme="system"] {
-    --bg-from:#f8fbff; --bg-to:#eef3f9;
-    --ov1:rgba(23,70,162,.08); --ov2:rgba(15,76,92,.08);
-}
-html[data-theme="dark"] {
-    --bg-from:#0d1117; --bg-to:#161b22;
-    --ov1:rgba(77,142,240,.06); --ov2:rgba(86,212,196,.05);
-}
-
+/* ══ Fondo del área de contenido ════════════════════════════════════════════ */
 .stApp,
 [data-testid="stAppViewContainer"],
 [data-testid="stAppViewContainer"] > section.main,
@@ -178,16 +158,15 @@ html[data-theme="dark"] {
 [data-testid="stMain"] > div,
 [data-testid="block-container"] {
     background:
-        radial-gradient(circle at top right, var(--ov1), transparent 22%),
-        radial-gradient(circle at top left,  var(--ov2), transparent 18%),
-        linear-gradient(180deg, var(--bg-from) 0%, var(--bg-to) 100%) !important;
+        radial-gradient(circle at top right, rgba(23,70,162,.08), transparent 22%),
+        radial-gradient(circle at top left,  rgba(15,76,92,.08),  transparent 18%),
+        linear-gradient(180deg, #f8fbff 0%, #eef3f9 100%) !important;
 }
 </style>
 """
 
 
-# ── Detección de páginas ──────────────────────────────────────────────────────
-
+# ── Detección de páginas ───────────────────────────────────────────────────────
 def _find_pages() -> dict:
     m = {"resumen":None,"exploracion":None,"modelos":None,"auditoria":None,"ranking":None}
     if not os.path.isdir("pages"):
@@ -205,26 +184,18 @@ def _find_pages() -> dict:
     return m
 
 
-# ── Render principal ──────────────────────────────────────────────────────────
-
+# ── Render principal ───────────────────────────────────────────────────────────
 def render_sidebar() -> None:
-    """Inyecta CSS y renderiza sidebar completo."""
+    """Inyecta CSS y renderiza sidebar: logo → nav → equipo al final."""
 
-    # 1. CSS — fuera del sidebar para que llegue al <head>
+    # CSS al <head>
     st.markdown(_SB_CSS, unsafe_allow_html=True)
-
-    # 2. JS — aplica data-theme al <html> según session_state
-    theme = st.session_state.get("app_theme", "light")
-    st.markdown(
-        f'<script>document.documentElement.setAttribute("data-theme","{theme}");</script>',
-        unsafe_allow_html=True,
-    )
 
     pages = _find_pages()
     members_html = "".join(f'<div class="sb-member">{m}</div>' for m in TEAM)
 
     with st.sidebar:
-        # Logo + branding
+        # ── Logo + branding ────────────────────────────────────────────────
         st.markdown(
             f"""
             <div class="sb-logo-wrap">
@@ -232,6 +203,21 @@ def render_sidebar() -> None:
                 <div class="sb-name">Seminario Predictivo</div>
                 <div class="sb-sub">Caso 06 · Amazon Reviews</div>
             </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        # ── Navegación ─────────────────────────────────────────────────────
+        _nav("main.py",            ICONS["home"],   "Inicio")
+        _nav(pages["resumen"],     ICONS["file"],   "Resumen Ejecutivo")
+        _nav(pages["exploracion"], ICONS["search"], "Exploración de Datos")
+        _nav(pages["modelos"],     ICONS["chart"],  "Modelos y Evaluación")
+        _nav(pages["auditoria"],   ICONS["shield"], "Auditoría en Tiempo Real")
+        _nav(pages["ranking"],     ICONS["bar"],    "Ranking y Benchmark")
+
+        # ── Equipo al final ────────────────────────────────────────────────
+        st.markdown(
+            f"""
             <div class="sb-team">
                 <div class="sb-team-t">Equipo</div>
                 {members_html}
@@ -240,33 +226,12 @@ def render_sidebar() -> None:
             unsafe_allow_html=True,
         )
 
-        # Nav
-        _nav("main.py",            ICONS["home"],   "Inicio")
-        _nav(pages["resumen"],     ICONS["file"],   "Resumen Ejecutivo")
-        _nav(pages["exploracion"], ICONS["search"], "Exploración de Datos")
-        _nav(pages["modelos"],     ICONS["chart"],  "Modelos y Evaluación")
-        _nav(pages["auditoria"],   ICONS["shield"], "Auditoría en Tiempo Real")
-        _nav(pages["ranking"],     ICONS["bar"],    "Ranking y Benchmark")
-
-        # Selector de tema
-        st.markdown('<span class="sb-theme-t">Tema</span>', unsafe_allow_html=True)
-        tc1, tc2, tc3 = st.columns(3, gap="small")
-        with tc1:
-            if st.button("☀ Claro",   key="th_l", use_container_width=True):
-                st.session_state["app_theme"] = "light";  st.rerun()
-        with tc2:
-            if st.button("◑ Oscuro",  key="th_d", use_container_width=True):
-                st.session_state["app_theme"] = "dark";   st.rerun()
-        with tc3:
-            if st.button("⊙ Sistema", key="th_s", use_container_width=True):
-                st.session_state["app_theme"] = "system"; st.rerun()
-
 
 def _nav(page, icon, label):
     if page is None:
         st.markdown(
             f'<div style="display:flex;align-items:center;gap:.5rem;padding:.28rem .5rem;'
-            f'color:rgba(248,250,252,.3);font-size:.8rem">'
+            f'color:rgba(248,250,252,.28);font-size:.8rem">'
             f'<div class="sb-ico">{icon}</div>{label}</div>',
             unsafe_allow_html=True,
         )

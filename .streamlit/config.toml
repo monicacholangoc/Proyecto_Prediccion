@@ -1,9 +1,9 @@
 # .streamlit/config.toml
-# IMPORTANTE: backgroundColor debe ser transparente/vacío para que nuestro
-# CSS de styles.css controle el fondo. Si se pone un color aquí,
-# Streamlit lo inyecta con !important y sobreescribe nuestro gradiente.
+# UBICACIÓN: carpeta .streamlit/ en la raíz del repositorio
 
 [theme]
+# El selector de tema nativo (☀ / ◑) aparece junto al botón Share
+# cuando toolbarMode = "auto". NO pongas backgroundColor aquí.
 primaryColor             = "#1746a2"
 backgroundColor          = ""
 secondaryBackgroundColor = ""
@@ -16,3 +16,4 @@ maxMessageSize = 500
 
 [client]
 showSidebarNavigation = false
+toolbarMode           = "auto"
