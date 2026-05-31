@@ -46,16 +46,6 @@ if metrics_df.empty:
 best      = metrics_df.sort_values("roc_auc", ascending=False).iloc[0]
 best_name = best["modelo"]
 
-st.markdown(
-    """<div class="accuracy-warning">
-        <div class="aw-title">¿Por qué no usamos Accuracy (exactitud)?</div>
-        <p>Con ~70 % de reseñas clasificadas como "no útiles", un modelo que <em>siempre</em> prediga "no útil"
-        obtendría 70 % de Accuracy <strong>sin haber aprendido nada</strong>. Por eso usamos métricas más honestas:
-        <strong>F1-Score</strong> (balance entre precisión y cobertura) y
-        <strong>ROC-AUC</strong> (qué tan bien separa las dos clases), ambas válidas cuando las clases están desbalanceadas.</p>
-    </div>""", unsafe_allow_html=True,
-)
-
 import plotly.graph_objects as go
 
 st.markdown('<div class="section-label">Comparación de modelos</div>', unsafe_allow_html=True)
@@ -145,6 +135,16 @@ fig_radar.update_layout(
     paper_bgcolor="rgba(0,0,0,0)",
 )
 st.plotly_chart(fig_radar, use_container_width=True)
+
+st.markdown(
+    """<div class="accuracy-warning">
+        <div class="aw-title">¿Por qué no usamos Accuracy (exactitud)?</div>
+        <p>Con ~70 % de reseñas clasificadas como "no útiles", un modelo que <em>siempre</em> prediga "no útil"
+        obtendría 70 % de Accuracy <strong>sin haber aprendido nada</strong>. Por eso usamos métricas más honestas:
+        <strong>F1-Score</strong> (balance entre precisión y cobertura) y
+        <strong>ROC-AUC</strong> (qué tan bien separa las dos clases), ambas válidas cuando las clases están desbalanceadas.</p>
+    </div>""", unsafe_allow_html=True,
+)
 
 st.markdown('<div class="section-label">¿Qué variables influyen más en la predicción?</div>', unsafe_allow_html=True)
 st.caption("Importancia relativa de cada variable según el modelo LightGBM. Una variable con mayor importancia tiene más peso en la decisión del modelo.")
