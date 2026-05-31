@@ -32,6 +32,43 @@ with open("styles/styles.css", "r", encoding="utf-8") as _f:
     st.markdown(f"<style>{_f.read()}</style>", unsafe_allow_html=True)
 render_sidebar()
 
+# CSS compacto para tarjetas de caracteristicas
+st.markdown("""
+<style>
+.feat-card {
+    background: var(--card-bg, #fff);
+    border: 1px solid var(--border, #e5e9f2);
+    border-radius: 8px;
+    padding: 0.45rem 0.6rem;
+    margin-bottom: 0.35rem;
+}
+.feat-lbl {
+    font-size: 0.6rem;
+    font-weight: 700;
+    color: var(--muted, #7a8499);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.1rem;
+}
+.feat-val {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: var(--text, #1a2236);
+    margin-bottom: 0.1rem;
+    line-height: 1.2;
+}
+.feat-cap {
+    font-size: 0.58rem;
+    color: var(--muted, #7a8499);
+    margin-bottom: 0.15rem;
+}
+.feat-badge {
+    font-size: 0.58rem !important;
+    padding: 0.08rem 0.4rem !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
 def _api_url():
     try: return st.secrets["API_URL"].rstrip("/")
     except: return os.getenv("API_URL", "https://proyecto-prediccion-v9qk.onrender.com").rstrip("/")
@@ -46,20 +83,19 @@ def _call_predict(review_text, stars):
     except Exception as exc:
         return {"error": str(exc)}
 
-# ── Header ────────────────────────────────────────────────────────────────────
 st.markdown("""
 <div style="background:linear-gradient(135deg,#16213b 0%,#1746a2 60%,#0f4c5c 100%);
     border-radius:16px;padding:1.4rem 2rem;margin-bottom:1.4rem;color:#fff">
     <div style="font-size:0.72rem;font-weight:600;letter-spacing:0.08em;
                 color:rgba(255,255,255,0.55);text-transform:uppercase;margin-bottom:0.35rem">
-        Seminario Predictivo 2026 · Caso 06
+        Seminario Predictivo 2026 - Caso 06
     </div>
     <div style="font-size:clamp(1.4rem,3vw,1.9rem);font-weight:800;
                 letter-spacing:-0.02em;line-height:1.2;margin-bottom:0.3rem">
-        Auditoría en Tiempo Real
+        Auditoria en Tiempo Real
     </div>
     <div style="font-size:0.82rem;color:rgba(255,255,255,0.65)">
-        Evaluación individual · Carga masiva CSV · Diagnóstico de utilidad
+        Evaluacion individual - Carga masiva CSV - Diagnostico de utilidad
     </div>
 </div>""", unsafe_allow_html=True)
 
@@ -76,41 +112,45 @@ product_detail = get_product_detail(selected_product)
 with sc2:
     st.metric("Producto", product_detail["ProductName"][:28])
 with sc3:
-    st.metric("Categoría", product_detail["Categoria_Real"][:22])
+    st.metric("Categoria", product_detail["Categoria_Real"][:22])
 
 st.markdown("---")
-tab1, tab2 = st.tabs(["📝 Reseña individual", "📂 Carga masiva CSV"])
+tab1, tab2 = st.tabs(["Resena individual", "Carga masiva CSV"])
 
-# ═══════════════════════════════════════════════════════════════
-# TAB 1 — Reseña individual
-# ═══════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════
+# TAB 1
+# ══════════════════════════════════════════════════════
 with tab1:
     left_col, right_col = st.columns([1.1, 1], gap="large")
 
     with left_col:
-        st.markdown('<div class="section-label">Configuración</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-label">Configuracion</div>', unsafe_allow_html=True)
+
+        # FIX: guardamos el valor ANTERIOR del toggle en una clave separada
+        # antes de renderizar el widget, para poder comparar despues
+        _prev_toggle_val = st.session_state.get("_toggle_prev_val", False)
 
         validate_context = st.toggle(
-            "Validación de contexto / punto ciego",
-            value=st.session_state.get("validate_context_toggle", True),
-            key="validate_context_toggle",
+            "Validacion de contexto / punto ciego",
+            value=False,  # siempre inicia desactivado
+            key="_toggle_current_val",
             help=(
-                "ON: si la reseña no menciona ningún término alimenticio "
-                "(taste, flavor, ingredient, sabor, ingrediente…) "
+                "ON: si la resena no menciona ningun termino alimenticio "
+                "(taste, flavor, ingredient, sabor, ingrediente...) "
                 "la probabilidad cae a 0.05 — punto ciego activado.\n"
-                "OFF: evalúa solo la utilidad del texto sin revisar contexto."
+                "OFF: evalua solo la utilidad del texto sin revisar contexto."
             ),
         )
 
-        stars       = st.slider("Calificación en estrellas", min_value=1, max_value=5, value=5)
+        stars       = st.slider("Calificacion en estrellas", min_value=1, max_value=5, value=5)
         user_name   = st.text_input("Perfil de usuario", value="Auditor_Seminario")
-        review_text = st.text_area("Texto de la reseña", height=220,
-                                   placeholder="Escribe aquí la reseña a evaluar...")
-        analyze_clicked = st.button("Analizar reseña", type="primary", use_container_width=True)
+        review_text = st.text_area("Texto de la resena", height=220,
+                                   placeholder="Escribe aqui la resena a evaluar...")
+        analyze_clicked = st.button("Analizar resena", type="primary", use_container_width=True)
 
         if analyze_clicked:
             if not is_non_empty_text(review_text):
-                st.warning("Ingresa una reseña antes de analizar.")
+                st.warning("Ingresa una resena antes de analizar.")
             else:
                 with st.spinner("Analizando..."):
                     api_r = _call_predict(review_text.strip(), stars)
@@ -118,6 +158,8 @@ with tab1:
                 st.session_state["_last_review_text"] = review_text.strip()
                 st.session_state["_last_stars"]       = stars
                 st.session_state["_last_product"]     = selected_product
+                # Guardar valor del toggle en el momento del analisis
+                st.session_state["_toggle_prev_val"]  = validate_context
                 if "error" in api_r:
                     st.error(f"API no disponible: {api_r['error']}")
                 audit_result = append_audited_review(
@@ -127,34 +169,37 @@ with tab1:
                 st.session_state["latest_audit_result"] = audit_result
                 st.session_state["latest_stars"]        = stars
 
-        # Recalcular en vivo cuando cambia el toggle sin re-analizar
+        # FIX REAL: comparamos el toggle actual vs el guardado ANTES del render
+        # Si cambiaron, recalculamos sin insertar en DB
         last_text    = st.session_state.get("_last_review_text")
         last_stars_v = st.session_state.get("_last_stars")
         last_product = st.session_state.get("_last_product")
-        prev_result  = st.session_state.get("latest_audit_result")
-        if last_text and prev_result:
-            prev_validate = prev_result.get("context_validation_enabled", True)
-            if validate_context != prev_validate:
-                detail = get_product_detail(last_product or selected_product)
-                recalc = audit_review_text(
-                    last_text, last_stars_v or stars,
-                    last_product or selected_product,
-                    product_name=detail.get("ProductName"),
-                    category_name=detail.get("Categoria_Real"),
-                    validate_context=validate_context,
-                )
-                st.session_state["latest_audit_result"] = recalc
 
-    # ── Panel derecho ─────────────────────────────────────────────────────────
+        toggle_changed = validate_context != _prev_toggle_val
+        if last_text and toggle_changed:
+            detail = get_product_detail(last_product or selected_product)
+            recalc = audit_review_text(
+                last_text,
+                last_stars_v or stars,
+                last_product or selected_product,
+                product_name=detail.get("ProductName"),
+                category_name=detail.get("Categoria_Real"),
+                validate_context=validate_context,
+            )
+            st.session_state["latest_audit_result"] = recalc
+            # Actualizar el valor previo para la proxima comparacion
+            st.session_state["_toggle_prev_val"] = validate_context
+
+    # Panel derecho
     with right_col:
         lr   = st.session_state.get("latest_audit_result")
         prob = lr["probability"] if lr else 0.0
 
         st.plotly_chart(build_helpfulness_gauge(prob), use_container_width=True)
 
-        # Características calculadas — compactas, 2x2
+        # Caracteristicas calculadas — tarjetas compactas
         st.markdown(
-            '<div class="section-label" style="margin-bottom:0.4rem">Características calculadas</div>',
+            '<div class="section-label" style="margin-bottom:0.3rem">Caracteristicas calculadas</div>',
             unsafe_allow_html=True,
         )
         review_len_v  = lr["review_len"]  if lr else 0
@@ -162,24 +207,17 @@ with tab1:
         stars_val     = st.session_state.get("latest_stars", 5)
         sentiment_val = lr.get("sentiment_score") if lr else None
 
-        # Estilos compactos inline
-        card_s = (
-            "background:var(--card-bg,#fff);border:1px solid var(--border,#e5e9f2);"
-            "border-radius:10px;padding:0.5rem 0.7rem;margin-bottom:0.4rem"
-        )
-        lbl_s  = "font-size:0.65rem;font-weight:600;color:var(--muted,#7a8499);text-transform:uppercase;letter-spacing:0.05em"
-        val_s  = "font-size:1rem;font-weight:700;color:var(--text,#1a2236);margin:0.1rem 0"
-        cap_s  = "font-size:0.62rem;color:var(--muted,#7a8499);margin-bottom:0.2rem"
-
         c1, c2 = st.columns(2, gap="small")
         with c1:
             lb = "metric-badge-good" if review_len_v > 60 else "metric-badge-warn"
             ll = "Adecuada" if review_len_v > 60 else "Muy corta"
             st.markdown(
-                f'<div style="{card_s}"><div style="{lbl_s}">Longitud</div>'
-                f'<div style="{val_s}">{review_len_v} palabras</div>'
-                f'<div style="{cap_s}">Umbral: ≥ 80</div>'
-                f'<span class="metric-badge {lb}" style="font-size:0.6rem">{ll}</span></div>',
+                f'<div class="feat-card">'
+                f'<div class="feat-lbl">Longitud</div>'
+                f'<div class="feat-val">{review_len_v} palabras</div>'
+                f'<div class="feat-cap">Umbral: 80 palabras</div>'
+                f'<span class="metric-badge feat-badge {lb}">{ll}</span>'
+                f'</div>',
                 unsafe_allow_html=True,
             )
         with c2:
@@ -190,10 +228,12 @@ with tab1:
             else:
                 sl, sb, ss = "Pendiente", "metric-badge-info", "—"
             st.markdown(
-                f'<div style="{card_s}"><div style="{lbl_s}">Sentimiento VADER</div>'
-                f'<div style="{val_s}">{ss}</div>'
-                f'<div style="{cap_s}">Score (−1 a +1)</div>'
-                f'<span class="metric-badge {sb}" style="font-size:0.6rem">{sl}</span></div>',
+                f'<div class="feat-card">'
+                f'<div class="feat-lbl">Sentimiento VADER</div>'
+                f'<div class="feat-val">{ss}</div>'
+                f'<div class="feat-cap">Score (-1 a +1)</div>'
+                f'<span class="metric-badge feat-badge {sb}">{sl}</span>'
+                f'</div>',
                 unsafe_allow_html=True,
             )
 
@@ -202,94 +242,98 @@ with tab1:
             filled = "&#9733;" * int(stars_val)
             empty  = "&#9734;" * max(0, 5 - int(stars_val))
             st.markdown(
-                f'<div style="{card_s}"><div style="{lbl_s}">Calificación</div>'
-                f'<div style="font-size:1rem;color:#f59e0b;margin:0.1rem 0">{filled}{empty}</div>'
-                f'<div style="{cap_s}">Estrellas asignadas</div>'
-                f'<span class="metric-badge metric-badge-info" style="font-size:0.6rem">{stars_val} de 5</span></div>',
+                f'<div class="feat-card">'
+                f'<div class="feat-lbl">Calificacion</div>'
+                f'<div class="feat-val" style="color:#f59e0b">{filled}{empty}</div>'
+                f'<div class="feat-cap">Estrellas asignadas</div>'
+                f'<span class="metric-badge feat-badge metric-badge-info">{stars_val} de 5</span>'
+                f'</div>',
                 unsafe_allow_html=True,
             )
         with c4:
             cl = "Incoherente" if incoherence_v else "Coherente"
             cb = "metric-badge-warn" if incoherence_v else "metric-badge-good"
-            ct = "Tono ≠ estrellas" if incoherence_v else "Tono alineado"
+            ct = "Tono diferente" if incoherence_v else "Tono alineado"
             st.markdown(
-                f'<div style="{card_s}"><div style="{lbl_s}">Coherencia</div>'
-                f'<div style="{val_s}">{ct}</div>'
-                f'<div style="{cap_s}">Texto vs. calificación</div>'
-                f'<span class="metric-badge {cb}" style="font-size:0.6rem">{cl}</span></div>',
+                f'<div class="feat-card">'
+                f'<div class="feat-lbl">Coherencia</div>'
+                f'<div class="feat-val">{ct}</div>'
+                f'<div class="feat-cap">Texto vs. calificacion</div>'
+                f'<span class="metric-badge feat-badge {cb}">{cl}</span>'
+                f'</div>',
                 unsafe_allow_html=True,
             )
 
-        # Diagnóstico
+        # Diagnostico
         st.markdown(
-            '<div class="section-label" style="margin-top:0.6rem;margin-bottom:0.4rem">Diagnóstico</div>',
+            '<div class="section-label" style="margin-top:0.5rem;margin-bottom:0.3rem">Diagnostico</div>',
             unsafe_allow_html=True,
         )
         if lr:
             is_blind = "Punto Ciego" in lr["status"]
             tone     = "danger" if is_blind else ("success" if prob >= 0.70 else "warning")
-            decision = "Revisión obligatoria" if is_blind else ("Lista para publicar" if prob >= 0.70 else "Conviene mejorarla")
+            decision = "Revision obligatoria" if is_blind else ("Lista para publicar" if prob >= 0.70 else "Conviene mejorarla")
             render_status_panel(
-                "Diagnóstico", decision,
-                (f"Estado: {lr['status']} · Utilidad: {format_percentage(prob)} · "
-                 f"Punto ciego: {'Sí' if is_blind else 'No'} · "
-                 f"Validación: {'Activa' if lr.get('context_validation_enabled') else 'Desactivada'}"),
+                "Diagnostico", decision,
+                (f"Estado: {lr['status']} | Utilidad: {format_percentage(prob)} | "
+                 f"Punto ciego: {'Si' if is_blind else 'No'} | "
+                 f"Validacion: {'Activa' if lr.get('context_validation_enabled') else 'Desactivada'}"),
                 tone=tone,
             )
             if lr.get("context_validation_enabled"):
                 ctx_hits  = ", ".join(lr.get("context_hits", [])) or "ninguna"
                 tech_hits = ", ".join(lr.get("tech_hits", []))    or "ninguno"
                 st.markdown(
-                    f'<div class="highlight-card" style="margin-top:0.4rem;padding:0.6rem 0.8rem">'
-                    f'<div class="highlight-title" style="font-size:0.7rem">Contexto alimenticio</div>'
-                    f'<div class="highlight-body" style="font-size:0.72rem">'
+                    f'<div class="highlight-card" style="margin-top:0.4rem;padding:0.5rem 0.7rem">'
+                    f'<div class="highlight-title" style="font-size:0.68rem">Contexto alimenticio</div>'
+                    f'<div class="highlight-body" style="font-size:0.7rem">'
                     f'{lr.get("context_explanation","")}<br>'
                     f'<b>Palabras detectadas:</b> {ctx_hits}<br>'
-                    f'<b>Términos ajenos:</b> {tech_hits}</div></div>',
+                    f'<b>Terminos ajenos:</b> {tech_hits}</div></div>',
                     unsafe_allow_html=True,
                 )
         else:
-            st.info("Introduce una reseña y presiona Analizar.")
+            st.info("Introduce una resena y presiona Analizar.")
 
-    # ── Sección inferior ──────────────────────────────────────────────────────
+    # Seccion inferior
     st.markdown("---")
 
     # Benchmark
     st.markdown('<div class="section-label">Benchmark del producto</div>', unsafe_allow_html=True)
     pb = get_product_benchmark(selected_product)
     b1, b2, b3, b4 = st.columns(4, gap="medium")
-    with b1: render_metric_card("Promedio histórico", format_percentage(pb["avg_helpfulness"]), "Utilidad media")
-    with b2: render_metric_card("Mejor score",        format_percentage(pb["top_helpfulness"]), "Reseña más útil")
-    with b3: render_metric_card("Total reseñas",      str(pb["count"]),                         "Volumen histórico")
+    with b1: render_metric_card("Promedio historico", format_percentage(pb["avg_helpfulness"]), "Utilidad media")
+    with b2: render_metric_card("Mejor score",        format_percentage(pb["top_helpfulness"]), "Resena mas util")
+    with b3: render_metric_card("Total resenas",      str(pb["count"]),                         "Volumen historico")
     with b4:
         lr = st.session_state.get("latest_audit_result")
         if lr:
-            render_metric_card("vs. promedio", f"{lr['probability'] - pb['avg_helpfulness']:+.1%}", "Tu reseña vs. media")
+            render_metric_card("vs. promedio", f"{lr['probability'] - pb['avg_helpfulness']:+.1%}", "Tu resena vs. media")
 
     lr   = st.session_state.get("latest_audit_result")
     prob = lr["probability"] if lr else 0.0
 
     if lr:
         recs = generate_review_recommendations(lr)
-        st.markdown('<div class="section-label">Cómo mejorar esta reseña</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-label">Como mejorar esta resena</div>', unsafe_allow_html=True)
         r1, r2 = st.columns(2, gap="large")
         with r1:
             st.markdown(
-                f'<div class="highlight-card"><div class="highlight-title">Acción principal</div>'
+                f'<div class="highlight-card"><div class="highlight-title">Accion principal</div>'
                 f'<div class="highlight-body">{recs[0]}</div></div>',
                 unsafe_allow_html=True,
             )
         with r2:
             if len(recs) > 1:
                 st.markdown(
-                    f'<div class="highlight-card"><div class="highlight-title">Acción adicional</div>'
+                    f'<div class="highlight-card"><div class="highlight-title">Accion adicional</div>'
                     f'<div class="highlight-body">{recs[1]}</div></div>',
                     unsafe_allow_html=True,
                 )
 
         sv1, _ = st.columns([0.3, 0.7])
         with sv1:
-            if st.button("Guardar reseña", use_container_width=True):
+            if st.button("Guardar resena", use_container_width=True):
                 ok, msg = save_latest_review_to_file(selected_product)
                 (st.success if ok else st.warning)(msg)
 
@@ -302,55 +346,65 @@ with tab1:
             badge=lr["status"], helpfulness=format_percentage(prob), highlighted=True,
         )
 
-    # Tu reseña en contexto — expandible para no crecer la página
+    # Posicion en ranking — metricas visibles, comentarios en expander
     latest_review_id = st.session_state.get("latest_review_id")
     position_summary = get_position_summary(selected_product, latest_review_id)
     review_window_df = get_review_context_window(selected_product, latest_review_id, window_size=2)
 
     if latest_review_id and not review_window_df.empty:
-        st.markdown('<div class="section-label">Tu reseña en contexto del ranking</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-label">Tu resena en contexto del ranking</div>', unsafe_allow_html=True)
         p1, p2, p3 = st.columns(3, gap="medium")
         with p1:
             render_metric_card(
-                "Posición local",
+                "Posicion local",
                 f"{position_summary['local_rank']} / {position_summary['product_count']}"
-                if position_summary["local_rank"] else "Sin reseña evaluada",
+                if position_summary["local_rank"] else "Sin resena evaluada",
                 "Lugar dentro del producto",
             )
         with p2:
             render_metric_card(
-                "Posición global",
+                "Posicion global",
                 f"{position_summary['global_rank']} / {position_summary['global_count']}"
-                if position_summary["global_rank"] else "Sin reseña evaluada",
+                if position_summary["global_rank"] else "Sin resena evaluada",
                 "Lugar en toda la base",
             )
         with p3:
-            render_metric_card("Total del producto", str(position_summary["product_count"]), "Volumen histórico")
+            render_metric_card("Total del producto", str(position_summary["product_count"]), "Volumen historico")
 
-        # Reseñas del ranking en expanders para no expandir la página
-        with st.expander("Ver reseñas del contexto de ranking", expanded=False):
+        # Comentarios solo visibles al expandir
+        with st.expander("Ver resenas del contexto de ranking"):
             for _, row in review_window_df.iterrows():
-                render_review_card(
-                    user_name=str(row["User"]),
-                    stars=int(row["Stars"]),
-                    review_text=str(row["Text"]),
-                    meta_line=f"Puesto local {int(row['Puesto Local'])}",
-                    badge="Tu reseña" if row["EsActual"] else row["Estado"],
-                    helpfulness=format_percentage(float(row["Helpfulness"])),
-                    highlighted=bool(row["EsActual"]),
+                is_current = bool(row["EsActual"])
+                badge_txt  = "Tu resena" if is_current else str(row["Estado"])
+                # Mostrar texto truncado con opcion de ver mas
+                full_text  = str(row["Text"])
+                short_text = full_text[:200] + ("..." if len(full_text) > 200 else "")
+                helpfulness_pct = format_percentage(float(row["Helpfulness"]))
+                puesto = int(row["Puesto Local"])
+                border = "border:2px solid var(--primary);" if is_current else ""
+                st.markdown(
+                    f'<div class="metric-card" style="{border}margin-bottom:0.6rem">'
+                    f'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.3rem">'
+                    f'<span class="metric-label">Puesto {puesto} — {str(row["User"])}</span>'
+                    f'<span class="metric-badge {"metric-badge-good" if "APROBADA" in str(row["Estado"]) else "metric-badge-warn"}">'
+                    f'{badge_txt}</span></div>'
+                    f'<div style="font-size:0.78rem;color:var(--text);margin-bottom:0.3rem">{short_text}</div>'
+                    f'<div style="font-size:0.68rem;color:var(--muted)">Utilidad: {helpfulness_pct}</div>'
+                    f'</div>',
+                    unsafe_allow_html=True,
                 )
 
-# ═══════════════════════════════════════════════════════════════
-# TAB 2 — Carga masiva CSV
-# ═══════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════
+# TAB 2
+# ══════════════════════════════════════════════════════
 with tab2:
-    st.markdown('<div class="section-label">Carga masiva de reseñas</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-label">Carga masiva de resenas</div>', unsafe_allow_html=True)
     st.markdown(
         '<div class="highlight-card"><div class="highlight-title">Formato requerido del CSV</div>'
         '<div class="highlight-body">El archivo debe contener: '
         '<code>ProductId</code>, <code>ProfileName</code>, <code>Score</code>, <code>Text</code>.<br>'
-        'Cada fila es una reseña. El sistema calculará utilidad, sentimiento e incoherencia '
-        'para cada una y las agregará a la base operativa.</div></div>',
+        'Cada fila es una resena. El sistema calculara utilidad, sentimiento e incoherencia '
+        'para cada una y las agregara a la base operativa.</div></div>',
         unsafe_allow_html=True,
     )
 
@@ -364,22 +418,22 @@ with tab2:
             if uploaded_file is None:
                 st.warning("Selecciona un archivo CSV antes de procesar.")
             else:
-                with st.spinner("Procesando reseñas..."):
+                with st.spinner("Procesando resenas..."):
                     batch_df, err = process_uploaded_audit_file(uploaded_file)
                 if err:
                     st.error(err)
                 else:
-                    st.success(f"✅ {len(batch_df)} reseñas procesadas y agregadas a la base operativa.")
+                    st.success(f"{len(batch_df)} resenas procesadas y agregadas a la base operativa.")
                     st.session_state["_last_batch_df"] = batch_df
 
     with uc2:
         st.markdown(
             '<div class="metric-card"><div class="metric-label">Columnas requeridas</div>'
             '<div class="metric-caption" style="margin-top:0.4rem">'
-            '<b>ProductId</b> — código del producto<br>'
+            '<b>ProductId</b> — codigo del producto<br>'
             '<b>ProfileName</b> — nombre del autor<br>'
-            '<b>Score</b> — calificación (1–5)<br>'
-            '<b>Text</b> — texto de la reseña</div></div>',
+            '<b>Score</b> — calificacion (1-5)<br>'
+            '<b>Text</b> — texto de la resena</div></div>',
             unsafe_allow_html=True,
         )
 
@@ -390,20 +444,20 @@ with tab2:
         aprobadas  = (batch_result["Estado"] == "APROBADA (Publicada)").sum() if "Estado" in batch_result.columns else 0
         rechazadas = len(batch_result) - aprobadas
         avg_util   = batch_result["Helpfulness"].mean() if "Helpfulness" in batch_result.columns else 0
-        with m1: render_metric_card("Total procesadas", str(len(batch_result)), "Reseñas en el lote")
-        with m2: render_metric_card("Aprobadas",        str(aprobadas),          "Utilidad ≥ 0.70")
+        with m1: render_metric_card("Total procesadas", str(len(batch_result)), "Resenas en el lote")
+        with m2: render_metric_card("Aprobadas",        str(aprobadas),          "Utilidad >= 0.70")
         with m3: render_metric_card("Rechazadas",       str(rechazadas),         "Baja calidad o punto ciego")
         with m4: render_metric_card("Utilidad media",   format_percentage(avg_util), "Promedio del lote")
 
         st.dataframe(batch_result, use_container_width=True, hide_index=True)
         st.download_button(
-            "⬇️ Descargar resultado CSV",
+            "Descargar resultado CSV",
             data=batch_result.to_csv(index=False).encode("utf-8-sig"),
             file_name="resultado_lote_auditoria.csv",
             mime="text/csv", use_container_width=True,
         )
 
-    st.markdown('<div class="section-label">Reseñas guardadas del producto seleccionado</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-label">Resenas guardadas del producto seleccionado</div>', unsafe_allow_html=True)
     saved_df = get_audited_reviews_operational_table()
     if not saved_df.empty:
         filt = saved_df[saved_df["ProductId"].astype(str) == selected_product] if "ProductId" in saved_df.columns else saved_df
@@ -413,17 +467,17 @@ with tab2:
                 filt["CreatedAt"] = pd.to_datetime(filt["CreatedAt"], errors="coerce").dt.strftime("%d/%m/%Y %H:%M")
             st.dataframe(filt, use_container_width=True, hide_index=True)
             st.download_button(
-                "⬇️ Descargar reseñas guardadas",
+                "Descargar resenas guardadas",
                 data=filt.to_csv(index=False).encode("utf-8-sig"),
                 file_name="resenas_guardadas.csv",
                 mime="text/csv", use_container_width=True,
             )
         else:
-            st.info("No hay reseñas guardadas para este producto.")
+            st.info("No hay resenas guardadas para este producto.")
     else:
-        st.info("No hay reseñas guardadas aún.")
+        st.info("No hay resenas guardadas aun.")
 
-# ── Session state ─────────────────────────────────────────────────────────────
+# Session state
 st.session_state["selected_product_id"] = selected_product
 st.session_state["latest_stars"]        = stars if "stars" in dir() else 5
 st.session_state["latest_review_text"]  = review_text if "review_text" in dir() else ""
