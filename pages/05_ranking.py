@@ -24,6 +24,8 @@ from services.preprocessing_service import (
     get_position_summary,
     get_review_context_window,
 )
+from services.supabase_service import load_reviews_from_supabase, clear_supabase_cache
+from services.supabase_service import load_reviews_from_supabase, clear_supabase_cache
 from config.constants import TOPIC_NAMES
 from utils.formatters import format_compact_number, format_percentage
 
@@ -145,35 +147,34 @@ def _load_full_dataset() -> pd.DataFrame:
 
     return df
 
-full_df   = _load_full_dataset()
-catalog   = get_product_catalog()
-# DB unificada: Supabase (nuevas) + histórico, nuevas primero
-op_db     = get_corporate_audit_db()
+full_df_base = _load_full_dataset()
+catalog      = get_product_catalog()
+op_db        = get_corporate_audit_db()
 global_ranking = get_global_ranking()
 
-# Fusionar reseñas nuevas de Supabase al dataset completo para que
-# los indicadores globales reflejen el total real
-if not op_db.empty:
-    # Tomar solo las nuevas (de Supabase) para agregarlas al full_df
-    nuevas = op_db[op_db.get("_es_nueva", pd.Series(False, index=op_db.index)) == True].copy() if "_es_nueva" in op_db.columns else pd.DataFrame()
-    if not nuevas.empty and not full_df.empty:
-        nuevas_norm = pd.DataFrame({
-            "ProductId":   nuevas["ProductId"].astype(str),
-            "Score":       nuevas["Stars"],
-            "Helpfulness": nuevas["Helpfulness"],
-            "Estado":      nuevas["Estado"],
-            "CreatedAt":   pd.to_datetime(nuevas["CreatedAt"], errors="coerce"),
-            "Año":         pd.to_datetime(nuevas["CreatedAt"], errors="coerce").dt.year.fillna(2026).astype(int),
-            "User":        nuevas["User"],
-            "Text":        nuevas.get("Text", ""),
-            "Stars":       nuevas["Stars"],
-            "Categoria_Real": nuevas["ProductId"].map(
-                catalog.set_index("ProductId")["Categoria_Real"].to_dict()
-                if not catalog.empty and "Categoria_Real" in catalog.columns else {}
-            ).fillna("Alimentos generales"),
-            "_es_nueva":   True,
-        })
-        full_df = pd.concat([nuevas_norm, full_df], ignore_index=True)
+# ── Fusionar reseñas nuevas de Supabase al full_df ───────────────────────────
+# Esto garantiza que los KPIs globales reflejen el total real (histórico + nuevas)
+sb_df = load_reviews_from_supabase()
+if not sb_df.empty:
+    cat_map = catalog.set_index("ProductId")["Categoria_Real"].to_dict() if not catalog.empty and "Categoria_Real" in catalog.columns else {}
+    sb_norm = pd.DataFrame({
+        "ProductId":    sb_df["product_id"].astype(str),
+        "Score":        pd.to_numeric(sb_df.get("stars", 5), errors="coerce").fillna(5).astype(int),
+        "Stars":        pd.to_numeric(sb_df.get("stars", 5), errors="coerce").fillna(5).astype(int),
+        "Helpfulness":  pd.to_numeric(sb_df.get("helpfulness", 0), errors="coerce").fillna(0),
+        "Estado":       sb_df.get("status", "RECHAZADA (Baja Calidad)"),
+        "User":         sb_df.get("usuario", "Nuevo"),
+        "Text":         sb_df.get("texto", ""),
+        "CreatedAt":    pd.to_datetime(sb_df.get("created_at"), errors="coerce"),
+        "Categoria_Real": sb_df["product_id"].astype(str).map(cat_map).fillna("Alimentos generales"),
+        "_es_nueva":    True,
+    })
+    sb_norm["Año"] = sb_norm["CreatedAt"].dt.year.fillna(2026).astype(int)
+    full_df_base["_es_nueva"] = False
+    # Concatenar nuevas PRIMERO para que aparezcan arriba
+    full_df = pd.concat([sb_norm, full_df_base], ignore_index=True)
+else:
+    full_df = full_df_base
 
 # Enriquecer op_db con año
 if not op_db.empty:
@@ -199,6 +200,23 @@ if not full_df.empty and "Año" in full_df.columns:
 product_options = get_product_options()
 
 # ── Filtros ───────────────────────────────────────────────────────────────────
+# ── Botón actualizar datos en tiempo real ────────────────────────────────────
+ref_col1, ref_col2 = st.columns([4, 1], gap="medium")
+with ref_col1:
+    nuevas_count = len(sb_df) if not sb_df.empty else 0
+    st.markdown(
+        f'<div style="padding:0.4rem 0;font-size:0.82rem;color:var(--muted)">'
+        f'📊 Total en base: <strong>{format_compact_number(len(full_df))}</strong> reseñas '
+        f'({format_compact_number(len(full_df_base))} históricas + '
+        f'<span style="color:#15803d;font-weight:700">{nuevas_count} nuevas</span>)'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
+with ref_col2:
+    if st.button("🔄 Actualizar", use_container_width=True):
+        clear_supabase_cache()
+        st.rerun()
+
 st.markdown('<div class="section-label">Filtros globales</div>', unsafe_allow_html=True)
 fc1, fc2, fc3, fc4 = st.columns([2, 1.4, 1.2, 1], gap="medium")
 
@@ -547,9 +565,9 @@ if not global_ranking.empty:
     if "Helpfulness" in top20.columns:
         top20["Helpfulness"] = top20["Helpfulness"].apply(lambda x: format_percentage(float(x)))
     st.dataframe(top20[display_cols], use_container_width=True, hide_index=True)
-# ── Indicador de reseñas nuevas ──────────────────────────────────────────────
+# ── Reseñas guardadas en Supabase — tiempo real ───────────────────────────────
 st.markdown("---")
-st.markdown('<div class="section-label">📡 Reseñas nuevas auditadas (acumuladas)</div>', unsafe_allow_html=True)
+st.markdown('<div class="section-label">📡 Reseñas auditadas — tiempo real (Supabase)</div>', unsafe_allow_html=True)
 
 sb_col1, sb_col2 = st.columns([3, 1], gap="medium")
 with sb_col1:
