@@ -76,16 +76,31 @@ elif "CreatedAt" in source.columns:
 else:
     source["Año"] = 0
 
-años_disponibles = sorted([y for y in source["Año"].unique() if y > 2000])
-
-# Agregar años de Supabase (reseñas nuevas)
+# ── Fusionar reseñas de Supabase al source ───────────────────────────────────
 try:
-    _sb_years_df = load_reviews_from_supabase()
-    if not _sb_years_df.empty and "created_at" in _sb_years_df.columns:
-        sb_years = pd.to_datetime(_sb_years_df["created_at"], errors="coerce").dt.year.dropna().astype(int).unique().tolist()
-        años_disponibles = sorted(set(años_disponibles + sb_years))
+    _sb_df = load_reviews_from_supabase()
+    if not _sb_df.empty:
+        _sb_norm = pd.DataFrame({
+            "Score":        pd.to_numeric(_sb_df.get("stars", 5), errors="coerce").fillna(5).astype(int),
+            "Helpfulness":  pd.to_numeric(_sb_df.get("helpfulness", 0), errors="coerce").fillna(0),
+            "y_util":       (_sb_df.get("helpfulness", 0) >= 0.70).astype(int),
+            "review_len":   pd.to_numeric(_sb_df.get("review_len", 50), errors="coerce").fillna(50).astype(int),
+            "sentiment_score": pd.to_numeric(_sb_df.get("sentiment_score", 0), errors="coerce").fillna(0),
+            "incoherente":  _sb_df.get("incoherente", False).astype(int) if "incoherente" in _sb_df.columns else 0,
+            "ProductId":    _sb_df.get("product_id", "").astype(str),
+            "Text":         _sb_df.get("texto", ""),
+            "Helpfulness":  pd.to_numeric(_sb_df.get("helpfulness", 0), errors="coerce").fillna(0),
+            "Año":          pd.to_datetime(_sb_df.get("created_at"), errors="coerce").dt.year.fillna(2026).astype(int),
+            "categoria_alimento": _sb_df.get("categoria", "Alimentos generales") if "categoria" in _sb_df.columns else "Alimentos generales",
+        })
+        # Asegurar que tenga las mismas columnas relevantes
+        if category_col and category_col not in _sb_norm.columns:
+            _sb_norm[category_col] = _sb_norm.get("categoria_alimento", "Alimentos generales")
+        source = pd.concat([source, _sb_norm], ignore_index=True)
 except Exception:
     pass
+
+años_disponibles = sorted([y for y in source["Año"].unique() if y > 2000])
 
 # ══════════════════════════════════════════════════════════════════════════════
 # FILTROS — multiselect
