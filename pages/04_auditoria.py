@@ -34,52 +34,96 @@ render_sidebar()
 
 st.markdown("""
 <style>
-.feat-grid { display:grid; grid-template-columns:1fr 1fr; gap:0.5rem; margin-bottom:0.6rem; }
+/* ── KPI Feature Cards ───────────────────────────────────── */
+.feat-grid {
+    display:grid; grid-template-columns:1fr 1fr; gap:0.65rem;
+    margin-bottom:0.75rem;
+}
 .feat-card {
-    background:#fff; border:1px solid #e2e8f0; border-radius:12px;
-    padding:0.7rem 0.8rem; position:relative; overflow:hidden;
-    box-shadow:0 1px 3px rgba(0,0,0,0.04);
+    background:#fff; border:0.5px solid #e2e8f0; border-radius:14px;
+    padding:0.9rem 1rem; position:relative; overflow:hidden;
 }
-.feat-card::before {
-    content:""; position:absolute; left:0; top:0; bottom:0;
-    width:3px; border-radius:3px 0 0 3px;
+.feat-card-top {
+    position:absolute; top:0; left:0; right:0; height:3px;
+    border-radius:14px 14px 0 0;
 }
-.feat-card-green::before { background:#15803d; }
-.feat-card-amber::before { background:#b45309; }
-.feat-card-blue::before  { background:#1d4ed8; }
-.feat-card-gray::before  { background:#94a3b8; }
-.feat-card-red::before   { background:#dc2626; }
-.feat-lbl { font-size:0.6rem; font-weight:700; color:#94a3b8; text-transform:uppercase;
-            letter-spacing:0.07em; margin-bottom:0.2rem; }
-.feat-val { font-size:1rem; font-weight:800; color:#0f172a; line-height:1.2; margin-bottom:0.15rem; }
-.feat-cap { font-size:0.62rem; color:#94a3b8; margin-bottom:0.25rem; }
-.feat-badge { display:inline-block; font-size:0.6rem !important; font-weight:700;
-              padding:0.12rem 0.45rem !important; border-radius:999px; color:#fff !important; }
-.feat-green { background:#15803d; }
-.feat-amber { background:#b45309; }
-.feat-blue  { background:#1d4ed8; }
-.feat-gray  { background:#64748b; }
-.feat-red   { background:#dc2626; }
+.feat-top-green { background:#1D9E75; }
+.feat-top-amber { background:#EF9F27; }
+.feat-top-blue  { background:#378ADD; }
+.feat-top-red   { background:#E24B4A; }
 
-.diag-card {
-    border-radius:14px; padding:1rem 1.1rem; margin-top:0.5rem;
-    border:1px solid; position:relative;
+.feat-ico {
+    width:32px; height:32px; border-radius:8px;
+    display:flex; align-items:center; justify-content:center;
+    margin-bottom:0.55rem; font-size:15px;
 }
-.diag-success { background:#f0fdf4; border-color:#86efac; }
-.diag-warning { background:#fffbeb; border-color:#fcd34d; }
-.diag-danger  { background:#fef2f2; border-color:#fca5a5; }
-.diag-title { font-size:0.65rem; font-weight:800; text-transform:uppercase;
-              letter-spacing:0.08em; margin-bottom:0.3rem; }
-.diag-success .diag-title { color:#15803d; }
-.diag-warning .diag-title { color:#b45309; }
-.diag-danger  .diag-title { color:#dc2626; }
-.diag-decision { font-size:1.05rem; font-weight:800; color:#0f172a; margin-bottom:0.3rem; }
-.diag-reason   { font-size:0.75rem; color:#475569; line-height:1.5; }
-.diag-prob { font-size:1.6rem; font-weight:900; position:absolute; right:1rem; top:50%;
-             transform:translateY(-50%); }
-.diag-success .diag-prob { color:#15803d; }
-.diag-warning .diag-prob { color:#b45309; }
-.diag-danger  .diag-prob { color:#dc2626; }
+.feat-ico-green { background:#EAF3DE; color:#3B6D11; }
+.feat-ico-amber { background:#FAEEDA; color:#854F0B; }
+.feat-ico-blue  { background:#E6F1FB; color:#185FA5; }
+.feat-ico-red   { background:#FCEBEB; color:#A32D2D; }
+
+.feat-lbl {
+    font-size:0.6rem; font-weight:600; color:#94a3b8;
+    text-transform:uppercase; letter-spacing:0.07em; margin-bottom:0.2rem;
+}
+.feat-val {
+    font-size:1.1rem; font-weight:700; color:#0f172a;
+    line-height:1.15; margin-bottom:0.12rem;
+}
+.feat-cap { font-size:0.62rem; color:#94a3b8; margin-bottom:0.35rem; }
+.feat-bar-bg {
+    background:#f1f5f9; border-radius:999px; height:3px;
+    overflow:hidden; margin-bottom:0.45rem;
+}
+.feat-bar-fg { height:100%; border-radius:999px; }
+.feat-badge {
+    display:inline-flex; align-items:center; gap:3px;
+    font-size:0.58rem; font-weight:600;
+    padding:0.13rem 0.5rem; border-radius:999px;
+}
+.badge-green { background:#EAF3DE; color:#3B6D11; }
+.badge-amber { background:#FAEEDA; color:#854F0B; }
+.badge-blue  { background:#E6F1FB; color:#185FA5; }
+.badge-red   { background:#FCEBEB; color:#A32D2D; }
+
+/* ── Diagnostic Card ─────────────────────────────────────── */
+.diag-card {
+    border-radius:14px; padding:1rem 1.15rem; margin-top:0.5rem;
+    border:0.5px solid; position:relative;
+}
+.diag-success { background:#EAF3DE; border-color:#C0DD97; }
+.diag-warning { background:#FAEEDA; border-color:#FAC775; }
+.diag-danger  { background:#FCEBEB; border-color:#F7C1C1; }
+
+.diag-badge {
+    display:inline-flex; align-items:center; gap:5px;
+    font-size:0.6rem; font-weight:600;
+    padding:0.18rem 0.6rem; border-radius:999px; margin-bottom:0.45rem;
+}
+.diag-badge-success { background:#C0DD97; color:#27500A; }
+.diag-badge-warning { background:#FAC775; color:#633806; }
+.diag-badge-danger  { background:#F7C1C1; color:#791F1F; }
+
+.diag-decision { font-size:1.05rem; font-weight:700; color:#0f172a; margin-bottom:0.28rem; }
+.diag-reason   { font-size:0.75rem; color:#475569; line-height:1.5; max-width:78%; }
+.diag-prob {
+    font-size:1.7rem; font-weight:700;
+    position:absolute; right:1.1rem; top:50%; transform:translateY(-50%);
+}
+.diag-success .diag-prob { color:#0F6E56; }
+.diag-warning .diag-prob { color:#854F0B; }
+.diag-danger  .diag-prob { color:#A32D2D; }
+
+.ctx-box {
+    background:#f8fafc; border:0.5px solid #e2e8f0; border-radius:10px;
+    padding:0.6rem 0.85rem; margin-top:0.45rem;
+}
+.ctx-lbl {
+    font-size:0.58rem; font-weight:600; color:#94a3b8;
+    text-transform:uppercase; letter-spacing:.07em; margin-bottom:0.22rem;
+}
+.ctx-txt { font-size:0.72rem; color:#475569; line-height:1.5; }
+.ctx-meta { margin-top:0.28rem; font-size:0.66rem; color:#64748b; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -310,62 +354,74 @@ with tab1:
         sv    = st.session_state.get("latest_stars", 5)
         sent  = lr.get("sentiment_score") if lr else None
 
-        lb = "feat-green" if rl > 60 else "feat-amber"
-        ll = "Adecuada" if rl > 60 else "Corta"
-
         if sent is not None:
             sl = "Positivo" if sent > 0.05 else ("Negativo" if sent < -0.05 else "Neutro")
-            sb = "feat-green" if sent > 0.05 else ("feat-amber" if sent < -0.05 else "feat-blue")
             ss = f"{sent:.2f}"
         else:
-            sl, sb, ss = "Pendiente", "feat-gray", "-"
+            sl, ss = "Pendiente", "-"
 
-        filled = "&#9733;" * int(sv)
-        empty  = "&#9734;" * max(0, 5 - int(sv))
         cl = "Coherente" if not incoh else "Incoherente"
-        cb = "feat-green" if not incoh else "feat-amber"
-
-        # Barra de progreso de longitud
         len_pct = min(int(rl / 80 * 100), 100)
-        len_color = "#15803d" if rl > 80 else ("#b45309" if rl > 40 else "#dc2626")
+
+        # ── Colores dinámicos ──────────────────────────────────────────────────
+        len_color   = "#1D9E75" if rl > 80 else ("#EF9F27" if rl > 40 else "#E24B4A")
+        len_top     = "green"   if rl > 60 else "amber"
+        len_ico_lbl = "Adecuada" if rl > 60 else "Corta"
+        len_badge   = "badge-green" if rl > 60 else "badge-amber"
+        len_ico_cls = "feat-ico-green" if rl > 60 else "feat-ico-amber"
+
+        sent_top = "green" if (sent is not None and sent > 0.05) else ("red" if (sent is not None and sent < -0.05) else "blue")
+        sent_ico_cls = "feat-ico-green" if sent_top == "green" else ("feat-ico-red" if sent_top == "red" else "feat-ico-blue")
+        sent_badge   = "badge-green"    if sent_top == "green" else ("badge-red"    if sent_top == "red" else "badge-blue")
+        sent_bar_clr = "#1D9E75"        if sent_top == "green" else ("#E24B4A"      if sent_top == "red" else "#378ADD")
+        sent_bar_pct = min(int((float(ss) + 1) / 2 * 100), 100) if ss != "-" else 50
+
+        coh_top      = "green" if not incoh else "amber"
+        coh_ico_cls  = "feat-ico-green" if not incoh else "feat-ico-amber"
+        coh_badge    = "badge-green"    if not incoh else "badge-amber"
+        coh_bar_pct  = 100              if not incoh else 30
+        coh_bar_clr  = "#1D9E75"        if not incoh else "#EF9F27"
+
+        stars_filled = "★" * int(sv)
+        stars_empty  = "☆" * (5 - int(sv))
 
         st.markdown(f"""
         <div class="feat-grid">
-            <div class="feat-card feat-card-{'green' if rl > 60 else 'amber'}">
+            <div class="feat-card">
+                <div class="feat-card-top feat-top-{len_top}"></div>
+                <div class="feat-ico {len_ico_cls}">📏</div>
                 <div class="feat-lbl">Longitud</div>
                 <div class="feat-val">{rl} palabras</div>
-                <div style="background:#f1f5f9;border-radius:999px;height:4px;margin:0.25rem 0;overflow:hidden">
-                    <div style="width:{len_pct}%;height:100%;background:{len_color};border-radius:999px"></div>
-                </div>
                 <div class="feat-cap">Umbral: 80 palabras</div>
-                <span class="feat-badge {'feat-green' if rl > 60 else 'feat-amber'}">{ll}</span>
+                <div class="feat-bar-bg"><div class="feat-bar-fg" style="width:{len_pct}%;background:{len_color}"></div></div>
+                <span class="feat-badge {len_badge}">{len_ico_lbl}</span>
             </div>
-            <div class="feat-card feat-card-{'green' if sent is not None and sent > 0.05 else ('red' if sent is not None and sent < -0.05 else 'blue')}">
+            <div class="feat-card">
+                <div class="feat-card-top feat-top-{sent_top}"></div>
+                <div class="feat-ico {sent_ico_cls}">💬</div>
                 <div class="feat-lbl">Sentimiento</div>
                 <div class="feat-val">{ss}</div>
-                <div style="background:#f1f5f9;border-radius:999px;height:4px;margin:0.25rem 0;overflow:hidden">
-                    <div style="width:{min(int((float(ss) + 1) / 2 * 100), 100) if ss != '-' else 50}%;height:100%;background:{'#15803d' if sent is not None and sent > 0.05 else '#dc2626'};border-radius:999px"></div>
-                </div>
-                <div class="feat-cap">VADER (-1 a +1)</div>
-                <span class="feat-badge {sb}">{sl}</span>
+                <div class="feat-cap">VADER (−1 a +1)</div>
+                <div class="feat-bar-bg"><div class="feat-bar-fg" style="width:{sent_bar_pct}%;background:{sent_bar_clr}"></div></div>
+                <span class="feat-badge {sent_badge}">{sl}</span>
             </div>
-            <div class="feat-card feat-card-blue">
-                <div class="feat-lbl">Calificacion</div>
-                <div class="feat-val" style="color:#f59e0b;letter-spacing:2px">{"★" * int(sv) + "☆" * (5 - int(sv))}</div>
-                <div style="background:#f1f5f9;border-radius:999px;height:4px;margin:0.25rem 0;overflow:hidden">
-                    <div style="width:{int(sv/5*100)}%;height:100%;background:#f59e0b;border-radius:999px"></div>
-                </div>
+            <div class="feat-card">
+                <div class="feat-card-top feat-top-amber"></div>
+                <div class="feat-ico feat-ico-amber">⭐</div>
+                <div class="feat-lbl">Calificación</div>
+                <div class="feat-val" style="color:#EF9F27;letter-spacing:2px">{stars_filled}{stars_empty}</div>
                 <div class="feat-cap">{sv} de 5 estrellas</div>
-                <span class="feat-badge feat-blue">{sv} / 5</span>
+                <div class="feat-bar-bg"><div class="feat-bar-fg" style="width:{int(sv/5*100)}%;background:#EF9F27"></div></div>
+                <span class="feat-badge badge-amber">{sv} / 5</span>
             </div>
-            <div class="feat-card feat-card-{'green' if not incoh else 'amber'}">
+            <div class="feat-card">
+                <div class="feat-card-top feat-top-{coh_top}"></div>
+                <div class="feat-ico {coh_ico_cls}">🔗</div>
                 <div class="feat-lbl">Coherencia</div>
                 <div class="feat-val">{cl}</div>
-                <div style="background:#f1f5f9;border-radius:999px;height:4px;margin:0.25rem 0;overflow:hidden">
-                    <div style="width:{'100' if not incoh else '30'}%;height:100%;background:{'#15803d' if not incoh else '#b45309'};border-radius:999px"></div>
-                </div>
                 <div class="feat-cap">Tono vs. estrellas</div>
-                <span class="feat-badge {cb}">{cl}</span>
+                <div class="feat-bar-bg"><div class="feat-bar-fg" style="width:{coh_bar_pct}%;background:{coh_bar_clr}"></div></div>
+                <span class="feat-badge {coh_badge}">{cl}</span>
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -391,9 +447,13 @@ with tab1:
             else:
                 razon = f"Utilidad estimada de {format_percentage(prob)}, por debajo del umbral del 70%."
 
+            # Badge e icono del diagnóstico
+            _diag_badge_cls  = "diag-badge-danger"  if is_blind else ("diag-badge-success" if prob >= 0.70 else "diag-badge-warning")
+            _diag_badge_icon = "🛑"                  if is_blind else ("✅"                  if prob >= 0.70 else "⚠️")
+
             st.markdown(f"""
             <div class="diag-card {diag_cls}">
-                <div class="diag-title">Resultado del analisis</div>
+                <span class="diag-badge {_diag_badge_cls}">{_diag_badge_icon} Resultado del análisis</span>
                 <div class="diag-decision">{decision}</div>
                 <div class="diag-reason">{razon}</div>
                 <div class="diag-prob">{format_percentage(prob)}</div>
@@ -404,13 +464,10 @@ with tab1:
                 ctx  = ", ".join(lr.get("context_hits", [])) or "ninguna"
                 tech = ", ".join(lr.get("tech_hits", []))    or "ninguno"
                 st.markdown(
-                    f'<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;'
-                    f'padding:0.55rem 0.8rem;margin-top:0.4rem">'
-                    f'<div style="font-size:0.6rem;font-weight:700;color:#94a3b8;text-transform:uppercase;'
-                    f'letter-spacing:.07em;margin-bottom:0.2rem">Contexto alimenticio</div>'
-                    f'<div style="font-size:0.72rem;color:#475569;line-height:1.5">'
-                    f'{lr.get("context_explanation","")}</div>'
-                    f'<div style="margin-top:0.3rem;font-size:0.68rem;color:#64748b">'
+                    f'<div class="ctx-box">'
+                    f'<div class="ctx-lbl">Contexto alimenticio</div>'
+                    f'<div class="ctx-txt">{lr.get("context_explanation","")}</div>'
+                    f'<div class="ctx-meta">'
                     f'<b>Detectadas:</b> {ctx} &nbsp;·&nbsp; <b>Ajenas:</b> {tech}'
                     f'</div></div>',
                     unsafe_allow_html=True,
