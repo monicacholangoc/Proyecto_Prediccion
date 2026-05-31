@@ -18,6 +18,8 @@ from plots.eda_charts import (build_correlation_heatmap, build_helpfulness_distr
     build_stars_distribution, build_stars_vs_helpfulness, build_sentiment_vs_score, build_target_balance)
 from services.catalog_service import map_product_metadata
 from services.data_loader import load_processed_reviews, load_reviews_with_category
+
+from services.supabase_service import load_reviews_from_supabase
 from services.feature_service import add_basic_text_features
 from services.preprocessing_service import get_corporate_audit_db
 from utils.formatters import format_compact_number, format_percentage
@@ -131,7 +133,12 @@ if helpfulness_col and sel_util != "Todas":
         df = df[df[helpfulness_col] < 0.70]
 
 # ── Indicadores del corte ─────────────────────────────────────────────────────
-n        = len(df)
+# Sumar reseñas nuevas de Supabase al total
+try:
+    _sb_extra_exp = len(load_reviews_from_supabase())
+except Exception:
+    _sb_extra_exp = 0
+n        = len(df) + _sb_extra_exp
 products = int(df["ProductId"].astype(str).nunique()) if "ProductId" in df.columns else 0
 ratio    = float(df[helpfulness_col].ge(0.70).mean()) if helpfulness_col and n > 0 else 0.0
 avg_len  = int(df["review_len"].fillna(0).mean()) if "review_len" in df.columns and n > 0 else 0

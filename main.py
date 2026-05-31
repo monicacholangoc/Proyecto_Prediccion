@@ -7,6 +7,8 @@ import streamlit as st
 from config.constants import DEFAULT_METRICS
 from config.theme import PAGE_CONFIG
 from services.data_loader import load_processed_reviews
+
+from services.supabase_service import load_reviews_from_supabase
 from services.model_eval_service import compute_model_evaluation
 from utils.formatters import format_compact_number, format_percentage
 from utils.state import initialize_state
@@ -45,6 +47,12 @@ def main() -> None:
     evaluation = compute_model_evaluation()
     metrics_df = evaluation["metrics"]
     has_reviews = not reviews.empty
+    # Sumar reseñas nuevas de Supabase al conteo del hero
+    try:
+        sb_count = len(load_reviews_from_supabase())
+    except Exception:
+        sb_count = 0
+    total_reviews_count = len(reviews) + sb_count
 
     best      = metrics_df.sort_values("roc_auc", ascending=False).iloc[0] if not metrics_df.empty else None
     roc_val   = format_percentage(float(best["roc_auc"])) if best is not None else "—"
@@ -77,7 +85,7 @@ def main() -> None:
             </div>
             <div style="margin-top:1.4rem;display:flex;gap:2rem;flex-wrap:wrap">
                 <div>
-                    <div style="font-size:1.6rem;font-weight:800;color:#7dd3fc">{format_compact_number(len(reviews)) if has_reviews else "~100 K"}</div>
+                    <div style="font-size:1.6rem;font-weight:800;color:#7dd3fc">{format_compact_number(total_reviews_count) if has_reviews else '~100 K'}</div>
                     <div style="font-size:0.7rem;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:.07em">Reseñas analizadas</div>
                 </div>
                 <div style="width:1px;background:rgba(255,255,255,0.15)"></div>

@@ -4,6 +4,8 @@ import streamlit as st
 from shared_sidebar import render_sidebar
 from components.cards import render_metric_card
 from services.data_loader import load_processed_reviews
+
+from services.supabase_service import load_reviews_from_supabase
 from services.feature_service import add_basic_text_features
 from services.model_eval_service import compute_model_evaluation
 from plots.eda_charts import build_stars_distribution, build_review_length_distribution
@@ -41,6 +43,11 @@ st.markdown(
 
 # ── Carga ─────────────────────────────────────────────────────────────────────
 reviews     = add_basic_text_features(load_processed_reviews())
+# Sumar reseñas nuevas de Supabase
+try:
+    _sb_extra = len(load_reviews_from_supabase())
+except Exception:
+    _sb_extra = 0
 evaluation  = compute_model_evaluation()
 metrics_df  = evaluation["metrics"]
 feat_imp_df = evaluation["feature_importance"]
@@ -64,7 +71,7 @@ _CHART_LAYOUT = dict(
 # ══════════════════════════════════════════════════════════════════════════════
 st.markdown('<div class="section-label">Pipeline de datos — de 568 K a la base analítica final</div>', unsafe_allow_html=True)
 
-base_final = len(reviews) if has_reviews else 100_000
+base_final = (len(reviews) + _sb_extra) if has_reviews else 100_000
 pct_kept   = round(base_final / 568_454 * 100, 1)
 
 _ARROW = (
