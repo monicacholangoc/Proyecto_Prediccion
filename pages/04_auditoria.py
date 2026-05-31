@@ -315,46 +315,6 @@ with tab1:
     position_summary = get_position_summary(selected_product, latest_review_id)
     review_window_df = get_review_context_window(selected_product, latest_review_id, window_size=2)
 
-    if latest_review_id and not review_window_df.empty:
-        st.markdown('<div class="section-label">Tu resena en contexto del ranking</div>', unsafe_allow_html=True)
-        p1, p2, p3 = st.columns(3, gap="medium")
-        with p1:
-            render_metric_card(
-                "Posicion local",
-                f"{position_summary['local_rank']} / {position_summary['product_count']}"
-                if position_summary["local_rank"] else "Sin resena evaluada",
-                "Lugar dentro del producto",
-            )
-        with p2:
-            render_metric_card(
-                "Posicion global",
-                f"{position_summary['global_rank']} / {position_summary['global_count']}"
-                if position_summary["global_rank"] else "Sin resena evaluada",
-                "Lugar en toda la base",
-            )
-        with p3:
-            render_metric_card(
-                "Total del producto", str(position_summary["product_count"]), "Volumen historico"
-            )
-
-        with st.expander("Ver resenas del contexto de ranking"):
-            for _, row in review_window_df.iterrows():
-                is_cur     = bool(row["EsActual"])
-                badge_txt  = "Tu resena" if is_cur else str(row["Estado"])
-                full_text  = str(row["Text"])
-                short_text = full_text[:180] + ("..." if len(full_text) > 180 else "")
-                border     = "border:2px solid var(--primary);" if is_cur else ""
-                badge_cls  = "metric-badge-good" if "APROBADA" in str(row["Estado"]) else "metric-badge-warn"
-                st.markdown(
-                    f'<div class="metric-card" style="{border}margin-bottom:0.5rem">'
-                    f'<div style="display:flex;justify-content:space-between;margin-bottom:0.25rem">'
-                    f'<span style="font-size:0.72rem;color:var(--muted)">Puesto {int(row["Puesto Local"])} - {str(row["User"])}</span>'
-                    f'<span class="metric-badge {badge_cls}" style="font-size:0.6rem">{badge_txt}</span></div>'
-                    f'<div style="font-size:0.76rem;color:var(--text);margin-bottom:0.2rem">{short_text}</div>'
-                    f'<div style="font-size:0.64rem;color:var(--muted)">Utilidad: {format_percentage(float(row["Helpfulness"]))}</div>'
-                    f'</div>',
-                    unsafe_allow_html=True,
-                )
 
 # ==============================================================
 # TAB 2
