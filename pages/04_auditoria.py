@@ -253,10 +253,25 @@ with tab1:
                 st.session_state["_toggle_prev_val"]  = validate_context
                 if "error" in api_r:
                     st.error(f"API no disponible: {api_r['error']}")
+                # Si la API respondió bien, usar su probabilidad
+                # Si no, append_audited_review calcula con el modelo local
                 audit_result = append_audited_review(
                     selected_product, user_name, stars,
                     review_text.strip(), validate_context=validate_context,
                 )
+                # Sobrescribir probabilidad con resultado de la API si está disponible
+                api_result = st.session_state.get("_api_result")
+                if api_result and "probability" in api_result:
+                    audit_result = dict(audit_result)
+                    audit_result["probability"] = float(api_result["probability"])
+                    # Recalcular status según nueva probabilidad
+                    if audit_result.get("context_blind_spot"):
+                        audit_result["status"] = "RECHAZADA (Punto Ciego)"
+                    elif audit_result["probability"] >= 0.70:
+                        audit_result["status"] = "APROBADA (Publicada)"
+                    else:
+                        audit_result["status"] = "RECHAZADA (Baja Calidad)"
+                    st.session_state["latest_audit_result"] = audit_result
                 st.session_state["latest_audit_result"] = audit_result
                 st.session_state["latest_stars"]        = stars
 
