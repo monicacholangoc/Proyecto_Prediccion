@@ -1,645 +1,230 @@
-"""
-Helper de sidebar: logo + selector de tema arriba + navegación funcional.
-El fondo del área principal se fuerza vía CSS inline en <style> con
-background-color directo (no gradiente) para garantizar cobertura total
-en main.py y todas las páginas de pages/.
-"""
+﻿"""Página 1 — Resumen Ejecutivo."""
 
-import os
-import base64
 import streamlit as st
-
-# ── Logo ────────────────────────────────────────────────────────────────────
-_LOGO_CANDIDATES = [
-    "assets/Logo.jpg", "assets/Logo.jpeg", "assets/Logo.png",
-    "assets/logo.jpg", "assets/logo.jpeg", "assets/logo.png",
-    "assets/Logo.JPG", "assets/Logo.PNG",
-]
-LOGO_URL = None
-
-
-def _find_logo() -> str | None:
-    for path in _LOGO_CANDIDATES:
-        if os.path.exists(path):
-            return path
-    return None
+from config.theme import PAGE_CONFIG
+from services.data_loader import load_processed_reviews
+from services.feature_service import add_basic_text_features
+from services.model_eval_service import compute_model_evaluation
+from services.catalog_service import get_product_catalog
+from services.preprocessing_service import get_corporate_audit_db
+from utils.formatters import format_compact_number, format_percentage
+from utils.state import initialize_state
+from shared_sidebar import render_sidebar
+import os
 
 
-def _logo_b64() -> tuple[str, str] | None:
-    if LOGO_URL:
-        return None
-    path = _find_logo()
-    if not path:
-        return None
-    ext  = path.rsplit(".", 1)[-1].lower()
-    mime = {"png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg"}.get(ext, "image/png")
-    with open(path, "rb") as f:
-        return base64.b64encode(f.read()).decode(), mime
+def _setup() -> None:
+    css_path = "styles/styles.css"
+    if os.path.exists(css_path):
+        with open(css_path, "r", encoding="utf-8") as f:
+            st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+    render_sidebar()
 
 
-# ── Iconos SVG nav ──────────────────────────────────────────────────────────
-_I_HOME   = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(248,250,252,0.85)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>'
-_I_FILE   = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(248,250,252,0.85)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>'
-_I_SEARCH = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(248,250,252,0.85)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>'
-_I_CHART  = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(248,250,252,0.85)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>'
-_I_SHIELD = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(248,250,252,0.85)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>'
-_I_BAR    = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(248,250,252,0.85)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>'
+def main() -> None:
+    st.set_page_config(
+        page_title="Resumen Ejecutivo · Seminario Predictivo",
+        page_icon="📋",
+        layout="wide",
+        initial_sidebar_state="expanded",
+    )
+    _setup()
+    initialize_state()
 
+    reviews    = add_basic_text_features(load_processed_reviews())
+    catalog    = get_product_catalog()
+    corp_db    = get_corporate_audit_db()
+    evaluation = compute_model_evaluation()
+    metrics_df = evaluation["metrics"]
+    has_rev    = not reviews.empty
 
-# ── CSS completo (sidebar + fondo main + temas) ─────────────────────────────
-_FULL_CSS = """
-<style>
-/* ════════════════════════════════════════════════════════════════════
-   VARIABLES DE TEMA — se sobrescriben por JS con data-theme
-   ════════════════════════════════════════════════════════════════════ */
-:root {
-    --bg-color:     #edf2f8;
-    --bg-color2:    #f0f5fc;
-    --surface:      #ffffff;
-    --surface-soft: rgba(255,255,255,0.93);
-    --text:         #0f172a;
-    --muted:        #526277;
-    --border:       #d8e1ec;
-    --primary:      #1746a2;
-    --accent:       #0f4c5c;
-    --success:      #0f9f74;
-    --warning:      #c97a12;
-    --danger:       #d65454;
-    --shadow-soft:  0 10px 24px rgba(15,23,42,0.05);
-    --shadow-card:  0 18px 36px rgba(15,23,42,0.08);
-}
+    best = metrics_df.sort_values("roc_auc", ascending=False).iloc[0] if not metrics_df.empty else None
+    baseline = metrics_df[metrics_df["modelo"].str.contains("Logistic|logistic", na=False)] if not metrics_df.empty else None
+    baseline_row = baseline.iloc[0] if baseline is not None and not baseline.empty else None
 
-/* ════════════════════════════════════════════════════════════════════
-   FONDO PRINCIPAL — background-color sólido, sin gradiente,
-   para garantizar cobertura en TODAS las páginas de Streamlit
-   ════════════════════════════════════════════════════════════════════ */
-html,
-body,
-.stApp,
-#root,
-[data-testid="stAppViewContainer"],
-[data-testid="stAppViewContainer"] > section,
-[data-testid="stAppViewContainer"] > section > div,
-[data-testid="stMain"],
-[data-testid="stMain"] > div,
-[data-testid="block-container"],
-.main,
-.block-container,
-div[class*="appview"],
-div[class*="main"] {
-    background-color: var(--bg-color) !important;
-    background-image: none !important;
-}
+    useful_ratio = float(reviews["y_util"].mean()) if has_rev and "y_util" in reviews.columns else 0.0
+    avg_len      = int(reviews["review_len"].fillna(0).mean()) if has_rev and "review_len" in reviews.columns else 0
 
-/* Gradient sutil ENCIMA del color sólido, sin romper la cobertura */
-.stApp {
-    background-image:
-        radial-gradient(circle at 90% 0%, rgba(23,70,162,0.07) 0%, transparent 40%),
-        radial-gradient(circle at 10% 5%, rgba(15,76,92,0.06) 0%, transparent 35%) !important;
-}
+    roc_val   = format_percentage(float(best["roc_auc"])) if best is not None else "—"
+    f1_val    = format_percentage(float(best["f1"]))      if best is not None else "—"
+    model_val = str(best["modelo"])                        if best is not None else "—"
 
-/* ════════════════════════════════════════════════════════════════════
-   MODO OSCURO
-   ════════════════════════════════════════════════════════════════════ */
-[data-theme="dark"] {
-    --bg-color:     #0d1117;
-    --bg-color2:    #161b22;
-    --surface:      #1c2333;
-    --surface-soft: rgba(28,35,51,0.97);
-    --text:         #e6edf3;
-    --muted:        #8b949e;
-    --border:       #30363d;
-    --primary:      #4d8ef0;
-    --accent:       #56d4c4;
-    --success:      #3fb950;
-    --warning:      #d29922;
-    --danger:       #f85149;
-    --shadow-soft:  0 10px 24px rgba(0,0,0,0.35);
-    --shadow-card:  0 18px 36px rgba(0,0,0,0.45);
-}
+    # ── Hero ─────────────────────────────────────────────────────────────────
+    st.markdown(
+        """
+        <div class="hero-compact">
+            <div class="hero-compact-left">
+                <span class="hero-compact-tag">Seminario Predictivo 2026 · Caso 06</span>
+                <h1>Resumen Ejecutivo</h1>
+                <p>Síntesis de hallazgos, métricas clave y recomendaciones del proyecto de predicción de utilidad de reseñas Amazon Fine Food.</p>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
-[data-theme="dark"] html,
-[data-theme="dark"] body,
-[data-theme="dark"] .stApp,
-[data-theme="dark"] #root,
-[data-theme="dark"] [data-testid="stAppViewContainer"],
-[data-theme="dark"] [data-testid="stAppViewContainer"] > section,
-[data-theme="dark"] [data-testid="stMain"],
-[data-theme="dark"] [data-testid="stMain"] > div,
-[data-theme="dark"] [data-testid="block-container"],
-[data-theme="dark"] .main,
-[data-theme="dark"] .block-container {
-    background-color: #0d1117 !important;
-    background-image: none !important;
-    color: #e6edf3 !important;
-}
+    # ── KPIs ──────────────────────────────────────────────────────────────────
+    st.markdown('<div class="section-label">Métricas principales</div>', unsafe_allow_html=True)
+    k1, k2, k3, k4 = st.columns(4, gap="small")
+    with k1:
+        st.markdown(
+            f"""<div class="kpi-card">
+                <div class="kpi-label">Reseñas analizadas</div>
+                <div class="kpi-value">{format_compact_number(len(reviews)) if has_rev else "—"}</div>
+            </div>""",
+            unsafe_allow_html=True,
+        )
+    with k2:
+        st.markdown(
+            f"""<div class="kpi-card">
+                <div class="kpi-label">ROC-AUC (mejor modelo)</div>
+                <div class="kpi-value">{roc_val}</div>
+            </div>""",
+            unsafe_allow_html=True,
+        )
+    with k3:
+        st.markdown(
+            f"""<div class="kpi-card">
+                <div class="kpi-label">F1-Score</div>
+                <div class="kpi-value">{f1_val}</div>
+            </div>""",
+            unsafe_allow_html=True,
+        )
+    with k4:
+        st.markdown(
+            f"""<div class="kpi-card">
+                <div class="kpi-label">Reseñas útiles</div>
+                <div class="kpi-value">{format_percentage(useful_ratio)}</div>
+            </div>""",
+            unsafe_allow_html=True,
+        )
 
-[data-theme="dark"] .stApp {
-    background-image:
-        radial-gradient(circle at 90% 0%, rgba(77,142,240,0.06) 0%, transparent 40%),
-        radial-gradient(circle at 10% 5%, rgba(86,212,196,0.04) 0%, transparent 35%) !important;
-}
+    st.markdown("<br>", unsafe_allow_html=True)
 
-/* MODO SISTEMA */
-@media (prefers-color-scheme: dark) {
-    [data-theme="system"] {
-        --bg-color: #0d1117; --bg-color2: #161b22;
-        --surface: #1c2333; --surface-soft: rgba(28,35,51,0.97);
-        --text: #e6edf3; --muted: #8b949e; --border: #30363d;
-        --primary: #4d8ef0; --accent: #56d4c4;
-        --success: #3fb950; --warning: #d29922; --danger: #f85149;
-        --shadow-soft: 0 10px 24px rgba(0,0,0,0.35);
-        --shadow-card: 0 18px 36px rgba(0,0,0,0.45);
-    }
-    [data-theme="system"] html, [data-theme="system"] body,
-    [data-theme="system"] .stApp,
-    [data-theme="system"] [data-testid="stAppViewContainer"],
-    [data-theme="system"] [data-testid="stMain"],
-    [data-theme="system"] [data-testid="block-container"] {
-        background-color: #0d1117 !important;
-        color: #e6edf3 !important;
-    }
-}
+    # ── Columnas principales ──────────────────────────────────────────────────
+    col_l, col_r = st.columns([1.2, 1], gap="large")
 
-/* Dark: textos */
-[data-theme="dark"] h1,[data-theme="dark"] h2,[data-theme="dark"] h3,
-[data-theme="dark"] .metric-value,[data-theme="dark"] .stat-pill-value,
-[data-theme="dark"] .kpi-value,[data-theme="dark"] .review-text,
-[data-theme="dark"] .review-user,[data-theme="dark"] .nav-card-title,
-[data-theme="dark"] .api-card-value { color: var(--text) !important; }
+    with col_l:
+        # Modelo ganador
+        st.markdown('<div class="section-label">Modelo ganador</div>', unsafe_allow_html=True)
+        if best is not None:
+            delta_str = ""
+            if baseline_row is not None:
+                delta = float(best["roc_auc"]) - float(baseline_row["roc_auc"])
+                delta_str = f'<span class="metric-badge metric-badge-good">+{delta:.1%} vs baseline</span>'
+            st.markdown(
+                f"""
+                <div class="metric-card" style="border-left:3px solid var(--primary);margin-bottom:0.8rem">
+                    <div class="metric-label">Algoritmo &nbsp;{delta_str}</div>
+                    <div class="metric-value">{model_val}</div>
+                    <div style="display:flex;gap:1.4rem;margin-top:0.7rem;flex-wrap:wrap">
+                        <div>
+                            <div style="color:var(--muted);font-size:0.72rem">ROC-AUC</div>
+                            <div style="font-size:1.3rem;font-weight:800;color:var(--primary)">{roc_val}</div>
+                        </div>
+                        <div>
+                            <div style="color:var(--muted);font-size:0.72rem">F1-Score</div>
+                            <div style="font-size:1.3rem;font-weight:800;color:var(--text)">{f1_val}</div>
+                        </div>
+                        <div>
+                            <div style="color:var(--muted);font-size:0.72rem">Útiles predichas</div>
+                            <div style="font-size:1.3rem;font-weight:800;color:var(--success)">{format_percentage(useful_ratio)}</div>
+                        </div>
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+        else:
+            st.info("Entrena los modelos para ver métricas.")
 
-[data-theme="dark"] p,[data-theme="dark"] li,[data-theme="dark"] label,
-[data-theme="dark"] .metric-caption,[data-theme="dark"] .metric-label,
-[data-theme="dark"] .highlight-body,[data-theme="dark"] .highlight-title,
-[data-theme="dark"] .section-label,[data-theme="dark"] .stat-pill-label,
-[data-theme="dark"] .kpi-label,[data-theme="dark"] .api-card-label,
-[data-theme="dark"] .review-meta,[data-theme="dark"] .review-helpfulness
-{ color: var(--muted) !important; }
+        # Tabla de modelos
+        if not metrics_df.empty:
+            st.markdown('<div class="section-label">Comparativa de modelos</div>', unsafe_allow_html=True)
+            display_cols = [c for c in ["modelo", "roc_auc", "f1", "accuracy", "precision", "recall"] if c in metrics_df.columns]
+            df_show = metrics_df[display_cols].copy()
+            for col in display_cols:
+                if col != "modelo":
+                    df_show[col] = df_show[col].apply(lambda x: f"{x:.3f}" if isinstance(x, float) else x)
+            st.dataframe(df_show, use_container_width=True, hide_index=True)
 
-/* Dark: cards */
-[data-theme="dark"] .metric-card,[data-theme="dark"] .highlight-card,
-[data-theme="dark"] .nav-card,[data-theme="dark"] .review-card,
-[data-theme="dark"] .stat-pill,[data-theme="dark"] .kpi-card,
-[data-theme="dark"] .api-card,[data-theme="dark"] .info-panel,
-[data-theme="dark"] .section-panel,[data-theme="dark"] .accuracy-warning {
-    background: var(--surface-soft) !important;
-    border-color: var(--border) !important;
-}
-
-/* Dark: badges */
-[data-theme="dark"] .metric-badge-good { background:#0d2b1a; color:#3fb950; }
-[data-theme="dark"] .metric-badge-warn { background:#2b1f07; color:#d29922; }
-[data-theme="dark"] .metric-badge-info { background:#0f1f3d; color:#4d8ef0; }
-
-/* Dark: inputs */
-[data-theme="dark"] .stTextInput input,
-[data-theme="dark"] .stTextArea textarea,
-[data-theme="dark"] .stSelectbox div[data-baseweb="select"] > div {
-    background: var(--surface) !important;
-    color: var(--text) !important;
-    border-color: var(--border) !important;
-}
-
-/* Dark: header */
-[data-theme="dark"] [data-testid="stHeader"] {
-    background: rgba(13,17,23,0.85) !important;
-    border-bottom-color: #30363d !important;
-}
-
-/* ════════════════════════════════════════════════════════════════════
-   SIDEBAR
-   ════════════════════════════════════════════════════════════════════ */
-[data-testid="stSidebar"],
-[data-testid="stSidebar"] > div,
-[data-testid="stSidebar"] > div > div,
-section[data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #1746a2 0%, #0f3380 100%) !important;
-    border-right: 1px solid rgba(255,255,255,0.06) !important;
-}
-[data-testid="stSidebar"] * { color: #f8fafc; }
-[data-testid="stSidebarNav"] { display: none !important; }
-
-/* ── Selector de tema — ARRIBA, junto al logo ─── */
-.sb-top-bar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0.75rem 0.6rem 0.5rem;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
-    margin-bottom: 0.6rem;
-    gap: 0.4rem;
-}
-.sb-brand-block { flex: 1; min-width: 0; }
-.sb-brand-name {
-    color: #f8fafc !important;
-    font-size: 0.78rem;
-    font-weight: 700;
-    line-height: 1.2;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-.sb-brand-sub {
-    color: rgba(248,250,252,0.45) !important;
-    font-size: 0.62rem;
-    margin-top: 0.05rem;
-    white-space: nowrap;
-}
-.sb-theme-pills {
-    display: flex;
-    gap: 0.22rem;
-    flex-shrink: 0;
-}
-.sb-theme-pill {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 26px;
-    height: 26px;
-    border-radius: 7px;
-    border: 1px solid rgba(255,255,255,0.12);
-    background: rgba(255,255,255,0.07);
-    cursor: pointer;
-    color: rgba(248,250,252,0.55);
-    transition: background 0.15s, color 0.15s, border-color 0.15s;
-    font-size: 0;
-    padding: 0;
-}
-.sb-theme-pill:hover {
-    background: rgba(255,255,255,0.16);
-    color: rgba(248,250,252,0.9);
-    border-color: rgba(255,255,255,0.25);
-}
-.sb-theme-pill.active {
-    background: rgba(77,142,240,0.35);
-    border-color: rgba(77,142,240,0.6);
-    color: #ffffff;
-}
-.sb-theme-pill svg { display: block; }
-
-/* ── Logo centrado (debajo del top bar) ── */
-.sb-logo-wrap {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 0.6rem 0.5rem 0.8rem;
-    gap: 0.5rem;
-    border-bottom: 1px solid rgba(255,255,255,0.07);
-    margin-bottom: 0.5rem;
-}
-.sb-logo-img {
-    width: 72px; height: 72px;
-    border-radius: 12px;
-    object-fit: contain;
-    background: #ffffff;
-    padding: 5px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
-}
-.sb-logo-svg { width: 72px; height: 72px; border-radius: 12px; display: block; }
-
-/* ── Nav items ── */
-.sb-nav-icon {
-    display: flex; align-items: center; justify-content: center;
-    width: 26px; height: 26px;
-    border-radius: 7px;
-    background: rgba(255,255,255,0.09);
-    flex-shrink: 0;
-}
-[data-testid="stSidebar"] [data-testid="stPageLink"] {
-    background: transparent !important; border: none !important;
-    padding: 0 !important; margin: 0 !important;
-}
-[data-testid="stSidebar"] [data-testid="stPageLink"] a,
-[data-testid="stSidebar"] [data-testid="stPageLink"] p {
-    color: rgba(248,250,252,0.82) !important;
-    font-size: 0.82rem !important; font-weight: 500 !important;
-    text-decoration: none !important;
-    padding: 0.28rem 0.45rem !important;
-    border-radius: 8px !important;
-    display: block !important;
-    transition: background 0.15s !important;
-    line-height: 1.3 !important;
-}
-[data-testid="stSidebar"] [data-testid="stPageLink"] a:hover,
-[data-testid="stSidebar"] [data-testid="stPageLink"] p:hover {
-    background: rgba(255,255,255,0.09) !important; color: #fff !important;
-}
-[data-testid="stSidebar"] [data-testid="stPageLink"][aria-current="page"] a,
-[data-testid="stSidebar"] [data-testid="stPageLink"][aria-current="page"] p {
-    background: rgba(255,255,255,0.15) !important; color: #fff !important;
-}
-[data-testid="stSidebar"] [data-testid="stHorizontalBlock"] {
-    gap: 0.15rem !important; align-items: center !important;
-    margin-bottom: 0.04rem !important;
-}
-[data-testid="stSidebar"] [data-testid="stHorizontalBlock"] > div {
-    padding: 0 !important; min-width: 0 !important;
-}
-
-/* ── Header ── */
-[data-testid="stHeader"] {
-    background: rgba(255,255,255,0.62);
-    backdrop-filter: blur(10px);
-    border-bottom: 1px solid rgba(216,225,236,0.7);
-}
-</style>
-"""
-
-# ── JS de tema ───────────────────────────────────────────────────────────────
-# Se inyecta FUERA del sidebar para llegar al <head> real del documento.
-# Aplica background-color sólido en todos los contenedores de Streamlit
-# inmediatamente y cada vez que el DOM cambia (Streamlit re-renderiza).
-_THEME_JS = """
-<script>
-(function(){
-    // Selectores de todos los contenedores que Streamlit genera
-    var SELS = [
-        'html','body','.stApp','#root',
-        '[data-testid="stAppViewContainer"]',
-        '[data-testid="stAppViewContainer"] > section',
-        '[data-testid="stAppViewContainer"] > section > div',
-        '[data-testid="stMain"]',
-        '[data-testid="stMain"] > div',
-        '[data-testid="block-container"]',
-        '.main','.block-container'
-    ];
-
-    function isDarkMode(theme){
-        return theme==='dark' ||
-               (theme==='system' && window.matchMedia('(prefers-color-scheme:dark)').matches);
-    }
-
-    function applyAll(theme){
-        var dark = isDarkMode(theme);
-        // config.toml inyecta backgroundColor como style inline en stApp;
-        // lo sobrescribimos con setProperty(..., 'important') aquí.
-        var bgMain  = dark ? '#0d1117' : '#edf2f8';
-        var bgCard  = dark ? '#161b22' : '#ffffff';
-        var txtMain = dark ? '#e6edf3' : '#0f172a';
-        var grad    = dark
-            ? 'radial-gradient(circle at 90% 0%,rgba(77,142,240,.06),transparent 40%)'
-            : 'radial-gradient(circle at 90% 0%,rgba(23,70,162,.07),transparent 40%),radial-gradient(circle at 10% 5%,rgba(15,76,92,.06),transparent 35%)';
-
-        // 1. data-theme en <html> para que el CSS lo capture
-        document.documentElement.setAttribute('data-theme', theme);
-
-        // 2. Sobrescribir el style inline que Streamlit inyecta desde config.toml
-        SELS.forEach(function(s){
-            document.querySelectorAll(s).forEach(function(el){
-                // NUNCA tocar el sidebar
-                if(el.closest('[data-testid="stSidebar"]')) return;
-                el.style.setProperty('background-color', bgMain, 'important');
-                el.style.setProperty('color', txtMain, 'important');
-                el.style.removeProperty('background-image');
-            });
-        });
-
-        // 2b. Forzar fondo azul del sidebar (Streamlit lo pisa con inline style)
-        var sbBg = dark ? 'linear-gradient(180deg,#1c2333 0%,#0d1117 100%)' 
-                        : 'linear-gradient(180deg,#1746a2 0%,#0f3380 100%)';
-        [
-            '[data-testid="stSidebar"]',
-            '[data-testid="stSidebar"] > div',
-            '[data-testid="stSidebar"] > div > div',
-            'section[data-testid="stSidebar"]'
-        ].forEach(function(s){
-            document.querySelectorAll(s).forEach(function(el){
-                el.style.setProperty('background', sbBg, 'important');
-                el.style.setProperty('background-color', 'transparent', 'important');
-            });
-        });
-
-        // 3. Gradiente decorativo encima del fondo sólido
-        document.querySelectorAll('.stApp').forEach(function(el){
-            el.style.setProperty('background-image', grad, 'important');
-        });
-
-        // 4. Cards / superficies secundarias
-        var cardSels = [
-            '[data-testid="stSidebarContent"]',
-            '.metric-card','.stat-pill','.highlight-card',
-            '.nav-card','.review-card','.kpi-card','.api-card'
-        ];
-        cardSels.forEach(function(s){
-            document.querySelectorAll(s).forEach(function(el){
-                if(!el.closest('[data-testid="stSidebar"]')){
-                    el.style.setProperty('background-color', bgCard, 'important');
-                }
-            });
-        });
-
-        // 5. Header de Streamlit
-        var hdr = document.querySelector('[data-testid="stHeader"]');
-        if(hdr) hdr.style.setProperty('background',
-            dark ? 'rgba(13,17,23,0.85)' : 'rgba(255,255,255,0.62)', 'important');
-
-        // 6. Activar píldora correcta
-        ['light','dark','system'].forEach(function(id){
-            var b=document.getElementById('stp-'+id);
-            if(b) b.classList.toggle('active', id===theme);
-        });
-    }
-
-    // Exponer globalmente para que los botones del sidebar lo llamen
-    window._setAppTheme = function(t){
-        localStorage.setItem('app_theme', t);
-        applyAll(t);
-    };
-
-    // Aplicar inmediatamente al cargar (antes del primer paint si es posible)
-    var saved = localStorage.getItem('app_theme') || 'light';
-    applyAll(saved);
-
-    // Re-aplicar cada vez que Streamlit re-renderiza el DOM
-    // (Streamlit puede restablecer el style inline al navegar entre páginas)
-    var _obs_timeout = null;
-    var obs = new MutationObserver(function(){
-        clearTimeout(_obs_timeout);
-        _obs_timeout = setTimeout(function(){
-            var t = localStorage.getItem('app_theme') || 'light';
-            applyAll(t);
-        }, 30);   // debounce 30ms para no saturar
-    });
-    var _startObs = function(){
-        obs.observe(document.body, {childList:true, subtree:true, attributes:true,
-                                    attributeFilter:['style','class']});
-    };
-    if(document.body) _startObs();
-    else document.addEventListener('DOMContentLoaded', _startObs);
-
-    // Cambio de preferencia del sistema
-    window.matchMedia('(prefers-color-scheme:dark)').addEventListener('change', function(){
-        if((localStorage.getItem('app_theme')||'light')==='system') applyAll('system');
-    });
-})();
-</script>
-"""
-
-
-def _theme_pills_html() -> str:
-    """HTML de las tres píldoras de tema (renderizado en el top bar del sidebar)."""
-    return """
-<div class="sb-theme-pills" id="sb-theme-pills">
-    <button class="sb-theme-pill" id="stp-light" title="Modo claro"
-        onclick="window._setAppTheme('light')">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-             stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="5"/>
-            <line x1="12" y1="1" x2="12" y2="3"/>
-            <line x1="12" y1="21" x2="12" y2="23"/>
-            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-            <line x1="1" y1="12" x2="3" y2="12"/>
-            <line x1="21" y1="12" x2="23" y2="12"/>
-            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-        </svg>
-    </button>
-    <button class="sb-theme-pill" id="stp-dark" title="Modo oscuro"
-        onclick="window._setAppTheme('dark')">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-             stroke="currentColor" stroke-width="2">
-            <path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z"/>
-        </svg>
-    </button>
-    <button class="sb-theme-pill" id="stp-system" title="Tema del sistema"
-        onclick="window._setAppTheme('system')">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-             stroke="currentColor" stroke-width="2">
-            <rect x="2" y="3" width="20" height="14" rx="2"/>
-            <line x1="8" y1="21" x2="16" y2="21"/>
-            <line x1="12" y1="17" x2="12" y2="21"/>
-        </svg>
-    </button>
-</div>
-<script>
-(function(){
-    var cur = localStorage.getItem('app_theme') || 'light';
-    ['light','dark','system'].forEach(function(id){
-        var b = document.getElementById('stp-'+id);
-        if(b) b.classList.toggle('active', id===cur);
-    });
-})();
-</script>
-"""
-
-
-def _detect_pages() -> dict:
-    mapping = {"resumen": None, "exploracion": None,
-               "modelos": None, "auditoria": None, "ranking": None}
-    pages_dir = "pages"
-    if not os.path.isdir(pages_dir):
-        return mapping
-    for fname in sorted(os.listdir(pages_dir)):
-        lower = fname.lower()
-        fpath = os.path.join(pages_dir, fname)
-        if not fname.endswith(".py"):
-            continue
-        if "resumen"  in lower: mapping["resumen"]     = fpath
-        elif "explor" in lower: mapping["exploracion"] = fpath
-        elif "model"  in lower: mapping["modelos"]     = fpath
-        elif "audit"  in lower: mapping["auditoria"]   = fpath
-        elif "rank"   in lower: mapping["ranking"]     = fpath
-    return mapping
-
-
-def render_sidebar() -> None:
-    """Inyecta CSS + JS de tema y renderiza sidebar completo."""
-    # CSS y JS van FUERA del sidebar (Streamlit los pone en <head>)
-    st.markdown(_FULL_CSS,  unsafe_allow_html=True)
-    st.markdown(_THEME_JS, unsafe_allow_html=True)
-
-    pages = _detect_pages()
-
-    # Logo HTML
-    logo_result = _logo_b64()
-    if LOGO_URL:
-        logo_html = f'<img class="sb-logo-img" src="{LOGO_URL}" alt="Logo">'
-    elif logo_result:
-        b64, mime = logo_result
-        logo_html = f'<img class="sb-logo-img" src="data:{mime};base64,{b64}" alt="Logo">'
-    else:
-        logo_html = """<svg class="sb-logo-svg" viewBox="0 0 80 80" fill="none"
-          xmlns="http://www.w3.org/2000/svg">
-          <rect width="80" height="80" rx="14" fill="url(#lgfb4)"/>
-          <path d="M22 58 L40 26 L58 58 Z" fill="rgba(255,255,255,0.15)"
-                stroke="rgba(255,255,255,0.45)" stroke-width="2"/>
-          <path d="M31 58 L40 38 L49 58 Z" fill="rgba(255,255,255,0.92)"/>
-          <circle cx="40" cy="24" r="5.5" fill="#7dd3fc"/>
-          <defs><linearGradient id="lgfb4" x1="0" y1="0" x2="80" y2="80"
-            gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stop-color="#1e3a8a"/>
-            <stop offset="100%" stop-color="#0f4c5c"/>
-          </linearGradient></defs>
-        </svg>"""
-
-    with st.sidebar:
-        # ── TOP BAR: brand + píldoras de tema ──────────────────────────────
+    with col_r:
+        # Dataset
+        st.markdown('<div class="section-label">Dataset</div>', unsafe_allow_html=True)
         st.markdown(
             f"""
-            <div class="sb-top-bar">
-                <div class="sb-brand-block">
-                    <div class="sb-brand-name">Seminario Predictivo</div>
-                    <div class="sb-brand-sub">Caso 06 · Amazon Reviews</div>
+            <div class="stat-pill" style="margin-bottom:0.4rem">
+                <div class="stat-pill-icon stat-pill-icon-blue">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" stroke-width="2" stroke-linecap="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/></svg>
                 </div>
-                {_theme_pills_html()}
+                <div><div class="stat-pill-value">Reseñas procesadas</div>
+                     <div class="stat-pill-label">{format_compact_number(len(reviews)) if has_rev else "—"} registros</div></div>
+            </div>
+            <div class="stat-pill" style="margin-bottom:0.4rem">
+                <div class="stat-pill-icon stat-pill-icon-teal">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0d9488" stroke-width="2" stroke-linecap="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/></svg>
+                </div>
+                <div><div class="stat-pill-value">Catálogo de productos</div>
+                     <div class="stat-pill-label">{format_compact_number(len(catalog))} productos</div></div>
+            </div>
+            <div class="stat-pill" style="margin-bottom:0.4rem">
+                <div class="stat-pill-icon stat-pill-icon-amber">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                </div>
+                <div><div class="stat-pill-value">Base operativa corporativa</div>
+                     <div class="stat-pill-label">{format_compact_number(len(corp_db))} registros</div></div>
+            </div>
+            <div class="stat-pill" style="margin-bottom:0.4rem">
+                <div class="stat-pill-icon stat-pill-icon-green">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#15803d" stroke-width="2" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                </div>
+                <div><div class="stat-pill-value">Longitud promedio de reseña</div>
+                     <div class="stat-pill-label">{avg_len} palabras por reseña</div></div>
             </div>
             """,
             unsafe_allow_html=True,
         )
 
-        # ── Logo ────────────────────────────────────────────────────────────
-        st.markdown(
-            f'<div class="sb-logo-wrap">{logo_html}</div>',
-            unsafe_allow_html=True,
-        )
+        # Conclusiones
+        st.markdown('<div class="section-label" style="margin-top:1rem">Conclusiones clave</div>', unsafe_allow_html=True)
+        conclusiones = [
+            ("metric-badge-good", "LightGBM supera al baseline logístico en ROC-AUC y F1."),
+            ("metric-badge-info", "La longitud del texto y el sentimiento VADER son los predictores más relevantes."),
+            ("metric-badge-info", "El desbalance de clases fue manejado con class_weight y SMOTE."),
+            ("metric-badge-warn", "Las reseñas muy cortas (<10 palabras) tienen menor utilidad predicha."),
+            ("metric-badge-good", "La API REST en Render permite predicción en tiempo real con latencia <500ms."),
+        ]
+        for badge, texto in conclusiones:
+            st.markdown(
+                f'<div style="display:flex;align-items:flex-start;gap:0.6rem;margin-bottom:0.5rem">'
+                f'<span class="metric-badge {badge}" style="margin-top:0.1rem;white-space:nowrap">●</span>'
+                f'<span style="font-size:0.82rem;color:var(--text);line-height:1.5">{texto}</span></div>',
+                unsafe_allow_html=True,
+            )
 
-        # ── Nav ─────────────────────────────────────────────────────────────
-        _nav_item("main.py",            _I_HOME,   "Inicio")
-        _nav_item(pages["resumen"],     _I_FILE,   "Resumen Ejecutivo")
-        _nav_item(pages["exploracion"], _I_SEARCH, "Exploración de Datos")
-        _nav_item(pages["modelos"],     _I_CHART,  "Modelos y Evaluación")
-        _nav_item(pages["auditoria"],   _I_SHIELD, "Auditoría en Tiempo Real")
-        _nav_item(pages["ranking"],     _I_BAR,    "Ranking y Benchmark")
-
-        # ── Autores ─────────────────────────────────────────────────────────
-        st.markdown(
-            """
-            <div style="
-                margin-top: 1.4rem;
-                padding: 0.75rem 0.6rem 0.6rem;
-                border-top: 1px solid rgba(255,255,255,0.12);
-            ">
-                <div style="
-                    color: rgba(248,250,252,0.40);
-                    font-size: 0.62rem;
-                    font-weight: 700;
-                    letter-spacing: 0.08em;
-                    text-transform: uppercase;
-                    margin-bottom: 0.45rem;
-                ">Autores</div>
-                <div style="color:rgba(248,250,252,0.82);font-size:0.78rem;line-height:1.9">
-                    Arévalo José<br>
-                    Cholango Mónica<br>
-                    Torres Byron
+    # ── Panel metodológico ────────────────────────────────────────────────────
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown('<div class="section-label">Metodología</div>', unsafe_allow_html=True)
+    m1, m2, m3, m4 = st.columns(4, gap="small")
+    pasos = [
+        ("1", "Adquisición", "Descarga y limpieza del dataset Amazon Fine Food Reviews (568K+ reseñas)."),
+        ("2", "Ingeniería", "Extracción de características textuales: longitud, sentimiento VADER, coherencia tono-estrella."),
+        ("3", "Modelado", "Entrenamiento y comparación de Logistic Regression, Random Forest, XGBoost y LightGBM."),
+        ("4", "Despliegue", "API FastAPI en Render con modelo LightGBM serializado; dashboard Streamlit en Cloud."),
+    ]
+    for col, (num, titulo, desc) in zip([m1, m2, m3, m4], pasos):
+        with col:
+            st.markdown(
+                f"""
+                <div class="highlight-card" style="text-align:center;padding:1rem 0.75rem">
+                    <div style="font-size:1.8rem;font-weight:900;color:var(--primary);line-height:1">{num}</div>
+                    <div class="highlight-title" style="font-size:0.82rem;font-weight:700;margin:0.3rem 0 0.4rem">{titulo}</div>
+                    <div class="highlight-body" style="font-size:0.75rem;line-height:1.45">{desc}</div>
                 </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+                """,
+                unsafe_allow_html=True,
+            )
 
 
-def _nav_item(page: str | None, icon_svg: str, label: str) -> None:
-    if page is None:
-        st.markdown(
-            f'<div style="display:flex;align-items:center;gap:0.5rem;'
-            f'padding:0.3rem 0.6rem;color:rgba(248,250,252,0.3);font-size:0.8rem">'
-            f'<div class="sb-nav-icon">{icon_svg}</div>{label}</div>',
-            unsafe_allow_html=True,
-        )
-        return
-    col_icon, col_link = st.columns([0.18, 0.82], gap="small")
-    with col_icon:
-        st.markdown(f'<div class="sb-nav-icon">{icon_svg}</div>', unsafe_allow_html=True)
-    with col_link:
-        st.page_link(page, label=label)
+if __name__ == "__main__":
+    main()
