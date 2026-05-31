@@ -11,6 +11,7 @@ import pandas as pd
 import numpy as np
 import streamlit as st
 
+from services.supabase_service import save_review_to_supabase, clear_supabase_cache
 from services.catalog_service import get_product_catalog, get_product_detail, map_product_metadata
 from services.data_loader import ensure_generated_data_dirs, load_audited_reviews_file, load_processed_reviews, read_uploaded_csv
 from services.ml_service import audit_review_text
@@ -118,38 +119,37 @@ def append_audited_review(
     text: str,
     validate_context: bool = True,
 ) -> dict:
-    """Audita una nueva reseña y la agrega a la base operativa."""
     db = initialize_corporate_audit_db()
     product_detail = get_product_detail(product_id)
     audit_result = audit_review_text(
-        text,
-        stars,
-        product_id,
+        text, stars, product_id,
         product_name=product_detail.get("ProductName"),
         category_name=product_detail.get("Categoria_Real"),
         validate_context=validate_context,
     )
     new_id = int(db["ID_Transaccion"].max()) + 1 if not db.empty else 10001
 
-    new_row = pd.DataFrame(
-        [
-            {
-                "ID_Transaccion": new_id,
-                "ProductId": str(product_id),
-                "User": user_name,
-                "Stars": int(stars),
-                "Helpfulness": audit_result["probability"],
-                "Text": text,
-                "Estado": audit_result["status"],
-                "CreatedAt": pd.Timestamp.now(),
-            }
-        ]
-    )
+    new_row = pd.DataFrame([{
+        "ID_Transaccion": new_id,
+        "ProductId":      str(product_id),
+        "User":           user_name,
+        "Stars":          int(stars),
+        "Helpfulness":    audit_result["probability"],
+        "Text":           text,
+        "Estado":         audit_result["status"],
+        "CreatedAt":      pd.Timestamp.now(),
+    }])
 
+    # Memoria sesión actual
     updated_db = pd.concat([db, new_row], ignore_index=True)
     st.session_state["db_central_corporativa"] = updated_db
-    st.session_state["latest_review_id"] = new_id
-    st.session_state["latest_audit_result"] = audit_result
+    st.session_state["latest_review_id"]       = new_id
+    st.session_state["latest_audit_result"]    = audit_result
+
+    # Persistencia Supabase
+    save_review_to_supabase(audit_result, new_row.iloc[0].to_dict())
+    clear_supabase_cache()
+
     return audit_result
 
 
