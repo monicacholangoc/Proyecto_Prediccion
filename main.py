@@ -1,21 +1,15 @@
-"""Punto de entrada — dashboard ejecutivo."""
+"""Punto de entrada — Bienvenida y presentación del caso."""
 
 import os
 import requests
 import streamlit as st
 
-from components.cards import render_metric_card
 from config.constants import DEFAULT_METRICS
 from config.theme import PAGE_CONFIG
-from services.catalog_service import get_product_catalog
 from services.data_loader import load_processed_reviews
-from services.feature_service import add_basic_text_features
 from services.model_eval_service import compute_model_evaluation
-from services.preprocessing_service import get_corporate_audit_db
 from utils.formatters import format_compact_number, format_percentage
 from utils.state import initialize_state
-from plots.eda_charts import build_stars_distribution, build_review_length_distribution, build_target_balance
-from plots.model_charts import build_model_metrics_chart
 from shared_sidebar import render_sidebar
 
 
@@ -45,45 +39,56 @@ def main() -> None:
     st.set_page_config(**PAGE_CONFIG)
     _setup()
     initialize_state()
-    # Marca la sesión como iniciada; las páginas secundarias usan esto para
-    # redirigir a main.py si el usuario llega directamente (sin sesión).
     st.session_state["app_initialized"] = True
 
-    reviews      = add_basic_text_features(load_processed_reviews())
-    catalog      = get_product_catalog()
-    corporate_db = get_corporate_audit_db()
-    evaluation   = compute_model_evaluation()
-    metrics_df   = evaluation["metrics"]
-    has_reviews  = not reviews.empty
+    reviews    = load_processed_reviews()
+    evaluation = compute_model_evaluation()
+    metrics_df = evaluation["metrics"]
+    has_reviews = not reviews.empty
 
-    useful_ratio = float(reviews["y_util"].mean()) if has_reviews and "y_util" in reviews.columns else 0.0
-    avg_length   = int(reviews["review_len"].fillna(0).mean()) if has_reviews and "review_len" in reviews.columns else 0
-    best         = metrics_df.sort_values("roc_auc", ascending=False).iloc[0] if not metrics_df.empty else None
-    baseline     = metrics_df[metrics_df["modelo"].str.contains("Logistic|logistic", na=False)] if not metrics_df.empty else None
-    baseline_row = baseline.iloc[0] if baseline is not None and not baseline.empty else None
-
+    best      = metrics_df.sort_values("roc_auc", ascending=False).iloc[0] if not metrics_df.empty else None
     roc_val   = format_percentage(float(best["roc_auc"])) if best is not None else "—"
-    f1_val    = format_percentage(float(best["f1"]))      if best is not None else "—"
     model_val = str(best["modelo"])                        if best is not None else "—"
 
-    # ── Hero ──────────────────────────────────────────────────────────────────
+    # ── Hero ─────────────────────────────────────────────────────────────────
     st.markdown(
         f"""
-        <div class="hero-compact">
-            <div class="hero-compact-left">
-                <span class="hero-compact-tag">Seminario Predictivo 2026 · Caso 06</span>
-                <h1>Plataforma Analítica de Utilidad de Reseñas</h1>
-                <p>Amazon Fine Food Reviews · Ingeniería de características textuales · Clasificadores comparados</p>
+        <div style="
+            background: linear-gradient(135deg, #0f1f3d 0%, #1746a2 55%, #0f4c5c 100%);
+            border-radius: 20px;
+            padding: 2.5rem 2.5rem 2rem;
+            margin-bottom: 1.6rem;
+            color: #ffffff;
+            position: relative;
+            overflow: hidden;
+        ">
+            <div style="font-size:0.7rem;font-weight:700;letter-spacing:0.12em;
+                        color:rgba(255,255,255,0.45);text-transform:uppercase;margin-bottom:0.6rem">
+                Seminario Predictivo 2026 · Caso 06
             </div>
-            <div class="hero-compact-stats">
-                <div class="hero-stat">
-                    <div class="hero-stat-value">{format_compact_number(len(reviews)) if has_reviews else '—'}</div>
-                    <div class="hero-stat-label">Reseñas analizadas</div>
+            <div style="font-size:clamp(1.7rem,4vw,2.4rem);font-weight:900;
+                        letter-spacing:-0.03em;line-height:1.15;margin-bottom:0.5rem">
+                Predicción de Utilidad<br>de Reseñas Amazon
+            </div>
+            <div style="font-size:0.9rem;color:rgba(255,255,255,0.6);max-width:600px;line-height:1.6">
+                ¿Qué hace que una reseña sea realmente útil para otros compradores?
+                Este proyecto predice la utilidad percibida a partir de características
+                textuales: longitud, sentimiento y coherencia.
+            </div>
+            <div style="margin-top:1.4rem;display:flex;gap:2rem;flex-wrap:wrap">
+                <div>
+                    <div style="font-size:1.6rem;font-weight:800;color:#7dd3fc">{format_compact_number(len(reviews)) if has_reviews else "~100 K"}</div>
+                    <div style="font-size:0.7rem;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:.07em">Reseñas analizadas</div>
                 </div>
-                <div class="hero-stat-divider"></div>
-                <div class="hero-stat">
-                    <div class="hero-stat-value">{roc_val}</div>
-                    <div class="hero-stat-label">ROC-AUC mejor modelo</div>
+                <div style="width:1px;background:rgba(255,255,255,0.15)"></div>
+                <div>
+                    <div style="font-size:1.6rem;font-weight:800;color:#86efac">{roc_val}</div>
+                    <div style="font-size:0.7rem;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:.07em">ROC-AUC · {model_val}</div>
+                </div>
+                <div style="width:1px;background:rgba(255,255,255,0.15)"></div>
+                <div>
+                    <div style="font-size:1.6rem;font-weight:800;color:#fcd34d">4</div>
+                    <div style="font-size:0.7rem;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:.07em">Features del modelo</div>
                 </div>
             </div>
         </div>
@@ -91,104 +96,97 @@ def main() -> None:
         unsafe_allow_html=True,
     )
 
-    # ── Datos del proyecto ────────────────────────────────────────────────────
-    st.markdown('<div class="section-label">Datos del proyecto</div>', unsafe_allow_html=True)
+    # ── Contexto del problema ─────────────────────────────────────────────────
+    st.markdown('<div class="section-label">Contexto del problema</div>', unsafe_allow_html=True)
     st.markdown(
-        f"""
-        <div class="stat-row">
-            <div class="stat-pill">
-                <div class="stat-pill-icon stat-pill-icon-blue">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" stroke-width="2" stroke-linecap="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/></svg>
-                </div>
-                <div><div class="stat-pill-value">{format_compact_number(DEFAULT_METRICS["registros_iniciales"])}</div><div class="stat-pill-label">Dataset original</div></div>
-            </div>
-            <div class="stat-pill">
-                <div class="stat-pill-icon stat-pill-icon-green">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#15803d" stroke-width="2" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-                </div>
-                <div><div class="stat-pill-value">{format_compact_number(len(reviews)) if has_reviews else '—'}</div><div class="stat-pill-label">Base analítica (≥ 5 votos)</div></div>
-            </div>
-            <div class="stat-pill">
-                <div class="stat-pill-icon stat-pill-icon-teal">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0d9488" stroke-width="2" stroke-linecap="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/></svg>
-                </div>
-                <div><div class="stat-pill-value">{format_compact_number(DEFAULT_METRICS["duplicados_removidos"])}</div><div class="stat-pill-label">Duplicados eliminados</div></div>
-            </div>
-            <div class="stat-pill">
-                <div class="stat-pill-icon stat-pill-icon-amber">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                </div>
-                <div><div class="stat-pill-value">{format_percentage(useful_ratio)}</div><div class="stat-pill-label">Reseñas útiles (≥ 0.70)</div></div>
+        """
+        <div class="highlight-card" style="margin-bottom:1rem">
+            <div class="highlight-title">¿Por qué predecir utilidad y no simplemente mostrar las reseñas más recientes?</div>
+            <div class="highlight-body">
+                Amazon muestra primero las reseñas percibidas como útiles porque impactan directamente
+                en las decisiones de compra de millones de usuarios. Sin embargo, la utilidad
+                <strong>no se puede predecir con las estrellas solas</strong> — una reseña de 5 estrellas
+                que solo dice "¡Excelente!" no ayuda a nadie. El verdadero predictor está
+                en el texto: longitud, coherencia, sentimiento y detalle.
             </div>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-    # ── Modelo activo ─────────────────────────────────────────────────────────
-    st.markdown('<div class="section-label">Modelo activo</div>', unsafe_allow_html=True)
-    if best is not None:
-        delta_str = ""
-        if baseline_row is not None:
-            delta = float(best["roc_auc"]) - float(baseline_row["roc_auc"])
-            delta_str = f'<span class="metric-badge metric-badge-good">+{delta:.1%} vs baseline</span>'
-        ma1, ma2 = st.columns([1, 1.6], gap="large")
-        with ma1:
-            st.markdown(
-                f"""
-                <div class="metric-card" style="border-left:3px solid var(--primary);margin-bottom:0.6rem">
-                    <div class="metric-label">Modelo ganador &nbsp;{delta_str}</div>
-                    <div class="metric-value">{model_val}</div>
-                    <div style="display:flex;gap:1.2rem;margin-top:0.6rem;flex-wrap:wrap">
-                        <div><div style="color:var(--muted);font-size:0.72rem">ROC-AUC</div>
-                             <div style="font-size:1.25rem;font-weight:800;color:var(--primary)">{roc_val}</div></div>
-                        <div><div style="color:var(--muted);font-size:0.72rem">F1-Score</div>
-                             <div style="font-size:1.25rem;font-weight:800;color:var(--text)">{f1_val}</div></div>
-                    </div>
+    ctx1, ctx2 = st.columns(2, gap="large")
+    with ctx1:
+        st.markdown(
+            """
+            <div class="metric-card">
+                <div class="metric-label" style="margin-bottom:0.6rem">Desafíos del dataset</div>
+                <ul style="margin:0;padding-left:1.2rem;font-size:0.83rem;color:var(--text);line-height:1.9">
+                    <li>Reseñas con &lt; 5 votos producen tasas de utilidad no representativas</li>
+                    <li>174 K duplicados por usuario-producto-fecha</li>
+                    <li>70 % de clases "no útiles" → <em>Accuracy</em> no sirve como métrica</li>
+                    <li>Texto de longitud muy variable: desde 1 palabra hasta miles</li>
+                </ul>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    with ctx2:
+        st.markdown(
+            """
+            <div class="metric-card">
+                <div class="metric-label" style="margin-bottom:0.6rem">Solución construida</div>
+                <ul style="margin:0;padding-left:1.2rem;font-size:0.83rem;color:var(--text);line-height:1.9">
+                    <li>Pipeline de limpieza reproducible con filtros documentados</li>
+                    <li>4 features textuales derivadas sin modelos de lenguaje</li>
+                    <li>2 clasificadores comparados con F1 y ROC-AUC</li>
+                    <li>API FastAPI + Dashboard Streamlit con auditoría en tiempo real</li>
+                </ul>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    # ── Guía de navegación ────────────────────────────────────────────────────
+    st.markdown('<div class="section-label">Guía del dashboard — qué encontrarás en cada sección</div>', unsafe_allow_html=True)
+
+    pages = [
+        ("📋", "Resumen Ejecutivo",        "Indicadores del pipeline de datos, métricas de modelos comparadas, hipótesis verificadas y distribuciones clave del caso."),
+        ("🔍", "Exploración de Datos",     "EDA interactivo con filtros por estrellas, categoría y longitud. Relaciones entre variables y correlación con la utilidad."),
+        ("🧪", "Modelos y Evaluación",     "Comparación Logistic Regression vs. LightGBM. Curva ROC, matriz de confusión e importancia de features explicada en lenguaje natural."),
+        ("🛡️", "Auditoría en Tiempo Real", "Escribe una reseña y obtén en segundos su probabilidad de utilidad, diagnóstico de coherencia y recomendaciones para mejorarla."),
+        ("🏆", "Ranking y Benchmark",      "Posición de cada reseña auditada dentro del catálogo del producto. Vista global y comparativa entre productos."),
+    ]
+
+    for icon, title, desc in pages:
+        st.markdown(
+            f"""
+            <div style="display:flex;gap:1rem;align-items:flex-start;
+                        padding:0.85rem 1rem;border-radius:10px;
+                        border:1px solid rgba(23,70,162,0.12);
+                        background:rgba(23,70,162,0.03);
+                        margin-bottom:0.5rem">
+                <div style="font-size:1.4rem;line-height:1;flex-shrink:0;padding-top:0.1rem">{icon}</div>
+                <div>
+                    <div style="font-weight:700;font-size:0.88rem;color:var(--text);margin-bottom:0.2rem">{title}</div>
+                    <div style="font-size:0.8rem;color:var(--muted);line-height:1.5">{desc}</div>
                 </div>
-                """,
-                unsafe_allow_html=True,
-            )
-        with ma2:
-            fig_m = build_model_metrics_chart(metrics_df)
-            fig_m.update_layout(height=220, margin=dict(l=10,r=10,t=30,b=10), showlegend=True,
-                                legend=dict(orientation="h", y=-0.3, font_size=10), title_font_size=12)
-            st.plotly_chart(fig_m, use_container_width=True, config={"displayModeBar": False})
-    else:
-        st.info("Entrena los modelos para ver métricas.")
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
-    # ── Distribuciones clave ──────────────────────────────────────────────────
-    st.markdown('<div class="section-label">Distribuciones clave</div>', unsafe_allow_html=True)
-    gc1, gc2 = st.columns(2, gap="small")
-    with gc1:
-        fig = build_stars_distribution(reviews)
-        fig.update_layout(height=200, margin=dict(l=10,r=10,t=30,b=10), showlegend=False, title_font_size=12)
-        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
-    with gc2:
-        fig2 = build_review_length_distribution(reviews)
-        if has_reviews and avg_length > 0:
-            fig2.add_vline(x=avg_length, line_dash="dash", line_color="#0f9f74",
-                           annotation_text=f"x̄={avg_length}", annotation_position="top right")
-        fig2.update_layout(height=200, margin=dict(l=10,r=10,t=30,b=10), showlegend=False, title_font_size=12)
-        st.plotly_chart(fig2, use_container_width=True, config={"displayModeBar": False})
-
-    # ── Balance de clases ─────────────────────────────────────────────────────
-    st.markdown('<div class="section-label">Balance de clases</div>', unsafe_allow_html=True)
-    fig3 = build_target_balance(reviews)
-    fig3.update_layout(height=180, margin=dict(l=10,r=10,t=30,b=10), showlegend=False, title_font_size=12)
-    st.plotly_chart(fig3, use_container_width=True, config={"displayModeBar": False})
-
-    # ── API de predicción ─────────────────────────────────────────────────────
-    st.markdown('<div class="section-label">API de predicción</div>', unsafe_allow_html=True)
+    # ── Estado de la API ──────────────────────────────────────────────────────
+    st.markdown('<div class="section-label">Estado de la API de predicción</div>', unsafe_allow_html=True)
     with st.spinner(""):
         api_status = _get_api_status()
     api_ok = api_status.get("status") == "ok"
     lgb_ok = "✓" in api_status.get("modelos", {}).get("lgb_model", "") if api_ok else False
+
     st.markdown(
         f"""
         <div class="api-status-grid">
             <div class="api-card">
-                <div class="api-card-label">Estado · FastAPI / Render</div>
+                <div class="api-card-label">FastAPI · Render</div>
                 <div class="api-card-value">proyecto-prediccion-v9qk</div>
                 <span class="metric-badge {'metric-badge-good' if api_ok else 'metric-badge-warn'}">{'Activa' if api_ok else 'Sin respuesta'}</span>
             </div>
@@ -198,17 +196,37 @@ def main() -> None:
                 <span class="metric-badge {'metric-badge-good' if lgb_ok else 'metric-badge-warn'}">{'Cargado' if lgb_ok else 'Heurística'}</span>
             </div>
             <div class="api-card">
-                <div class="api-card-label">Predicción</div>
+                <div class="api-card-label">Endpoint predicción</div>
                 <div class="api-card-value">POST /reviews/predict_helpfulness</div>
             </div>
             <div class="api-card">
-                <div class="api-card-label">Palabras clave</div>
+                <div class="api-card-label">Endpoint palabras clave</div>
                 <div class="api-card-value">GET /reviews/top_words</div>
             </div>
         </div>
         """,
         unsafe_allow_html=True,
     )
+
+    # ── Equipo ────────────────────────────────────────────────────────────────
+    st.markdown('<div class="section-label">Equipo</div>', unsafe_allow_html=True)
+    t1, t2, t3 = st.columns(3, gap="medium")
+    for col, name, role in zip(
+        [t1, t2, t3],
+        ["Arévalo José", "Cholango Mónica", "Torres Byron"],
+        ["Modelado & API", "EDA & Pipeline", "Dashboard & UI"],
+    ):
+        with col:
+            st.markdown(
+                f"""
+                <div class="metric-card" style="text-align:center">
+                    <div style="font-size:1.6rem;margin-bottom:0.4rem">👤</div>
+                    <div style="font-weight:700;font-size:0.9rem">{name}</div>
+                    <div style="font-size:0.75rem;color:var(--muted);margin-top:0.2rem">{role}</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
 
 
 if __name__ == "__main__":
