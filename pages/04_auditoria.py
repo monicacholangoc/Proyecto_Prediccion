@@ -283,21 +283,7 @@ with tab1:
 
     st.markdown("---")
 
-    # Benchmark
-    st.markdown('<div class="section-label">Benchmark del producto</div>', unsafe_allow_html=True)
-    pb = get_product_benchmark(selected_product)
-    b1, b2, b3, b4 = st.columns(4, gap="medium")
-    with b1:
-        render_metric_card("Promedio", format_percentage(pb["avg_helpfulness"]), "Utilidad media")
-    with b2:
-        render_metric_card("Mejor score", format_percentage(pb["top_helpfulness"]), "Resena mas util")
-    with b3:
-        render_metric_card("Total resenas", str(pb["count"]), "Volumen historico")
-    with b4:
-        lr = st.session_state.get("latest_audit_result")
-        if lr:
-            render_metric_card("vs. promedio", f"{lr['probability'] - pb['avg_helpfulness']:+.1%}", "Tu resena vs. media")
-
+    
     lr   = st.session_state.get("latest_audit_result")
     prob = lr["probability"] if lr else 0.0
 
