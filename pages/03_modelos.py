@@ -12,7 +12,7 @@ with open("styles/styles.css", "r", encoding="utf-8") as _f:
 render_sidebar()
 
 st.title("Modelos y Evaluación")
-st.caption("Comparación de clasificadores con métricas apropiadas para datos desbalanceados.")
+st.caption("Comparamos tres clasificadores para predecir si una reseña de Amazon será útil o no. Usamos métricas pensadas para datos desbalanceados (donde una clase es mucho más frecuente que la otra).")
 
 evaluation         = compute_model_evaluation()
 metrics_df         = evaluation["metrics"]
@@ -28,10 +28,11 @@ best_name = best["modelo"]
 
 st.markdown(
     """<div class="accuracy-warning">
-        <div class="aw-title">Por qué no se usa Accuracy</div>
-        <p>Con ~70 % de reseñas "no útiles", un modelo que prediga siempre "no útil" alcanzaría ~70 % de Accuracy
-        <strong>sin aprender nada</strong>. Se usan <strong>F1-Score</strong> y <strong>ROC-AUC</strong>,
-        válidos con clases desbalanceadas.</p>
+        <div class="aw-title">¿Por qué no usamos Accuracy (exactitud)?</div>
+        <p>Con ~70 % de reseñas clasificadas como "no útiles", un modelo que <em>siempre</em> prediga "no útil"
+        obtendría 70 % de Accuracy <strong>sin haber aprendido nada</strong>. Por eso usamos métricas más honestas:
+        <strong>F1-Score</strong> (balance entre precisión y cobertura) y
+        <strong>ROC-AUC</strong> (qué tan bien separa las dos clases), ambas válidas cuando las clases están desbalanceadas.</p>
     </div>""", unsafe_allow_html=True,
 )
 
@@ -44,17 +45,18 @@ for _, row in metrics_df.iterrows():
             f"""<div class="metric-card" style="{'border:2px solid var(--primary);' if is_best else ''}">
                 <div class="metric-label">Modelo</div>
                 <div class="metric-value" style="font-size:1.1rem">{row['modelo']}</div>
-                <span class="metric-badge {'metric-badge-good' if is_best else 'metric-badge-info'}">{'Modelo ganador' if is_best else 'Baseline'}</span>
+                <span class="metric-badge {'metric-badge-good' if is_best else 'metric-badge-info'}">{'Modelo ganador' if is_best else 'Referencia'}</span>
             </div>""", unsafe_allow_html=True,
         )
-    with mc2: render_metric_card("Precisión", f"{float(row['precision']):.4f}", "TP / (TP + FP)")
-    with mc3: render_metric_card("Recall",    f"{float(row['recall']):.4f}",    "TP / (TP + FN)")
-    with mc4: render_metric_card("F1-Score",  f"{float(row['f1']):.4f}",        "Precisión + Recall")
-    with mc5: render_metric_card("ROC-AUC",   f"{float(row['roc_auc']):.4f}",   "Capacidad discriminativa")
+    with mc2: render_metric_card("Precisión", f"{float(row['precision']):.1%}", "De cada 100 reseñas que el modelo dice que son útiles, ¿cuántas realmente lo son?")
+    with mc3: render_metric_card("Recall (Cobertura)", f"{float(row['recall']):.1%}", "De todas las reseñas útiles reales, ¿cuántas logra detectar el modelo?")
+    with mc4: render_metric_card("F1-Score", f"{float(row['f1']):.1%}", "Promedio balanceado entre Precisión y Cobertura. Más alto = mejor.")
+    with mc5: render_metric_card("ROC-AUC", f"{float(row['roc_auc']):.1%}", "Capacidad general de separar reseñas útiles de no útiles. 100% = perfecto, 50% = azar.")
 
 st.plotly_chart(build_model_metrics_chart(metrics_df), use_container_width=True)
 
-st.markdown('<div class="section-label">Importancia de variables</div>', unsafe_allow_html=True)
+st.markdown('<div class="section-label">¿Qué variables influyen más en la predicción?</div>', unsafe_allow_html=True)
+st.caption("Importancia relativa de cada variable según el modelo LightGBM. Una variable con mayor importancia tiene más peso en la decisión del modelo.")
 if not feature_imp_df.empty:
     ordered = feature_imp_df.sort_values("importancia", ascending=False)
     feature_labels = {
@@ -63,10 +65,19 @@ if not feature_imp_df.empty:
         "incoherente":     "La incoherencia penaliza la utilidad",
         "Score":           "Las estrellas aportan contexto",
     }
+    feature_names = {
+        "review_len":      "Longitud de la reseña",
+        "sentiment_score": "Puntuación de sentimiento",
+        "incoherente":     "Texto incoherente",
+        "Score":           "Calificación (estrellas)",
+    }
     fig_imp = px.bar(ordered.sort_values("importancia", ascending=True),
         x="importancia", y="feature", orientation="h",
-        title="Importancia relativa — LightGBM", template="plotly_white",
+        title="Importancia relativa de variables — Modelo LightGBM",
+        labels={"importancia": "Importancia relativa", "feature": "Variable"},
+        template="plotly_white",
         color_discrete_sequence=["#1d4ed8"])
+    fig_imp.update_yaxes(ticktext=[feature_names.get(f, f) for f in ordered.sort_values("importancia", ascending=True)["feature"]], tickvals=list(ordered.sort_values("importancia", ascending=True)["feature"]))
     for _, row in ordered.iterrows():
         label = feature_labels.get(row["feature"], "")
         if label:
@@ -78,14 +89,18 @@ if not feature_imp_df.empty:
     imp_cols = st.columns(len(ordered), gap="medium")
     for col, (_, row) in zip(imp_cols, ordered.iterrows()):
         with col:
-            render_metric_card(str(row["feature"]), f"{float(row['importancia']):.1%}", feature_labels.get(row["feature"], ""))
+            render_metric_card(
+                feature_names.get(str(row["feature"]), str(row["feature"])),
+                f"{float(row['importancia']):.1%}",
+                feature_labels.get(row["feature"], "")
+            )
 else:
     st.info("No hay datos de importancia disponibles.")
 
-st.markdown('<div class="section-label">Curva ROC</div>', unsafe_allow_html=True)
-st.caption("Área = 1.0 es el clasificador perfecto. La diagonal es el azar puro (AUC = 0.5).")
+st.markdown('<div class="section-label">Curva ROC — ¿Qué tan bien separa los modelos las clases?</div>', unsafe_allow_html=True)
+st.caption("La curva ROC muestra cómo varía la tasa de aciertos según el umbral de decisión. Un área (AUC) de 1.0 = clasificador perfecto. La línea diagonal punteada representa el azar puro (AUC = 0.5).")
 st.plotly_chart(build_roc_chart(metrics_df, roc_curves), use_container_width=True)
 
-st.markdown(f'<div class="section-label">Matriz de confusión — {best_name}</div>', unsafe_allow_html=True)
-st.caption("Los falsos negativos (útiles clasificadas como no útiles) son el error más costoso.")
+st.markdown(f'<div class="section-label">Matriz de Confusión — {best_name}</div>', unsafe_allow_html=True)
+st.caption("Muestra cuántas predicciones fueron correctas e incorrectas. Los **Falsos Negativos** (reseñas útiles clasificadas como no útiles) son el error más costoso, porque perdemos reseñas valiosas.")
 st.plotly_chart(build_confusion_matrix_chart(confusion_matrices.get(best_name), best_name), use_container_width=True)
