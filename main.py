@@ -78,17 +78,17 @@ def main() -> None:
             <div class="hero-compact-stats">
                 <div class="hero-stat">
                     <div class="hero-stat-value">{format_compact_number(len(reviews)) if has_reviews else '—'}</div>
-                    <div class="hero-stat-label">Reseñas</div>
+                    <div class="hero-stat-label">Reseñas analizadas</div>
                 </div>
                 <div class="hero-stat-divider"></div>
                 <div class="hero-stat">
                     <div class="hero-stat-value">{roc_val}</div>
-                    <div class="hero-stat-label">ROC-AUC</div>
+                    <div class="hero-stat-label">ROC-AUC mejor modelo</div>
                 </div>
                 <div class="hero-stat-divider"></div>
                 <div class="hero-stat">
                     <div class="hero-stat-value">{format_percentage(useful_ratio)}</div>
-                    <div class="hero-stat-label">Útiles</div>
+                    <div class="hero-stat-label">Reseñas útiles en dataset</div>
                 </div>
             </div>
         </div>
@@ -99,7 +99,7 @@ def main() -> None:
     col_left, col_right = st.columns([1.55, 1], gap="large")
 
     with col_left:
-        st.markdown('<div class="section-label">Dataset</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-label">Datos del proyecto</div>', unsafe_allow_html=True)
         st.markdown(
             f"""
             <div class="stat-row">
@@ -107,25 +107,25 @@ def main() -> None:
                     <div class="stat-pill-icon stat-pill-icon-blue">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" stroke-width="2" stroke-linecap="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/></svg>
                     </div>
-                    <div><div class="stat-pill-value">{format_compact_number(DEFAULT_METRICS["registros_iniciales"])}</div><div class="stat-pill-label">Dataset bruto</div></div>
+                    <div><div class="stat-pill-value">{format_compact_number(DEFAULT_METRICS["registros_iniciales"])}</div><div class="stat-pill-label">Dataset original</div></div>
                 </div>
                 <div class="stat-pill">
                     <div class="stat-pill-icon stat-pill-icon-green">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#15803d" stroke-width="2" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
                     </div>
-                    <div><div class="stat-pill-value">{format_compact_number(len(reviews)) if has_reviews else '—'}</div><div class="stat-pill-label">Base analítica</div></div>
+                    <div><div class="stat-pill-value">{format_compact_number(len(reviews)) if has_reviews else '—'}</div><div class="stat-pill-label">Base analítica (≥ 5 votos)</div></div>
                 </div>
                 <div class="stat-pill">
                     <div class="stat-pill-icon stat-pill-icon-teal">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0d9488" stroke-width="2" stroke-linecap="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/></svg>
                     </div>
-                    <div><div class="stat-pill-value">{format_compact_number(len(catalog))}</div><div class="stat-pill-label">Catálogo</div></div>
+                    <div><div class="stat-pill-value">{format_compact_number(DEFAULT_METRICS["duplicados_removidos"])}</div><div class="stat-pill-label">Duplicados eliminados</div></div>
                 </div>
                 <div class="stat-pill">
                     <div class="stat-pill-icon stat-pill-icon-amber">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
                     </div>
-                    <div><div class="stat-pill-value">{format_compact_number(len(corporate_db))}</div><div class="stat-pill-label">Base operativa</div></div>
+                    <div><div class="stat-pill-value">{format_percentage(useful_ratio)}</div><div class="stat-pill-label">Reseñas útiles (≥ 0.70)</div></div>
                 </div>
             </div>
             """,
@@ -168,7 +168,7 @@ def main() -> None:
                              <div style="font-size:1.25rem;font-weight:800;color:var(--primary)">{roc_val}</div></div>
                         <div><div style="color:var(--muted);font-size:0.72rem">F1-Score</div>
                              <div style="font-size:1.25rem;font-weight:800;color:var(--text)">{f1_val}</div></div>
-                        <div><div style="color:var(--muted);font-size:0.72rem">Útiles predichas</div>
+                        <div><div style="color:var(--muted);font-size:0.72rem">Útiles en dataset</div>
                              <div style="font-size:1.25rem;font-weight:800;color:var(--success)">{format_percentage(useful_ratio)}</div></div>
                     </div>
                 </div>
@@ -182,29 +182,19 @@ def main() -> None:
         else:
             st.info("Entrena los modelos para ver métricas.")
 
-        st.markdown('<div class="section-label">Variables predictoras</div>', unsafe_allow_html=True)
-        features = [
-            ("stat-pill-icon-green", "#15803d", '<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>', "Longitud", "Palabras en la reseña", "Feature #1", "metric-badge-good"),
-            ("stat-pill-icon-blue",  "#1d4ed8", '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>', "Sentimiento VADER", "Score compuesto", "Feature #2", "metric-badge-info"),
-            ("stat-pill-icon-amber", "#b45309", '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>', "Coherencia", "Tono vs. estrellas", "Feature #3", "metric-badge-warn"),
-            ("stat-pill-icon-teal",  "#0d9488", '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>', "Calificación", "Estrellas 1–5", "Contexto", "metric-badge-info"),
-        ]
-        for icon_class, color, path, label, caption, badge, badge_class in features:
-            st.markdown(
-                f"""
-                <div class="stat-pill" style="margin-bottom:0.4rem">
-                    <div class="stat-pill-icon {icon_class}">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="2" stroke-linecap="round">{path}</svg>
-                    </div>
-                    <div style="flex:1;display:flex;justify-content:space-between;align-items:center">
-                        <div><div class="stat-pill-value" style="font-size:0.88rem;font-weight:700">{label}</div>
-                             <div class="stat-pill-label">{caption}</div></div>
-                        <span class="metric-badge {badge_class}">{badge}</span>
-                    </div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
+        st.markdown('<div class="section-label">Conclusión del modelo</div>', unsafe_allow_html=True)
+        st.markdown(
+            f"""
+            <div class="insight-panel">
+                <div class="insight-title">¿Qué predice la utilidad de una reseña?</div>
+                <p>El análisis confirma que <strong>escribir más es el factor principal</strong>: las reseñas largas y detalladas son consistentemente más útiles. El sentimiento del texto aporta información adicional, pero su peso es menor que la extensión. La incoherencia entre el tono y las estrellas penaliza directamente la predicción. La calificación sola no es suficiente para predecir utilidad.</p>
+            </div>
+            <div style="margin-top:0.5rem;color:var(--muted);font-size:0.8rem">
+                Consejo práctico: una reseña de más de 80 palabras, con tono coherente con las estrellas asignadas, tiene alta probabilidad de ser percibida como útil por otros compradores.
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
         st.markdown('<div class="section-label">API de predicción</div>', unsafe_allow_html=True)
         with st.spinner(""):

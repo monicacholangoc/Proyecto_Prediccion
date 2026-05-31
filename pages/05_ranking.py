@@ -151,4 +151,5 @@ else:
     st.info("No hay reseñas guardadas para los filtros seleccionados.")
 
 st.markdown('<div class="section-label">Top 20 global por utilidad</div>', unsafe_allow_html=True)
+st.caption("Ranking consolidado sobre toda la base operativa: reseñas históricas del dataset Amazon (inicializadas al arrancar) más las reseñas nuevas auditadas en esta sesión.")
 st.dataframe(global_ranking_df.head(20), use_container_width=True, hide_index=True)

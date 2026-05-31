@@ -2,11 +2,9 @@
 import streamlit as st
 from shared_sidebar import render_sidebar
 from components.cards import render_metric_card
-from services.catalog_service import get_product_catalog
 from services.data_loader import load_processed_reviews
 from services.feature_service import add_basic_text_features
 from plots.eda_charts import build_stars_distribution, build_review_length_distribution
-from services.preprocessing_service import get_corporate_audit_db
 from utils.formatters import format_compact_number, format_percentage
 
 with open("styles/styles.css", "r", encoding="utf-8") as _f:
@@ -17,15 +15,12 @@ st.title("Resumen Ejecutivo")
 st.caption("Indicadores del dataset, hipótesis verificadas y distribuciones clave.")
 
 reviews      = add_basic_text_features(load_processed_reviews())
-catalog      = get_product_catalog()
-corporate_db = get_corporate_audit_db()
 has_reviews  = not reviews.empty
 
-useful_ratio   = float(reviews["y_util"].mean()) if has_reviews and "y_util" in reviews.columns else float(corporate_db["Helpfulness"].ge(0.70).mean()) if not corporate_db.empty else 0.0
+useful_ratio   = float(reviews["y_util"].mean()) if has_reviews and "y_util" in reviews.columns else 0.0
 avg_length     = int(reviews["review_len"].fillna(0).mean()) if has_reviews and "review_len" in reviews.columns else 0
-approved_ratio = float(corporate_db["Estado"].eq("APROBADA (Publicada)").mean()) if not corporate_db.empty else 0.0
 
-st.markdown('<div class="section-label">Dataset</div>', unsafe_allow_html=True)
+st.markdown('<div class="section-label">Calidad del pipeline de datos</div>', unsafe_allow_html=True)
 st.markdown(
     f"""
     <div class="stat-row">
@@ -33,35 +28,35 @@ st.markdown(
             <div class="stat-pill-icon stat-pill-icon-blue">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" stroke-width="2" stroke-linecap="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/></svg>
             </div>
-            <div><div class="stat-pill-value">568.454</div><div class="stat-pill-label">Dataset original</div></div>
-        </div>
-        <div class="stat-pill">
-            <div class="stat-pill-icon stat-pill-icon-green">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#15803d" stroke-width="2" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-            </div>
-            <div><div class="stat-pill-value">{format_compact_number(len(reviews)) if has_reviews else '—'}</div><div class="stat-pill-label">Base analítica (≥ 5 votos)</div></div>
-        </div>
-        <div class="stat-pill">
-            <div class="stat-pill-icon stat-pill-icon-teal">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0d9488" stroke-width="2" stroke-linecap="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/></svg>
-            </div>
-            <div><div class="stat-pill-value">{format_compact_number(len(catalog))}</div><div class="stat-pill-label">Catálogo</div></div>
+            <div><div class="stat-pill-value">568.454</div><div class="stat-pill-label">Reseñas originales</div></div>
         </div>
         <div class="stat-pill">
             <div class="stat-pill-icon stat-pill-icon-amber">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
             </div>
-            <div><div class="stat-pill-value">{format_compact_number(len(corporate_db))}</div><div class="stat-pill-label">Base operativa</div></div>
+            <div><div class="stat-pill-value">174.918</div><div class="stat-pill-label">Duplicados eliminados</div></div>
+        </div>
+        <div class="stat-pill">
+            <div class="stat-pill-icon stat-pill-icon-teal">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0d9488" stroke-width="2" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            </div>
+            <div><div class="stat-pill-value">{format_compact_number(len(reviews)) if has_reviews else '—'}</div><div class="stat-pill-label">Base analítica final (≥ 5 votos)</div></div>
+        </div>
+        <div class="stat-pill">
+            <div class="stat-pill-icon stat-pill-icon-green">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#15803d" stroke-width="2" stroke-linecap="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            </div>
+            <div><div class="stat-pill-value">14</div><div class="stat-pill-label">Nulos eliminados</div></div>
         </div>
     </div>
     """, unsafe_allow_html=True,
 )
 
-st.markdown('<div class="section-label">Indicadores clave</div>', unsafe_allow_html=True)
+st.markdown('<div class="section-label">Indicadores clave del dataset</div>', unsafe_allow_html=True)
 k1, k2, k3 = st.columns(3, gap="medium")
-with k1: render_metric_card("Reseñas útiles (≥ 0.70)", format_percentage(useful_ratio), "Variable objetivo del modelo")
-with k2: render_metric_card("Longitud media", f"{avg_length} palabras", "Feature #1 del modelo")
-with k3: render_metric_card("Reseñas aprobadas", format_percentage(approved_ratio), "Clasificadas como publicadas")
+with k1: render_metric_card("Reseñas útiles (≥ 0.70)", format_percentage(useful_ratio), "Proporción de la variable objetivo — confirma el desbalance de clases")
+with k2: render_metric_card("Longitud media", f"{avg_length} palabras", "Feature #1 del modelo — las reseñas largas tienden a ser más útiles")
+with k3: render_metric_card("Desbalance de clases", f"{format_percentage(1 - useful_ratio)} no útiles", "Justifica usar F1 y ROC-AUC en lugar de Accuracy")
 
 st.markdown('<div class="section-label">Hipótesis verificadas</div>', unsafe_allow_html=True)
 h1, h2, h3 = st.columns(3, gap="medium")
@@ -80,15 +75,15 @@ for col, (title, result, badge_class, body) in zip([h1, h2, h3], hypotheses):
             </div>""", unsafe_allow_html=True,
         )
 
-st.markdown('<div class="section-label">Distribuciones</div>', unsafe_allow_html=True)
+st.markdown('<div class="section-label">Distribuciones clave</div>', unsafe_allow_html=True)
 lc, rc = st.columns(2, gap="large")
 with lc:
-    st.caption("**Calificaciones** — Concentración en 4–5 estrellas genera desbalance de clases.")
+    st.caption("**Calificaciones** — El 63 % de las reseñas tienen 4–5 estrellas. Esta concentración genera desbalance de clases y es la razón principal por la que Accuracy no es una métrica válida aquí.")
     st.plotly_chart(build_stars_distribution(reviews), use_container_width=True)
 with rc:
     fig2 = build_review_length_distribution(reviews)
     if avg_length > 0:
         fig2.add_vline(x=avg_length, line_dash="dash", line_color="#0f9f74",
                        annotation_text=f"Media: {avg_length} palabras", annotation_position="top right")
-    st.caption("**Longitud** — Pocas reseñas son muy largas; suelen ser las más útiles.")
+    st.caption("**Longitud** — La distribución es asimétrica: pocas reseñas son muy largas, pero son consistentemente las más útiles. Esto confirma la hipótesis H1 del caso.")
     st.plotly_chart(fig2, use_container_width=True)

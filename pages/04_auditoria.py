@@ -109,7 +109,10 @@ ar = st.session_state.get("_api_result")
 prob = ar["probability"] if ar and "error" not in ar else (lr["probability"] if lr else 0.0)
 review_len  = lr["review_len"]  if lr else 0
 incoherence = lr["incoherente"] if lr else False
-sentiment_val = (ar or {}).get("features", {}).get("sentiment_score") or (ar or {}).get("sentiment_score")
+sentiment_val = (ar or {}).get("features", {}).get("sentiment_score") \
+    or (ar or {}).get("sentiment_score") \
+    or (ar or {}).get("features_calculated", {}).get("sentiment_compound") \
+    or (lr.get("sentiment_score") if lr else None)
 stars_val = st.session_state.get("latest_stars", 5)
 
 f1, f2, f3, f4 = st.columns(4, gap="medium")
@@ -123,9 +126,12 @@ with f3:
     s_badge = ("metric-badge-good" if sentiment_val and sentiment_val > 0.05 else ("metric-badge-warn" if sentiment_val and sentiment_val < -0.05 else "metric-badge-info")) if sentiment_val is not None else "metric-badge-info"
     st.markdown(f"""<div class="metric-card"><div class="metric-label">Sentimiento VADER</div><div class="metric-value">{f'{sentiment_val:.2f}' if sentiment_val is not None else '—'}</div><div class="metric-caption">Score compuesto (−1 a +1)</div><span class="metric-badge {s_badge}">{s_label}</span></div>""", unsafe_allow_html=True)
 with f4:
-    st.markdown(f"""<div class="metric-card"><div class="metric-label">Coherencia</div><div class="metric-value">{'Sí' if incoherence else 'No'}</div><div class="metric-caption">¿El tono contradice las estrellas?</div><span class="metric-badge {'metric-badge-warn' if incoherence else 'metric-badge-good'}">{'Incoherente' if incoherence else 'Coherente'}</span></div>""", unsafe_allow_html=True)
+    coherence_label = "Incoherente" if incoherence else "Coherente"
+    coherence_value = "Tono vs. estrellas no coinciden" if incoherence else "Tono alineado con estrellas"
+    st.markdown(f"""<div class="metric-card"><div class="metric-label">Coherencia texto–estrellas</div><div class="metric-value" style="font-size:1rem">{coherence_value}</div><div class="metric-caption">¿El sentimiento del texto coincide con la calificación?</div><span class="metric-badge {'metric-badge-warn' if incoherence else 'metric-badge-good'}">{coherence_label}</span></div>""", unsafe_allow_html=True)
 
 st.markdown('<div class="section-label">Benchmark del producto</div>', unsafe_allow_html=True)
+st.caption("Comparación de la reseña actual contra el historial del producto en la base operativa. Incluye reseñas históricas del dataset y reseñas auditadas previamente en esta sesión.")
 pb = get_product_benchmark(selected_product)
 b1, b2, b3, b4 = st.columns(4, gap="medium")
 with b1: render_metric_card("Promedio", format_percentage(pb["avg_helpfulness"]), "Utilidad media")

@@ -86,6 +86,16 @@ if not feature_imp_df.empty:
     fig_imp.update_layout(height=320, margin=dict(r=260))
     st.plotly_chart(fig_imp, use_container_width=True)
 
+    st.markdown(
+        """<div class="insight-panel">
+            <div class="insight-title">Interpretación del modelo</div>
+            <p>Las reseñas largas con sentimiento coherente con las estrellas son consistentemente más útiles.
+            La longitud de la reseña es el predictor dominante: aporta más del doble del peso que el sentimiento.
+            La incoherencia entre tono y calificación actúa como penalizador. La calificación en estrellas
+            sola no es suficiente para predecir utilidad — confirma que el texto es lo que realmente importa.</p>
+        </div>""", unsafe_allow_html=True,
+    )
+
     total_imp = ordered["importancia"].sum()
     imp_cols = st.columns(len(ordered), gap="medium")
     for col, (_, row) in zip(imp_cols, ordered.iterrows()):
@@ -104,5 +114,5 @@ st.caption("La curva ROC muestra cómo varía la tasa de aciertos según el umbr
 st.plotly_chart(build_roc_chart(metrics_df, roc_curves), use_container_width=True)
 
 st.markdown(f'<div class="section-label">Matriz de Confusión — {best_name}</div>', unsafe_allow_html=True)
-st.caption("Muestra cuántas predicciones fueron correctas e incorrectas. Los **Falsos Negativos** (reseñas útiles clasificadas como no útiles) son el error más costoso, porque perdemos reseñas valiosas.")
+st.caption("Cada celda muestra cuántas reseñas clasificó el modelo. La diagonal principal (↘) son los aciertos. Los **Falsos Negativos** (reseñas útiles clasificadas como no útiles) son el error más costoso: el modelo pierde contenido de valor que nunca llega a los compradores.")
 st.plotly_chart(build_confusion_matrix_chart(confusion_matrices.get(best_name), best_name), use_container_width=True)
