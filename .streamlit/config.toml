@@ -1,16 +1,18 @@
+# .streamlit/config.toml
+# IMPORTANTE: backgroundColor debe ser transparente/vacío para que nuestro
+# CSS de styles.css controle el fondo. Si se pone un color aquí,
+# Streamlit lo inyecta con !important y sobreescribe nuestro gradiente.
+
 [theme]
-# Tema base CLARO — el modo oscuro/sistema lo maneja el JS de shared_sidebar.py
-# primaryColor define el azul nativo de Streamlit (botones, sliders, etc.)
-primaryColor       = "#1746a2"
-backgroundColor    = "#edf2f8"
-secondaryBackgroundColor = "#ffffff"
-textColor          = "#0f172a"
-font               = "sans serif"
+primaryColor             = "#1746a2"
+backgroundColor          = ""
+secondaryBackgroundColor = ""
+textColor                = "#0f172a"
+font                     = "sans serif"
 
 [server]
 maxUploadSize  = 500
 maxMessageSize = 500
 
 [client]
-# Oculta la navegación automática de páginas de Streamlit
 showSidebarNavigation = false
