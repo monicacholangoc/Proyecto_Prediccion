@@ -1,32 +1,37 @@
-"""Pagina de auditoria en tiempo real.
+"""Auditoria en tiempo real."""
+try:
+    import streamlit as _st
+    if not _st.session_state.get("app_initialized"):
+        _st.switch_page("main.py")
+except Exception:
+    pass
 
-Recibe una reseña, consulta la capa de servicios y devuelve una salida
-lista para usuario final: score, estado y diagnostico resumido.
-"""
-
+import os
 import pandas as pd
+import requests
 import streamlit as st
-
-from components.cards import render_highlight_card, render_metric_card, render_review_card
-from components.feedback import render_bullet_panel, render_info_panel, render_status_panel
+from shared_sidebar import render_sidebar
+from components.cards import render_metric_card, render_review_card
+from components.feedback import render_status_panel
 from plots.audit_charts import build_helpfulness_gauge
-from services.catalog_service import get_product_detail, get_product_options
-from services.ml_service import generate_review_recommendations
+from services.catalog_service import get_product_detail, get_product_options, get_product_catalog
+from services.ml_service import generate_review_recommendations, audit_review_text, load_trained_model
 from services.preprocessing_service import (
     append_audited_review,
-    get_audited_reviews_operational_table,
     get_product_benchmark,
     get_position_summary,
-    get_product_reviews_by_date,
     get_review_context_window,
+    get_audited_reviews_operational_table,
     process_uploaded_audit_file,
     save_latest_review_to_file,
 )
 from utils.formatters import format_percentage
 from utils.validators import is_non_empty_text
 
+with open("styles/styles.css", "r", encoding="utf-8") as _f:
+    st.markdown(f"<style>{_f.read()}</style>", unsafe_allow_html=True)
+render_sidebar()
 
-# ── CSS visual mejorado ───────────────────────────────────────────────────────
 st.markdown("""
 <style>
 .feat-grid { display:grid; grid-template-columns:1fr 1fr; gap:0.5rem; margin-bottom:0.6rem; }
@@ -35,413 +40,492 @@ st.markdown("""
     padding:0.7rem 0.8rem; position:relative; overflow:hidden;
     box-shadow:0 1px 3px rgba(0,0,0,0.04);
 }
-.feat-card::before { content:""; position:absolute; left:0; top:0; bottom:0; width:3px; border-radius:3px 0 0 3px; }
+.feat-card::before {
+    content:""; position:absolute; left:0; top:0; bottom:0;
+    width:3px; border-radius:3px 0 0 3px;
+}
 .feat-card-green::before { background:#15803d; }
 .feat-card-amber::before { background:#b45309; }
 .feat-card-blue::before  { background:#1d4ed8; }
+.feat-card-gray::before  { background:#94a3b8; }
 .feat-card-red::before   { background:#dc2626; }
-.feat-lbl { font-size:0.6rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:0.07em; margin-bottom:0.2rem; }
+.feat-lbl { font-size:0.6rem; font-weight:700; color:#94a3b8; text-transform:uppercase;
+            letter-spacing:0.07em; margin-bottom:0.2rem; }
 .feat-val { font-size:1rem; font-weight:800; color:#0f172a; line-height:1.2; margin-bottom:0.15rem; }
 .feat-cap { font-size:0.62rem; color:#94a3b8; margin-bottom:0.25rem; }
-.feat-badge { display:inline-block; font-size:0.6rem !important; font-weight:700; padding:0.12rem 0.45rem !important; border-radius:999px; color:#fff !important; }
-.feat-green { background:#15803d; } .feat-amber { background:#b45309; }
-.feat-blue  { background:#1d4ed8; } .feat-red   { background:#dc2626; }
+.feat-badge { display:inline-block; font-size:0.6rem !important; font-weight:700;
+              padding:0.12rem 0.45rem !important; border-radius:999px; color:#fff !important; }
+.feat-green { background:#15803d; }
+.feat-amber { background:#b45309; }
+.feat-blue  { background:#1d4ed8; }
 .feat-gray  { background:#64748b; }
-.diag-card { border-radius:14px; padding:1rem 1.1rem; margin-top:0.5rem; border:1px solid; position:relative; }
+.feat-red   { background:#dc2626; }
+
+.diag-card {
+    border-radius:14px; padding:1rem 1.1rem; margin-top:0.5rem;
+    border:1px solid; position:relative;
+}
 .diag-success { background:#f0fdf4; border-color:#86efac; }
 .diag-warning { background:#fffbeb; border-color:#fcd34d; }
 .diag-danger  { background:#fef2f2; border-color:#fca5a5; }
-.diag-title { font-size:0.65rem; font-weight:800; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:0.3rem; }
-.diag-success .diag-title { color:#15803d; } .diag-warning .diag-title { color:#b45309; } .diag-danger .diag-title { color:#dc2626; }
+.diag-title { font-size:0.65rem; font-weight:800; text-transform:uppercase;
+              letter-spacing:0.08em; margin-bottom:0.3rem; }
+.diag-success .diag-title { color:#15803d; }
+.diag-warning .diag-title { color:#b45309; }
+.diag-danger  .diag-title { color:#dc2626; }
 .diag-decision { font-size:1.05rem; font-weight:800; color:#0f172a; margin-bottom:0.3rem; }
-.diag-reason   { font-size:0.75rem; color:#475569; line-height:1.5; max-width:72%; }
-.diag-prob { font-size:1.6rem; font-weight:900; position:absolute; right:1rem; top:50%; transform:translateY(-50%); }
-.diag-success .diag-prob { color:#15803d; } .diag-warning .diag-prob { color:#b45309; } .diag-danger .diag-prob { color:#dc2626; }
+.diag-reason   { font-size:0.75rem; color:#475569; line-height:1.5; }
+.diag-prob { font-size:1.6rem; font-weight:900; position:absolute; right:1rem; top:50%;
+             transform:translateY(-50%); }
+.diag-success .diag-prob { color:#15803d; }
+.diag-warning .diag-prob { color:#b45309; }
+.diag-danger  .diag-prob { color:#dc2626; }
 </style>
 """, unsafe_allow_html=True)
 
-st.title("Auditoría en Tiempo Real")
-st.caption("Espacio central del producto para evaluar reseñas y dar retroalimentación.")
 
-product_options = get_product_options()
+def _api_url():
+    try:
+        return st.secrets["API_URL"].rstrip("/")
+    except Exception:
+        return os.getenv("API_URL", "https://proyecto-prediccion-v9qk.onrender.com").rstrip("/")
+
+
+def _call_predict(review_text, stars, model_name="lgbm"):
+    try:
+        r = requests.post(
+            _api_url() + "/reviews/predict_helpfulness",
+            json={"review_text": review_text, "stars": stars, "model": model_name},
+            timeout=35,
+        )
+        r.raise_for_status()
+        return r.json()
+    except requests.exceptions.Timeout:
+        return {"error": "Timeout. Reintenta."}
+    except Exception as exc:
+        return {"error": str(exc)}
+
+
+st.markdown("""
+<div style="background:linear-gradient(135deg,#16213b 0%,#1746a2 60%,#0f4c5c 100%);
+    border-radius:16px;padding:1.4rem 2rem;margin-bottom:1.4rem;color:#fff">
+    <div style="font-size:0.72rem;font-weight:600;letter-spacing:0.08em;
+                color:rgba(255,255,255,0.55);text-transform:uppercase;margin-bottom:0.35rem">
+        Seminario Predictivo 2026 - Caso 06
+    </div>
+    <div style="font-size:clamp(1.4rem,3vw,1.9rem);font-weight:800;
+                letter-spacing:-0.02em;line-height:1.2;margin-bottom:0.3rem">
+        Auditoria en Tiempo Real
+    </div>
+    <div style="font-size:0.82rem;color:rgba(255,255,255,0.65)">
+        Evaluacion individual - Carga masiva CSV - Diagnostico de utilidad
+    </div>
+</div>""", unsafe_allow_html=True)
+
+# ── Catálogo y filtro por categoría ──────────────────────────────────────────
+catalog = get_product_catalog()
+
+st.markdown('<div class="section-label">Selecciona categoría y producto a auditar</div>', unsafe_allow_html=True)
+
+# Obtener categorías disponibles
+if not catalog.empty and "Categoria_Real" in catalog.columns:
+    categorias = ["Todas las categorías"] + sorted(catalog["Categoria_Real"].dropna().unique().tolist())
+else:
+    categorias = ["Todas las categorías"]
+
+cat_col, prod_col = st.columns([1, 2], gap="medium")
+
+with cat_col:
+    selected_cat = st.selectbox(
+        "Categoría",
+        options=categorias,
+        help="Filtra los productos por categoría de alimento"
+    )
+
+# Filtrar productos según categoría seleccionada
+if not catalog.empty and selected_cat != "Todas las categorías" and "Categoria_Real" in catalog.columns:
+    filtered_catalog = catalog[catalog["Categoria_Real"] == selected_cat]
+    product_options = sorted(filtered_catalog["ProductId"].dropna().astype(str).unique().tolist())
+else:
+    product_options = get_product_options()
 
 if not product_options:
-    st.warning("No hay productos disponibles en el catalogo para auditar.")
+    st.warning("No hay productos disponibles para esta categoría.")
     st.stop()
 
-left_col, right_col = st.columns([1.1, 1], gap="large")
-
-with left_col:
-    st.markdown(
-        """
-        <div class="section-panel">
-            <div class="section-kicker">Entrada operativa</div>
-            <h3>Evalúa una reseña antes de publicarla</h3>
-            <p>
-                Esta herramienta simula el flujo de revisión de una reseña y estima
-                si será percibida como útil por otros compradores.
-            </p>
-        </div>
-        """,
-        unsafe_allow_html=True,
+with prod_col:
+    selected_product = st.selectbox(
+        "Producto",
+        options=product_options,
+        help="Selecciona el producto sobre el que harás la reseña"
     )
-    selected_product = st.selectbox("Producto", options=product_options)
-    product_detail = get_product_detail(selected_product)
-    if product_detail:
-        st.markdown(f"""
-        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;
-                    padding:0.6rem 1rem;margin-bottom:0.5rem">
-            <div style="display:flex;gap:2rem;flex-wrap:wrap">
-                <div>
-                    <div style="font-size:0.6rem;font-weight:700;color:#94a3b8;text-transform:uppercase">Producto</div>
-                    <div style="font-size:0.88rem;font-weight:700;color:#0f172a">{product_detail['ProductName']}</div>
-                </div>
-                <div>
-                    <div style="font-size:0.6rem;font-weight:700;color:#94a3b8;text-transform:uppercase">Categoria</div>
-                    <div style="font-size:0.88rem;font-weight:700;color:#1d4ed8">{product_detail['Categoria_Real']}</div>
-                </div>
+
+product_detail = get_product_detail(selected_product)
+
+# Info del producto seleccionado
+st.markdown(
+    f"""<div class="highlight-card" style="padding:0.6rem 1rem;margin-bottom:0.5rem">
+        <div style="display:flex;gap:2rem;flex-wrap:wrap;align-items:center">
+            <div>
+                <div class="highlight-title" style="font-size:0.65rem">Producto</div>
+                <div style="font-size:0.88rem;font-weight:700;color:var(--text)">{product_detail['ProductName']}</div>
             </div>
-        </div>""", unsafe_allow_html=True)
-    validate_context = st.toggle(
-        "Activar validación de contexto / punto ciego",
-        value=True,
-        help=(
-            "Si está activo, la app revisa si la reseña realmente habla del "
-            "producto o categoría seleccionados, además de medir utilidad."
-        ),
-    )
-    stars = st.slider("Calificación en estrellas", min_value=1, max_value=5, value=5)
-    user_name = st.text_input("Perfil de usuario", value="Auditor_Seminario")
-    review_text = st.text_area("Texto de la reseña", height=200)
-    analyze_review = st.button("Analizar reseña", type="primary")
+            <div>
+                <div class="highlight-title" style="font-size:0.65rem">Categoría</div>
+                <div style="font-size:0.88rem;font-weight:700;color:var(--primary)">{product_detail['Categoria_Real']}</div>
+            </div>
+            <div>
+                <div class="highlight-title" style="font-size:0.65rem">ID Producto</div>
+                <div style="font-size:0.78rem;color:var(--muted);font-family:monospace">{product_detail['ProductId']}</div>
+            </div>
+        </div>
+    </div>""",
+    unsafe_allow_html=True,
+)
 
-    # La accion principal se delega al service para no mezclar UI con negocio.
-    if analyze_review:
-        if not is_non_empty_text(review_text):
-            st.warning("Ingresa una reseña antes de analizar.")
-        else:
-            audit_result = append_audited_review(
-                selected_product,
-                user_name,
-                stars,
-                review_text,
+st.markdown("---")
+tab1, tab2 = st.tabs(["Resena individual", "Carga masiva CSV"])
+
+# ==============================================================
+# TAB 1
+# ==============================================================
+with tab1:
+    left_col, right_col = st.columns([1.1, 1], gap="large")
+
+    with left_col:
+        st.markdown('<div class="section-label">Configuracion</div>', unsafe_allow_html=True)
+
+        # ── Selector de modelo ────────────────────────────────────────────
+        MODEL_OPTIONS = {
+            "LightGBM (Principal)":        "lgbm",
+            "Logistic Regression":         "logistic",
+            "Heurística (sin modelo)":     "heuristic",
+        }
+        selected_model_label = st.selectbox(
+            "Modelo de predicción",
+            options=list(MODEL_OPTIONS.keys()),
+            help="Selecciona el modelo que evaluará la utilidad de la reseña. LightGBM es el modelo ganador del proyecto.",
+        )
+        selected_model = MODEL_OPTIONS[selected_model_label]
+
+        # Badge visual del modelo seleccionado
+        model_colors = {"lgbm": "#15803d", "logistic": "#1d4ed8", "heuristic": "#b45309"}
+        model_color  = model_colors.get(selected_model, "#64748b")
+        st.markdown(
+            f'<span style="background:{model_color};color:#fff;font-size:0.7rem;'
+            f'font-weight:700;padding:0.2rem 0.6rem;border-radius:999px">'
+            f'✓ {selected_model_label}</span>',
+            unsafe_allow_html=True,
+        )
+
+        # Leer valor previo ANTES de renderizar el toggle
+        _prev_val = st.session_state.get("_toggle_prev_val", False)
+
+        validate_context = st.toggle(
+            "Validacion de contexto / punto ciego",
+            value=False,
+            key="_toggle_current_val",
+            help=(
+                "ON: si la resena no menciona ningun termino alimenticio, "
+                "la probabilidad cae a 0.05 (punto ciego).\n"
+                "OFF: solo evalua utilidad del texto."
+            ),
+        )
+
+        stars = st.slider("Calificacion en estrellas", min_value=1, max_value=5, value=5)
+        user_name = st.text_input("Perfil de usuario", value="Auditor_Seminario")
+        review_text = st.text_area(
+            "Texto de la resena", height=200,
+            placeholder="Escribe aqui la resena a evaluar...",
+        )
+        analyze_clicked = st.button("Analizar resena", use_container_width=True)
+
+        if analyze_clicked:
+            if not is_non_empty_text(review_text):
+                st.warning("Ingresa una resena antes de analizar.")
+            else:
+                with st.spinner("Analizando..."):
+                    api_r = _call_predict(review_text.strip(), stars, selected_model)
+                st.session_state["_api_result"]       = api_r if "error" not in api_r else None
+                st.session_state["_last_review_text"] = review_text.strip()
+                st.session_state["_last_stars"]       = stars
+                st.session_state["_last_product"]     = selected_product
+                st.session_state["_toggle_prev_val"]  = validate_context
+                if "error" in api_r:
+                    st.error(f"API no disponible: {api_r['error']}")
+                audit_result = append_audited_review(
+                    selected_product, user_name, stars,
+                    review_text.strip(), validate_context=validate_context,
+                )
+                st.session_state["latest_audit_result"] = audit_result
+                st.session_state["latest_stars"]        = stars
+
+        # Recalcular si el toggle cambio sin re-analizar
+        last_text    = st.session_state.get("_last_review_text")
+        last_stars_v = st.session_state.get("_last_stars")
+        last_product = st.session_state.get("_last_product")
+
+        if last_text and (validate_context != _prev_val):
+            detail = get_product_detail(last_product or selected_product)
+            recalc = audit_review_text(
+                last_text,
+                last_stars_v or stars,
+                last_product or selected_product,
+                product_name=detail.get("ProductName"),
+                category_name=detail.get("Categoria_Real"),
                 validate_context=validate_context,
             )
-            st.session_state["latest_audit_result"] = audit_result
+            st.session_state["latest_audit_result"] = recalc
+            st.session_state["_toggle_prev_val"]    = validate_context
 
-    st.markdown("#### Carga masiva")
-    uploaded_file = st.file_uploader(
-        "Sube un CSV para auditoría por lotes",
-        type=["csv"],
-        help="Debe incluir ProductId, ProfileName, Score y Text.",
-    )
-    process_batch = st.button("Procesar lote CSV")
-    if process_batch:
-        if uploaded_file is None:
-            st.warning("Selecciona un archivo CSV antes de procesar el lote.")
+    # Panel derecho
+    with right_col:
+        lr   = st.session_state.get("latest_audit_result")
+        prob = lr["probability"] if lr else 0.0
+
+        st.plotly_chart(build_helpfulness_gauge(prob), use_container_width=True)
+
+        # Caracteristicas calculadas compactas
+        st.markdown(
+            '<div class="section-label" style="margin-bottom:0.3rem">Caracteristicas calculadas</div>',
+            unsafe_allow_html=True,
+        )
+        rl    = lr["review_len"]  if lr else 0
+        incoh = lr["incoherente"] if lr else False
+        sv    = st.session_state.get("latest_stars", 5)
+        sent  = lr.get("sentiment_score") if lr else None
+
+        lb = "feat-green" if rl > 60 else "feat-amber"
+        ll = "Adecuada" if rl > 60 else "Corta"
+
+        if sent is not None:
+            sl = "Positivo" if sent > 0.05 else ("Negativo" if sent < -0.05 else "Neutro")
+            sb = "feat-green" if sent > 0.05 else ("feat-amber" if sent < -0.05 else "feat-blue")
+            ss = f"{sent:.2f}"
         else:
-            batch_df, error_message = process_uploaded_audit_file(uploaded_file)
-            if error_message:
-                st.error(error_message)
-            else:
-                st.success(f"Lote procesado correctamente: {len(batch_df)} reseñas agregadas.")
-                st.dataframe(batch_df.head(20), use_container_width=True)
+            sl, sb, ss = "Pendiente", "feat-gray", "-"
 
-with right_col:
-    lr   = st.session_state.get("latest_audit_result")
-    prob = lr["probability"] if lr else 0.0
-    st.plotly_chart(build_helpfulness_gauge(prob), use_container_width=True)
+        filled = "&#9733;" * int(sv)
+        empty  = "&#9734;" * max(0, 5 - int(sv))
+        cl = "Coherente" if not incoh else "Incoherente"
+        cb = "feat-green" if not incoh else "feat-amber"
 
-    # ── Características calculadas ────────────────────────────────────────────
-    st.markdown('<div class="section-label" style="margin-bottom:0.4rem">Caracteristicas calculadas</div>', unsafe_allow_html=True)
-    rl   = lr["review_len"] if lr else 0
-    incoh = lr["incoherente"] if lr else False
-    sv   = st.session_state.get("latest_stars", 5)
-    sent = lr.get("sentiment_score") if lr else None
-
-    lb = "feat-green" if rl > 60 else "feat-amber"
-    ll = "Adecuada" if rl > 60 else "Corta"
-    card_len = "feat-card-green" if rl > 60 else "feat-card-amber"
-    len_pct  = min(int(rl / 80 * 100), 100)
-    len_color = "#15803d" if rl > 80 else ("#b45309" if rl > 40 else "#dc2626")
-
-    if sent is not None:
-        sl = "Positivo" if sent > 0.05 else ("Negativo" if sent < -0.05 else "Neutro")
-        sb = "feat-green" if sent > 0.05 else ("feat-red" if sent < -0.05 else "feat-blue")
-        card_sent = "feat-card-green" if sent > 0.05 else ("feat-card-red" if sent < -0.05 else "feat-card-blue")
-        ss = f"{sent:.2f}"
-        sent_pct = min(int((sent + 1) / 2 * 100), 100)
-        sent_color = "#15803d" if sent > 0.05 else "#dc2626"
-    else:
-        sl, sb, ss, card_sent = "Pendiente", "feat-gray", "-", "feat-card-blue"
-        sent_pct, sent_color = 50, "#94a3b8"
-
-    cl = "Coherente" if not incoh else "Incoherente"
-    cb = "feat-green" if not incoh else "feat-amber"
-    card_coh = "feat-card-green" if not incoh else "feat-card-amber"
-
-    st.markdown(f"""
-    <div class="feat-grid">
-        <div class="feat-card {card_len}">
-            <div class="feat-lbl">Longitud</div>
-            <div class="feat-val">{rl} palabras</div>
-            <div style="background:#f1f5f9;border-radius:999px;height:4px;margin:0.25rem 0;overflow:hidden">
-                <div style="width:{len_pct}%;height:100%;background:{len_color};border-radius:999px"></div>
-            </div>
-            <div class="feat-cap">Umbral: 80 palabras</div>
-            <span class="feat-badge {lb}">{ll}</span>
-        </div>
-        <div class="feat-card {card_sent}">
-            <div class="feat-lbl">Sentimiento</div>
-            <div class="feat-val">{ss}</div>
-            <div style="background:#f1f5f9;border-radius:999px;height:4px;margin:0.25rem 0;overflow:hidden">
-                <div style="width:{sent_pct}%;height:100%;background:{sent_color};border-radius:999px"></div>
-            </div>
-            <div class="feat-cap">VADER (-1 a +1)</div>
-            <span class="feat-badge {sb}">{sl}</span>
-        </div>
-        <div class="feat-card feat-card-blue">
-            <div class="feat-lbl">Calificacion</div>
-            <div class="feat-val" style="color:#f59e0b;letter-spacing:2px">{"★" * int(sv) + "☆" * (5 - int(sv))}</div>
-            <div style="background:#f1f5f9;border-radius:999px;height:4px;margin:0.25rem 0;overflow:hidden">
-                <div style="width:{int(sv/5*100)}%;height:100%;background:#f59e0b;border-radius:999px"></div>
-            </div>
-            <div class="feat-cap">{sv} de 5 estrellas</div>
-            <span class="feat-badge feat-blue">{sv} / 5</span>
-        </div>
-        <div class="feat-card {card_coh}">
-            <div class="feat-lbl">Coherencia</div>
-            <div class="feat-val">{cl}</div>
-            <div style="background:#f1f5f9;border-radius:999px;height:4px;margin:0.25rem 0;overflow:hidden">
-                <div style="width:{"100" if not incoh else "30"}%;height:100%;background:{"#15803d" if not incoh else "#b45309"};border-radius:999px"></div>
-            </div>
-            <div class="feat-cap">Tono vs. estrellas</div>
-            <span class="feat-badge {cb}">{cl}</span>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # ── Diagnóstico visual ────────────────────────────────────────────────────
-    st.markdown('<div class="section-label" style="margin-top:0.5rem;margin-bottom:0.3rem">Diagnostico</div>', unsafe_allow_html=True)
-    if lr:
-        is_blind = "Punto Ciego" in lr["status"]
-        diag_cls = "diag-danger" if is_blind else ("diag-success" if prob >= 0.70 else "diag-warning")
-        decision = "Revision obligatoria" if is_blind else ("Lista para publicar" if prob >= 0.70 else "Conviene mejorarla")
-        if is_blind:
-            razon = "La resena no menciona contexto alimenticio relevante."
-        elif prob >= 0.70:
-            razon = "La resena supera el umbral de utilidad del 70%."
-        elif rl < 60:
-            razon = "La resena es muy corta. Se recomienda superar las 80 palabras."
-        elif sent is not None and sent < -0.05:
-            razon = "El sentimiento es negativo. Revisa la coherencia con las estrellas."
-        else:
-            razon = f"Utilidad de {format_percentage(prob)}, por debajo del umbral del 70%."
+        # Barra de progreso de longitud
+        len_pct = min(int(rl / 80 * 100), 100)
+        len_color = "#15803d" if rl > 80 else ("#b45309" if rl > 40 else "#dc2626")
 
         st.markdown(f"""
-        <div class="diag-card {diag_cls}">
-            <div class="diag-title">Resultado del analisis</div>
-            <div class="diag-decision">{decision}</div>
-            <div class="diag-reason">{razon}</div>
-            <div class="diag-prob">{format_percentage(prob)}</div>
-        </div>
-        """, unsafe_allow_html=True)
-
-        if lr.get("context_validation_enabled"):
-            ctx  = ", ".join(lr.get("context_hits", [])) or "ninguna"
-            tech = ", ".join(lr.get("tech_hits", []))    or "ninguno"
-            st.markdown(
-                f'''<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;
-                            padding:0.55rem 0.8rem;margin-top:0.4rem">
-                    <div style="font-size:0.6rem;font-weight:700;color:#94a3b8;text-transform:uppercase;
-                                letter-spacing:.07em;margin-bottom:0.2rem">Contexto alimenticio</div>
-                    <div style="font-size:0.72rem;color:#475569;line-height:1.5">{lr.get("context_explanation","")}</div>
-                    <div style="margin-top:0.3rem;font-size:0.68rem;color:#64748b">
-                        <b>Detectadas:</b> {ctx} &nbsp;·&nbsp; <b>Ajenas:</b> {tech}
-                    </div></div>''',
-                unsafe_allow_html=True,
-            )
-    else:
-        st.markdown("""
-        <div style="background:#f8fafc;border:1px dashed #cbd5e1;border-radius:12px;
-                    padding:1.2rem;text-align:center;margin-top:0.5rem">
-            <div style="font-size:0.8rem;color:#94a3b8">
-                Escribe una resena y presiona Analizar para ver el diagnostico
+        <div class="feat-grid">
+            <div class="feat-card feat-card-{'green' if rl > 60 else 'amber'}">
+                <div class="feat-lbl">Longitud</div>
+                <div class="feat-val">{rl} palabras</div>
+                <div style="background:#f1f5f9;border-radius:999px;height:4px;margin:0.25rem 0;overflow:hidden">
+                    <div style="width:{len_pct}%;height:100%;background:{len_color};border-radius:999px"></div>
+                </div>
+                <div class="feat-cap">Umbral: 80 palabras</div>
+                <span class="feat-badge {'feat-green' if rl > 60 else 'feat-amber'}">{ll}</span>
+            </div>
+            <div class="feat-card feat-card-{'green' if sent is not None and sent > 0.05 else ('red' if sent is not None and sent < -0.05 else 'blue')}">
+                <div class="feat-lbl">Sentimiento</div>
+                <div class="feat-val">{ss}</div>
+                <div style="background:#f1f5f9;border-radius:999px;height:4px;margin:0.25rem 0;overflow:hidden">
+                    <div style="width:{min(int((float(ss) + 1) / 2 * 100), 100) if ss != '-' else 50}%;height:100%;background:{'#15803d' if sent is not None and sent > 0.05 else '#dc2626'};border-radius:999px"></div>
+                </div>
+                <div class="feat-cap">VADER (-1 a +1)</div>
+                <span class="feat-badge {sb}">{sl}</span>
+            </div>
+            <div class="feat-card feat-card-blue">
+                <div class="feat-lbl">Calificacion</div>
+                <div class="feat-val" style="color:#f59e0b;letter-spacing:2px">{"★" * int(sv) + "☆" * (5 - int(sv))}</div>
+                <div style="background:#f1f5f9;border-radius:999px;height:4px;margin:0.25rem 0;overflow:hidden">
+                    <div style="width:{int(sv/5*100)}%;height:100%;background:#f59e0b;border-radius:999px"></div>
+                </div>
+                <div class="feat-cap">{sv} de 5 estrellas</div>
+                <span class="feat-badge feat-blue">{sv} / 5</span>
+            </div>
+            <div class="feat-card feat-card-{'green' if not incoh else 'amber'}">
+                <div class="feat-lbl">Coherencia</div>
+                <div class="feat-val">{cl}</div>
+                <div style="background:#f1f5f9;border-radius:999px;height:4px;margin:0.25rem 0;overflow:hidden">
+                    <div style="width:{'100' if not incoh else '30'}%;height:100%;background:{'#15803d' if not incoh else '#b45309'};border-radius:999px"></div>
+                </div>
+                <div class="feat-cap">Tono vs. estrellas</div>
+                <span class="feat-badge {cb}">{cl}</span>
             </div>
         </div>
         """, unsafe_allow_html=True)
 
-st.markdown("### Lectura del Resultado")
-result_cols = st.columns(4, gap="medium")
-latest_result = st.session_state.get("latest_audit_result")
-probability = latest_result["probability"] if latest_result else 0.0
-review_len = latest_result["review_len"] if latest_result else 0
-incoherence = latest_result["incoherente"] if latest_result else False
-product_benchmark = get_product_benchmark(selected_product)
-latest_review_id = st.session_state.get("latest_review_id")
-position_summary = get_position_summary(selected_product, latest_review_id)
-review_window_df = get_review_context_window(selected_product, latest_review_id, window_size=1)
-product_history_df = get_product_reviews_by_date(selected_product, ascending=False)
-
-with result_cols[0]:
-    render_metric_card("Utilidad estimada", format_percentage(probability), "Probabilidad calculada por la capa de scoring")
-with result_cols[1]:
-    render_metric_card("Longitud", f"{review_len} palabras", "Cantidad de palabras detectadas en la reseña")
-with result_cols[2]:
-    render_metric_card("Incoherencia", "Sí" if incoherence else "No", "Consistencia básica entre tono y estrellas")
-with result_cols[3]:
-    blind_spot_label = "Punto ciego" if latest_result and latest_result.get("context_blind_spot") else "Estado"
-    blind_spot_value = "Detectado" if latest_result and latest_result.get("context_blind_spot") else (latest_result["status"] if latest_result else "Sin evaluar")
-    blind_spot_caption = "Resultado contextual actual" if latest_result and latest_result.get("context_validation_enabled") else "Resultado operativo actual"
-    render_metric_card(blind_spot_label, blind_spot_value, blind_spot_caption)
-
-position_cols = st.columns(3, gap="medium")
-with position_cols[0]:
-    render_metric_card(
-        "Posición local",
-        f"{position_summary['local_rank']} / {position_summary['product_count']}" if position_summary["local_rank"] else "Sin posición",
-        "Lugar estimado dentro del producto",
-    )
-with position_cols[1]:
-    render_metric_card(
-        "Posición global",
-        f"{position_summary['global_rank']} / {position_summary['global_count']}" if position_summary["global_rank"] else "Sin posición",
-        "Lugar estimado en toda la base visible",
-    )
-with position_cols[2]:
-    render_metric_card(
-        "Reseñas del producto",
-        str(position_summary["product_count"]),
-        "Volumen histórico del artículo seleccionado",
-    )
-
-advice_left, advice_right = st.columns([1, 1], gap="large")
-with advice_left:
-    if latest_result:
-        recommendations = generate_review_recommendations(latest_result)
-        render_highlight_card(
-            "Recomendación principal",
-            "Mejora sugerida",
-            recommendations[0],
+        # Diagnostico
+        st.markdown(
+            '<div class="section-label" style="margin-top:0.5rem;margin-bottom:0.3rem">Diagnostico</div>',
+            unsafe_allow_html=True,
         )
-    else:
-        render_highlight_card(
-            "Recomendación principal",
-            "Esperando análisis",
-            "Una vez analices una reseña, aquí aparecerá la recomendación más importante para mejorarla.",
-        )
-with advice_right:
-    render_bullet_panel(
-        "Buenas prácticas para una reseña útil",
-        [
-            "Describe el contexto real de uso del producto.",
-            "Explica beneficios o problemas concretos, no solo opinión general.",
-            "Mantén coherencia entre el texto escrito y la calificación en estrellas.",
-        ],
-    )
+        if lr:
+            is_blind = "Punto Ciego" in lr["status"]
+            diag_cls = "diag-danger" if is_blind else ("diag-success" if prob >= 0.70 else "diag-warning")
+            decision = "Revision obligatoria" if is_blind else ("Lista para publicar" if prob >= 0.70 else "Conviene mejorarla")
 
-benchmark_left, benchmark_right = st.columns(2, gap="large")
-with benchmark_left:
-    render_bullet_panel(
-        "Comparación contra el histórico",
-        [
-            f"Promedio del producto: {format_percentage(product_benchmark['avg_helpfulness'])}.",
-            f"Mejor score del producto: {format_percentage(product_benchmark['top_helpfulness'])}.",
-            f"Volumen histórico visible: {product_benchmark['count']} reseñas.",
-        ],
-    )
-with benchmark_right:
-    if latest_result:
-        delta_vs_avg = latest_result["probability"] - product_benchmark["avg_helpfulness"]
-        comparison_text = (
-            "Tu reseña está por encima del promedio histórico del producto."
-            if delta_vs_avg >= 0
-            else "Tu reseña está por debajo del promedio histórico del producto."
-        )
-        render_highlight_card(
-            "Benchmark",
-            f"{delta_vs_avg:+.1%}",
-            comparison_text,
-        )
-    else:
-        render_highlight_card(
-            "Benchmark",
-            "Sin comparación",
-            "Analiza una reseña para contrastarla contra el promedio histórico del producto.",
-        )
-
-if latest_result:
-    st.markdown("### Explicación para el usuario")
-    render_info_panel(
-        "Cómo interpretar este score",
-        f"El sistema estimó una utilidad de {format_percentage(probability)}. "
-        f"Esto se apoya en señales como longitud textual, coherencia general y estructura de la reseña. "
-        f"Si el score no es alto, la estrategia correcta no es cambiar la nota, sino mejorar la calidad del contenido escrito.",
-    )
-    render_bullet_panel("Sugerencias automáticas", recommendations)
-
-    save_left, save_right = st.columns([0.7, 1.3], gap="large")
-    with save_left:
-        save_review = st.button("Grabar reseña", use_container_width=True)
-    with save_right:
-        if save_review:
-            saved_ok, save_message = save_latest_review_to_file(selected_product)
-            if saved_ok:
-                st.success(save_message)
+            if is_blind:
+                razon = "La resena no menciona contexto alimenticio relevante."
+            elif prob >= 0.70:
+                razon = "La resena supera el umbral de utilidad del 70%."
+            elif rl < 60:
+                razon = "La resena es muy corta. Se recomienda superar las 80 palabras."
+            elif sent is not None and sent < -0.05:
+                razon = "El sentimiento del texto es negativo. Revisa la coherencia con las estrellas."
             else:
-                st.warning(save_message)
+                razon = f"Utilidad estimada de {format_percentage(prob)}, por debajo del umbral del 70%."
 
-    st.markdown("### Vista previa tipo plataforma")
-    created_at_display = pd.Timestamp.now().strftime("%d/%m/%Y")
-    render_review_card(
-        user_name=user_name,
-        stars=stars,
-        review_text=review_text,
-        meta_line=f"{product_detail['ProductName']} | {product_detail['Categoria_Real']} | {created_at_display}",
-        badge=latest_result["status"],
-        helpfulness=format_percentage(probability),
-        highlighted=True,
+            st.markdown(f"""
+            <div class="diag-card {diag_cls}">
+                <div class="diag-title">Resultado del analisis</div>
+                <div class="diag-decision">{decision}</div>
+                <div class="diag-reason">{razon}</div>
+                <div class="diag-prob">{format_percentage(prob)}</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+            if lr.get("context_validation_enabled"):
+                ctx  = ", ".join(lr.get("context_hits", [])) or "ninguna"
+                tech = ", ".join(lr.get("tech_hits", []))    or "ninguno"
+                st.markdown(
+                    f'<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;'
+                    f'padding:0.55rem 0.8rem;margin-top:0.4rem">'
+                    f'<div style="font-size:0.6rem;font-weight:700;color:#94a3b8;text-transform:uppercase;'
+                    f'letter-spacing:.07em;margin-bottom:0.2rem">Contexto alimenticio</div>'
+                    f'<div style="font-size:0.72rem;color:#475569;line-height:1.5">'
+                    f'{lr.get("context_explanation","")}</div>'
+                    f'<div style="margin-top:0.3rem;font-size:0.68rem;color:#64748b">'
+                    f'<b>Detectadas:</b> {ctx} &nbsp;·&nbsp; <b>Ajenas:</b> {tech}'
+                    f'</div></div>',
+                    unsafe_allow_html=True,
+                )
+        else:
+            st.markdown("""
+            <div style="background:#f8fafc;border:1px dashed #cbd5e1;border-radius:12px;
+                        padding:1.2rem;text-align:center;margin-top:0.5rem">
+                <div style="font-size:0.8rem;color:#94a3b8">
+                    Escribe una resena y presiona Analizar para ver el diagnostico
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+    st.markdown("---")
+
+    
+    lr   = st.session_state.get("latest_audit_result")
+    prob = lr["probability"] if lr else 0.0
+
+    if lr:
+        recs = generate_review_recommendations(lr)
+        st.markdown('<div class="section-label">Como mejorar esta resena</div>', unsafe_allow_html=True)
+        r1, r2 = st.columns(2, gap="large")
+        with r1:
+            st.markdown(
+                f'<div class="highlight-card"><div class="highlight-title">Accion principal</div>'
+                f'<div class="highlight-body">{recs[0]}</div></div>',
+                unsafe_allow_html=True,
+            )
+        with r2:
+            if len(recs) > 1:
+                st.markdown(
+                    f'<div class="highlight-card"><div class="highlight-title">Accion adicional</div>'
+                    f'<div class="highlight-body">{recs[1]}</div></div>',
+                    unsafe_allow_html=True,
+                )
+
+        sv1, _ = st.columns([0.3, 0.7])
+        with sv1:
+            if st.button("Guardar resena", use_container_width=True):
+                ok, msg = save_latest_review_to_file(selected_product)
+                (st.success if ok else st.warning)(msg)
+
+    latest_review_id = st.session_state.get("latest_review_id")
+    position_summary = get_position_summary(selected_product, latest_review_id)
+    review_window_df = get_review_context_window(selected_product, latest_review_id, window_size=2)
+
+
+# ==============================================================
+# TAB 2
+# ==============================================================
+with tab2:
+    st.markdown('<div class="section-label">Carga masiva de resenas</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="highlight-card"><div class="highlight-title">Formato requerido del CSV</div>'
+        '<div class="highlight-body">Columnas: '
+        '<code>ProductId</code>, <code>ProfileName</code>, <code>Score</code>, <code>Text</code>.'
+        '</div></div>',
+        unsafe_allow_html=True,
     )
 
-    st.markdown("### Tu reseña en contexto del producto")
-    if review_window_df.empty:
-        render_info_panel(
-            "Ventana contextual no disponible",
-            "Todavía no fue posible ubicar la reseña dentro del ranking local del producto.",
+    uc1, uc2 = st.columns([1.5, 1], gap="large")
+    with uc1:
+        uploaded_file = st.file_uploader(
+            "Selecciona el archivo CSV", type=["csv"],
+            help="Columnas: ProductId, ProfileName, Score, Text",
         )
+        if st.button("Procesar lote CSV", type="primary", use_container_width=True):
+            if uploaded_file is None:
+                st.warning("Selecciona un archivo CSV antes de procesar.")
+            else:
+                with st.spinner("Procesando resenas..."):
+                    batch_df, err = process_uploaded_audit_file(uploaded_file)
+                if err:
+                    st.error(err)
+                else:
+                    st.success(f"{len(batch_df)} resenas procesadas.")
+                    st.session_state["_last_batch_df"] = batch_df
+
+
+    batch_result = st.session_state.get("_last_batch_df")
+    if batch_result is not None and not batch_result.empty:
+        st.markdown('<div class="section-label">Resultado del lote</div>', unsafe_allow_html=True)
+        m1, m2, m3, m4 = st.columns(4, gap="medium")
+        aprobadas  = int((batch_result["Estado"] == "APROBADA (Publicada)").sum()) if "Estado" in batch_result.columns else 0
+        rechazadas = len(batch_result) - aprobadas
+        avg_util   = float(batch_result["Helpfulness"].mean()) if "Helpfulness" in batch_result.columns else 0.0
+        with m1:
+            render_metric_card("Total", str(len(batch_result)), "Resenas en el lote")
+        with m2:
+            render_metric_card("Aprobadas", str(aprobadas), "Utilidad >= 0.70")
+        with m3:
+            render_metric_card("Rechazadas", str(rechazadas), "Baja calidad o punto ciego")
+        with m4:
+            render_metric_card("Utilidad media", format_percentage(avg_util), "Promedio del lote")
+        st.dataframe(batch_result, use_container_width=True, hide_index=True)
+        st.download_button(
+            "Descargar resultado CSV",
+            data=batch_result.to_csv(index=False).encode("utf-8-sig"),
+            file_name="resultado_lote_auditoria.csv",
+            mime="text/csv",
+            use_container_width=True,
+        )
+
+    st.markdown('<div class="section-label">Resenas guardadas del producto</div>', unsafe_allow_html=True)
+    saved_df = get_audited_reviews_operational_table()
+    if not saved_df.empty:
+        filt = (
+            saved_df[saved_df["ProductId"].astype(str) == selected_product]
+            if "ProductId" in saved_df.columns
+            else saved_df
+        )
+        if not filt.empty:
+            filt = filt.copy()
+            if "CreatedAt" in filt.columns:
+                filt["CreatedAt"] = pd.to_datetime(filt["CreatedAt"], errors="coerce").dt.strftime("%d/%m/%Y %H:%M")
+            st.dataframe(filt, use_container_width=True, hide_index=True)
+            st.download_button(
+                "Descargar resenas guardadas",
+                data=filt.to_csv(index=False).encode("utf-8-sig"),
+                file_name="resenas_guardadas.csv",
+                mime="text/csv",
+                use_container_width=True,
+            )
+        else:
+            st.info("No hay resenas guardadas para este producto.")
     else:
-        for _, row in review_window_df.iterrows():
-            meta_line = (
-                f"Puesto local {int(row['Puesto Local'])} | "
-                f"{pd.to_datetime(row['CreatedAt']).strftime('%d/%m/%Y') if 'CreatedAt' in row and pd.notna(row['CreatedAt']) else 'Sin fecha'}"
-            )
-            badge = "Tu reseña evaluada" if row["EsActual"] else row["Estado"]
-            render_review_card(
-                user_name=str(row["User"]),
-                stars=int(row["Stars"]),
-                review_text=str(row["Text"]),
-                meta_line=meta_line,
-                badge=badge,
-                helpfulness=format_percentage(float(row["Helpfulness"])),
-                highlighted=bool(row["EsActual"]),
-            )
-
-st.markdown("### Historial del producto por fecha")
-history_preview = product_history_df.head(10).copy()
-if not history_preview.empty:
-    history_preview["CreatedAt"] = pd.to_datetime(history_preview["CreatedAt"], errors="coerce").dt.strftime("%d/%m/%Y %H:%M")
-    st.dataframe(
-        history_preview[["CreatedAt", "User", "Stars", "Helpfulness", "Estado", "Text"]],
-        use_container_width=True,
-    )
-
-st.markdown("### Archivo operativo de reseñas guardadas")
-saved_reviews_df = get_audited_reviews_operational_table()
-if saved_reviews_df.empty:
-    st.info("Aún no hay reseñas guardadas en el CSV operativo separado.")
-else:
-    st.dataframe(saved_reviews_df.tail(20), use_container_width=True)
+        st.info("No hay resenas guardadas aun.")
 
 st.session_state["selected_product_id"] = selected_product
-st.session_state["latest_stars"] = stars
-st.session_state["latest_review_text"] = review_text
+st.session_state["latest_stars"]        = stars if "stars" in dir() else 5
+st.session_state["latest_review_text"]  = review_text if "review_text" in dir() else ""
