@@ -15,7 +15,7 @@ import streamlit as st
 from shared_sidebar import render_sidebar
 from components.cards import render_metric_card, render_review_card
 from services.catalog_service import get_product_detail, get_product_options, get_product_catalog
-from services.data_loader import load_processed_reviews
+from services.data_loader import load_processed_reviews, load_reviews_with_category
 from services.feature_service import add_basic_text_features
 from services.preprocessing_service import (
     get_corporate_audit_db,
@@ -97,44 +97,49 @@ st.markdown("""
 # ── Cargar DATASET COMPLETO (no solo las 1000 de la DB operativa) ─────────────
 @st.cache_data(show_spinner=False)
 def _load_full_dataset() -> pd.DataFrame:
-    """Carga el parquet completo y enriquece con categoria y año."""
-    df = add_basic_text_features(load_processed_reviews())
+    """Carga el parquet completo priorizando el enriquecido con categorias de alimento."""
+    # Prioridad: reviews_con_categoria (tiene categoria_alimento con 16+ cats)
+    # Fallback: reviews_limpias (solo 5 topics LDA o ninguna categoria)
+    df = add_basic_text_features(load_reviews_with_category())
+    if df.empty:
+        df = add_basic_text_features(load_processed_reviews())
     if df.empty:
         return df
-    # Año desde columna Time (unix timestamp) si existe
+
+    # Normalizar columna de categoria: preferir categoria_alimento
+    if "categoria_alimento" in df.columns:
+        df["Categoria_Real"] = df["categoria_alimento"]
+    elif "product_topic" in df.columns and "Categoria_Real" not in df.columns:
+        df["Categoria_Real"] = df["product_topic"].map(TOPIC_NAMES).fillna("Alimentos generales")
+    elif "Categoria_Real" not in df.columns:
+        df["Categoria_Real"] = "Alimentos generales"
+
+    # Año desde Time (unix) o CreatedAt
     if "Time" in df.columns:
         df["CreatedAt"] = pd.to_datetime(df["Time"], unit="s", errors="coerce")
     elif "CreatedAt" in df.columns:
         df["CreatedAt"] = pd.to_datetime(df["CreatedAt"], errors="coerce")
     else:
         df["CreatedAt"] = pd.NaT
-
     df["Año"] = df["CreatedAt"].dt.year.where(df["CreatedAt"].notna(), other=0).astype(int)
 
-    # Categoria desde product_topic si existe
-    if "product_topic" in df.columns:
-        df["Categoria_Real"] = df["product_topic"].map(TOPIC_NAMES).fillna("Alimentos generales")
-    elif "Categoria_Real" not in df.columns:
-        df["Categoria_Real"] = "Alimentos generales"
-
-    # Estado desde y_util
+    # Helpfulness y Estado
     if "y_util" in df.columns:
+        df["Helpfulness"] = df["y_util"].astype(float)
         df["Estado"] = df["y_util"].apply(
             lambda x: "APROBADA (Publicada)" if x == 1 else "RECHAZADA (Baja Calidad)"
         )
-        df["Helpfulness"] = df["y_util"].astype(float)
     elif "Helpfulness" not in df.columns:
         if "HelpfulnessNumerator" in df.columns and "HelpfulnessDenominator" in df.columns:
             denom = df["HelpfulnessDenominator"].replace(0, pd.NA)
             df["Helpfulness"] = (df["HelpfulnessNumerator"] / denom).fillna(0)
-            df["Estado"] = df["Helpfulness"].apply(
-                lambda x: "APROBADA (Publicada)" if x >= 0.70 else "RECHAZADA (Baja Calidad)"
-            )
         else:
             df["Helpfulness"] = 0.5
-            df["Estado"] = "Sin clasificar"
+        df["Estado"] = df["Helpfulness"].apply(
+            lambda x: "APROBADA (Publicada)" if x >= 0.70 else "RECHAZADA (Baja Calidad)"
+        )
 
-    # Columna Stars desde Score si no existe
+    # Stars desde Score
     if "Stars" not in df.columns and "Score" in df.columns:
         df["Stars"] = df["Score"]
 
