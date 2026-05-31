@@ -1,15 +1,15 @@
-"""
-Helper de sidebar: logo + selector de tema arriba + navegación funcional.
-El fondo del área principal se fuerza vía CSS inline en <style> con
+﻿"""
+Helper de sidebar: logo + selector de tema arriba + navegaciÃ³n funcional.
+El fondo del Ã¡rea principal se fuerza vÃ­a CSS inline en <style> con
 background-color directo (no gradiente) para garantizar cobertura total
-en main.py y todas las páginas de pages/.
+en main.py y todas las pÃ¡ginas de pages/.
 """
 
 import os
 import base64
 import streamlit as st
 
-# ── Logo ────────────────────────────────────────────────────────────────────
+# â”€â”€ Logo â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 _LOGO_CANDIDATES = [
     "assets/Logo.jpg", "assets/Logo.jpeg", "assets/Logo.png",
     "assets/logo.jpg", "assets/logo.jpeg", "assets/logo.png",
@@ -37,7 +37,7 @@ def _logo_b64() -> tuple[str, str] | None:
         return base64.b64encode(f.read()).decode(), mime
 
 
-# ── Iconos SVG nav ──────────────────────────────────────────────────────────
+# â”€â”€ Iconos SVG nav â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 _I_HOME   = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(248,250,252,0.85)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>'
 _I_FILE   = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(248,250,252,0.85)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>'
 _I_SEARCH = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(248,250,252,0.85)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>'
@@ -46,12 +46,12 @@ _I_SHIELD = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke=
 _I_BAR    = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(248,250,252,0.85)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>'
 
 
-# ── CSS completo (sidebar + fondo main + temas) ─────────────────────────────
+# â”€â”€ CSS completo (sidebar + fondo main + temas) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 _FULL_CSS = """
 <style>
-/* ════════════════════════════════════════════════════════════════════
-   VARIABLES DE TEMA — se sobrescriben por JS con data-theme
-   ════════════════════════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   VARIABLES DE TEMA â€” se sobrescriben por JS con data-theme
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 :root {
     --bg-color:     #edf2f8;
     --bg-color2:    #f0f5fc;
@@ -69,10 +69,10 @@ _FULL_CSS = """
     --shadow-card:  0 18px 36px rgba(15,23,42,0.08);
 }
 
-/* ════════════════════════════════════════════════════════════════════
-   FONDO PRINCIPAL — background-color sólido, sin gradiente,
-   para garantizar cobertura en TODAS las páginas de Streamlit
-   ════════════════════════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   FONDO PRINCIPAL â€” background-color sÃ³lido, sin gradiente,
+   para garantizar cobertura en TODAS las pÃ¡ginas de Streamlit
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 html,
 body,
 .stApp,
@@ -91,16 +91,16 @@ div[class*="main"] {
     background-image: none !important;
 }
 
-/* Gradient sutil ENCIMA del color sólido, sin romper la cobertura */
+/* Gradient sutil ENCIMA del color sÃ³lido, sin romper la cobertura */
 .stApp {
     background-image:
         radial-gradient(circle at 90% 0%, rgba(23,70,162,0.07) 0%, transparent 40%),
         radial-gradient(circle at 10% 5%, rgba(15,76,92,0.06) 0%, transparent 35%) !important;
 }
 
-/* ════════════════════════════════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    MODO OSCURO
-   ════════════════════════════════════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 [data-theme="dark"] {
     --bg-color:     #0d1117;
     --bg-color2:    #161b22;
@@ -206,9 +206,9 @@ div[class*="main"] {
     border-bottom-color: #30363d !important;
 }
 
-/* ════════════════════════════════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    SIDEBAR
-   ════════════════════════════════════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 [data-testid="stSidebar"],
 [data-testid="stSidebar"] > div,
 [data-testid="stSidebar"] > div > div,
@@ -219,7 +219,7 @@ section[data-testid="stSidebar"] {
 [data-testid="stSidebar"] * { color: #f8fafc; }
 [data-testid="stSidebarNav"] { display: none !important; }
 
-/* ── Selector de tema — ARRIBA, junto al logo ─── */
+/* â”€â”€ Selector de tema â€” ARRIBA, junto al logo â”€â”€â”€ */
 .sb-top-bar {
     display: flex;
     align-items: center;
@@ -277,7 +277,7 @@ section[data-testid="stSidebar"] {
 }
 .sb-theme-pill svg { display: block; }
 
-/* ── Logo centrado (debajo del top bar) ── */
+/* â”€â”€ Logo centrado (debajo del top bar) â”€â”€ */
 .sb-logo-wrap {
     display: flex;
     flex-direction: column;
@@ -297,7 +297,7 @@ section[data-testid="stSidebar"] {
 }
 .sb-logo-svg { width: 72px; height: 72px; border-radius: 12px; display: block; }
 
-/* ── Nav items ── */
+/* â”€â”€ Nav items â”€â”€ */
 .sb-nav-icon {
     display: flex; align-items: center; justify-content: center;
     width: 26px; height: 26px;
@@ -336,7 +336,18 @@ section[data-testid="stSidebar"] {
     padding: 0 !important; min-width: 0 !important;
 }
 
-/* ── Header ── */
+/* Fondo transparente en contenedores internos del sidebar */
+[data-testid="stSidebar"] [data-testid="stHorizontalBlock"],
+[data-testid="stSidebar"] [data-testid="stHorizontalBlock"] > div,
+[data-testid="stSidebar"] [data-testid="column"],
+[data-testid="stSidebar"] [data-testid="column"] > div,
+[data-testid="stSidebar"] .stMarkdown,
+[data-testid="stSidebar"] .element-container {
+    background: transparent !important;
+    background-color: transparent !important;
+}
+
+/* â”€â”€ Header â”€â”€ */
 [data-testid="stHeader"] {
     background: rgba(255,255,255,0.62);
     backdrop-filter: blur(10px);
@@ -345,9 +356,9 @@ section[data-testid="stSidebar"] {
 </style>
 """
 
-# ── JS de tema ───────────────────────────────────────────────────────────────
+# â”€â”€ JS de tema â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 # Se inyecta FUERA del sidebar para llegar al <head> real del documento.
-# Aplica background-color sólido en todos los contenedores de Streamlit
+# Aplica background-color sÃ³lido en todos los contenedores de Streamlit
 # inmediatamente y cada vez que el DOM cambia (Streamlit re-renderiza).
 _THEME_JS = """
 <script>
@@ -372,7 +383,7 @@ _THEME_JS = """
     function applyAll(theme){
         var dark = isDarkMode(theme);
         // config.toml inyecta backgroundColor como style inline en stApp;
-        // lo sobrescribimos con setProperty(..., 'important') aquí.
+        // lo sobrescribimos con setProperty(..., 'important') aquÃ­.
         var bgMain  = dark ? '#0d1117' : '#edf2f8';
         var bgCard  = dark ? '#161b22' : '#ffffff';
         var txtMain = dark ? '#e6edf3' : '#0f172a';
@@ -409,7 +420,7 @@ _THEME_JS = """
             });
         });
 
-        // 3. Gradiente decorativo encima del fondo sólido
+        // 3. Gradiente decorativo encima del fondo sÃ³lido
         document.querySelectorAll('.stApp').forEach(function(el){
             el.style.setProperty('background-image', grad, 'important');
         });
@@ -433,7 +444,7 @@ _THEME_JS = """
         if(hdr) hdr.style.setProperty('background',
             dark ? 'rgba(13,17,23,0.85)' : 'rgba(255,255,255,0.62)', 'important');
 
-        // 6. Activar píldora correcta
+        // 6. Activar pÃ­ldora correcta
         ['light','dark','system'].forEach(function(id){
             var b=document.getElementById('stp-'+id);
             if(b) b.classList.toggle('active', id===theme);
@@ -451,7 +462,7 @@ _THEME_JS = """
     applyAll(saved);
 
     // Re-aplicar cada vez que Streamlit re-renderiza el DOM
-    // (Streamlit puede restablecer el style inline al navegar entre páginas)
+    // (Streamlit puede restablecer el style inline al navegar entre pÃ¡ginas)
     var _obs_timeout = null;
     var obs = new MutationObserver(function(){
         clearTimeout(_obs_timeout);
@@ -477,7 +488,7 @@ _THEME_JS = """
 
 
 def _theme_pills_html() -> str:
-    """HTML de las tres píldoras de tema (renderizado en el top bar del sidebar)."""
+    """HTML de las tres pÃ­ldoras de tema (renderizado en el top bar del sidebar)."""
     return """
 <div class="sb-theme-pills" id="sb-theme-pills">
     <button class="sb-theme-pill" id="stp-light" title="Modo claro"
@@ -574,13 +585,13 @@ def render_sidebar() -> None:
         </svg>"""
 
     with st.sidebar:
-        # ── TOP BAR: brand + píldoras de tema ──────────────────────────────
+        # â”€â”€ TOP BAR: brand + pÃ­ldoras de tema â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         st.markdown(
             f"""
             <div class="sb-top-bar">
                 <div class="sb-brand-block">
                     <div class="sb-brand-name">Seminario Predictivo</div>
-                    <div class="sb-brand-sub">Caso 06 · Amazon Reviews</div>
+                    <div class="sb-brand-sub">Caso 06 Â· Amazon Reviews</div>
                 </div>
                 {_theme_pills_html()}
             </div>
@@ -588,21 +599,21 @@ def render_sidebar() -> None:
             unsafe_allow_html=True,
         )
 
-        # ── Logo ────────────────────────────────────────────────────────────
+        # â”€â”€ Logo â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         st.markdown(
             f'<div class="sb-logo-wrap">{logo_html}</div>',
             unsafe_allow_html=True,
         )
 
-        # ── Nav ─────────────────────────────────────────────────────────────
+        # â”€â”€ Nav â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         _nav_item("main.py",            _I_HOME,   "Inicio")
         _nav_item(pages["resumen"],     _I_FILE,   "Resumen Ejecutivo")
-        _nav_item(pages["exploracion"], _I_SEARCH, "Exploración de Datos")
-        _nav_item(pages["modelos"],     _I_CHART,  "Modelos y Evaluación")
-        _nav_item(pages["auditoria"],   _I_SHIELD, "Auditoría en Tiempo Real")
+        _nav_item(pages["exploracion"], _I_SEARCH, "ExploraciÃ³n de Datos")
+        _nav_item(pages["modelos"],     _I_CHART,  "Modelos y EvaluaciÃ³n")
+        _nav_item(pages["auditoria"],   _I_SHIELD, "AuditorÃ­a en Tiempo Real")
         _nav_item(pages["ranking"],     _I_BAR,    "Ranking y Benchmark")
 
-        # ── Autores ─────────────────────────────────────────────────────────
+        # â”€â”€ Autores â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         st.markdown(
             """
             <div style="
@@ -619,8 +630,8 @@ def render_sidebar() -> None:
                     margin-bottom: 0.45rem;
                 ">Autores</div>
                 <div style="color:rgba(248,250,252,0.82);font-size:0.78rem;line-height:1.9">
-                    Arévalo José<br>
-                    Cholango Mónica<br>
+                    ArÃ©valo JosÃ©<br>
+                    Cholango MÃ³nica<br>
                     Torres Byron
                 </div>
             </div>
