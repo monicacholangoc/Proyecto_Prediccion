@@ -238,35 +238,30 @@ def process_uploaded_audit_batch(df_input: pd.DataFrame) -> tuple[pd.DataFrame, 
     batch_df = pd.DataFrame(processed_rows)
     st.session_state["db_central_corporativa"] = pd.concat([db, batch_df], ignore_index=True)
 
-    # ── Guardar cada fila en Supabase ────────────────────────────────────────
-    sb_ok = 0
-    sb_fail = 0
-    for i, proc_row in enumerate(processed_rows):
-        audit_r = {
-            "probability":          proc_row["Helpfulness"],
-            "status":               proc_row["Estado"],
-            "review_len":           len(str(proc_row.get("Text", "")).split()),
-            "sentiment_score":      0.0,
-            "incoherente":          False,
-            "context_blind_spot":   False,
-            "context_hits":         [],
-            "context_explanation":  "",
-        }
-        ok, _ = save_review_to_supabase(audit_r, {
+    # ── Guardar cada fila del lote en Supabase ───────────────────────────────
+    sb_errors = 0
+    for i, (proc_row, orig_row) in enumerate(zip(processed_rows, df_input.itertuples())):
+        audit_r = audit_review_text(
+            str(proc_row["Text"].replace("...", "")),
+            int(proc_row["Stars"]),
+            proc_row["ProductId"],
+            validate_context=False,  # ya se auditó arriba, evitar doble cómputo
+        )
+        row_data = {
             "ID_Transaccion": proc_row["ID_Transaccion"],
             "ProductId":      proc_row["ProductId"],
             "User":           proc_row["User"],
             "Stars":          proc_row["Stars"],
             "Text":           proc_row["Text"],
-        })
-        if ok:
-            sb_ok += 1
-        else:
-            sb_fail += 1
+        }
+        ok, _ = save_review_to_supabase(audit_r, row_data)
+        if not ok:
+            sb_errors += 1
 
     clear_supabase_cache()
-    msg_extra = f" ({sb_ok} guardadas en Supabase" + (f", {sb_fail} fallaron" if sb_fail else "") + ")"
-    return batch_df, None if sb_fail == 0 else f"Lote procesado con {sb_fail} errores en Supabase."
+    if sb_errors > 0:
+        return batch_df, f"{sb_errors} filas no pudieron guardarse en Supabase."
+    return batch_df, None
 
 
 def process_uploaded_audit_file(uploaded_file) -> tuple[pd.DataFrame, str | None]:
