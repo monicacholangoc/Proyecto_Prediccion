@@ -1,442 +1,537 @@
-"""Auditoria en tiempo real."""
+"""Ranking y Benchmark — versión mejorada con KPIs visuales, filtros de año/estado y top categorías."""
+
+# ── Guard: redirige a main.py si se accede directamente sin sesión ──────────
 try:
     import streamlit as _st
     if not _st.session_state.get("app_initialized"):
         _st.switch_page("main.py")
 except Exception:
     pass
+# ────────────────────────────────────────────────────────────────────────────
 
-import os
 import pandas as pd
-import requests
+import plotly.express as px
+import plotly.graph_objects as go
 import streamlit as st
+
 from shared_sidebar import render_sidebar
 from components.cards import render_metric_card, render_review_card
-from components.feedback import render_status_panel
-from plots.audit_charts import build_helpfulness_gauge
-from services.catalog_service import get_product_detail, get_product_options
-from services.ml_service import generate_review_recommendations, audit_review_text
+from services.catalog_service import get_product_detail, get_product_options, get_product_catalog
 from services.preprocessing_service import (
-    append_audited_review,
-    get_product_benchmark,
-    get_position_summary,
-    get_review_context_window,
     get_audited_reviews_operational_table,
-    process_uploaded_audit_file,
-    save_latest_review_to_file,
+    get_corporate_audit_db,
+    get_global_ranking,
+    get_local_product_ranking,
+    get_position_summary,
+    get_product_reviews_by_date,
+    get_review_context_window,
 )
-from utils.formatters import format_percentage
-from utils.validators import is_non_empty_text
+from utils.formatters import format_compact_number, format_percentage
 
+# ── CSS adicional para esta página ───────────────────────────────────────────
 with open("styles/styles.css", "r", encoding="utf-8") as _f:
     st.markdown(f"<style>{_f.read()}</style>", unsafe_allow_html=True)
-render_sidebar()
 
 st.markdown("""
 <style>
-.feat-grid { display:grid; grid-template-columns:1fr 1fr; gap:0.3rem; margin-bottom:0.5rem; }
-.feat-card { background:#fff; border:1px solid #e5e9f2; border-radius:8px; padding:0.4rem 0.55rem; }
-.feat-lbl { font-size:0.58rem; font-weight:700; color:#7a8499; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:0.05rem; }
-.feat-val { font-size:0.88rem; font-weight:700; color:#1a2236; line-height:1.2; margin-bottom:0.05rem; }
-.feat-cap { font-size:0.56rem; color:#9aa5b8; margin-bottom:0.1rem; }
-.feat-badge { display:inline-block; font-size:0.56rem !important; font-weight:600; padding:0.06rem 0.35rem !important; border-radius:4px; color:#fff !important; }
-.feat-green { background:#15803d; }
-.feat-amber { background:#b45309; }
-.feat-blue  { background:#1d4ed8; }
-.feat-gray  { background:#64748b; }
+/* ── Podium cards ── */
+.podium-wrap { display:flex; gap:0.5rem; align-items:flex-end; margin-bottom:0.6rem; flex-wrap:wrap; }
+.podium-card {
+    flex:1; min-width:140px;
+    border-radius:14px; padding:0.85rem 0.8rem 0.7rem;
+    background:var(--surface-soft); border:1px solid var(--border);
+    box-shadow:var(--shadow-soft); text-align:center;
+    transition:transform .18s;
+}
+.podium-card:hover { transform:translateY(-3px); }
+.podium-1 { border-top:4px solid #f59e0b; }
+.podium-2 { border-top:4px solid #94a3b8; }
+.podium-3 { border-top:4px solid #b45309; }
+.podium-medal { font-size:1.6rem; line-height:1; margin-bottom:0.3rem; }
+.podium-pos   { font-size:0.6rem; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin-bottom:0.15rem; }
+.podium-user  { font-size:0.82rem; font-weight:700; color:var(--text); margin-bottom:0.2rem; line-height:1.2; }
+.podium-score { font-size:1.15rem; font-weight:800; color:var(--primary); }
+.podium-sub   { font-size:0.65rem; color:var(--muted); }
+
+/* ── Gauge bar ── */
+.gauge-bar-wrap { margin:0.3rem 0 0.1rem; }
+.gauge-bar-bg   { background:var(--border); border-radius:999px; height:7px; overflow:hidden; }
+.gauge-bar-fill { height:100%; border-radius:999px; }
+
+/* ── Category rank table ── */
+.cat-row { display:flex; align-items:center; gap:0.5rem; padding:0.35rem 0; border-bottom:1px solid var(--border); }
+.cat-row:last-child { border-bottom:none; }
+.cat-rank  { width:22px; font-size:0.72rem; font-weight:800; color:var(--muted); flex-shrink:0; }
+.cat-name  { flex:1; font-size:0.82rem; font-weight:600; color:var(--text); }
+.cat-bar   { width:80px; }
+.cat-score { font-size:0.8rem; font-weight:700; color:var(--primary); width:40px; text-align:right; flex-shrink:0; }
+
+/* ── Global KPI row ── */
+.gkpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:0.5rem; margin-bottom:0.5rem; }
+.gkpi-card {
+    background:var(--surface-soft); border:1px solid var(--border);
+    border-radius:14px; padding:0.8rem 0.9rem;
+    box-shadow:var(--shadow-soft); text-align:center;
+}
+.gkpi-icon  { font-size:1.4rem; margin-bottom:0.2rem; }
+.gkpi-val   { font-size:1.3rem; font-weight:800; color:var(--text); line-height:1; }
+.gkpi-lbl   { font-size:0.68rem; color:var(--muted); margin-top:0.15rem; }
+
+/* ── Status pill ── */
+.status-pill {
+    display:inline-block; font-size:0.65rem; font-weight:700;
+    padding:0.15rem 0.5rem; border-radius:999px;
+}
+.sp-green { background:#dcfce7; color:#15803d; }
+.sp-amber { background:#fef3c7; color:#b45309; }
+.sp-red   { background:#fee2e2; color:#991b1b; }
+
+/* ── Year chip row ── */
+.year-chips { display:flex; flex-wrap:wrap; gap:0.4rem; margin-bottom:0.6rem; }
+
+@media(max-width:768px) {
+    .gkpi-grid { grid-template-columns:repeat(2,1fr); }
+    .podium-wrap { flex-direction:column; align-items:stretch; }
+}
 </style>
 """, unsafe_allow_html=True)
 
+render_sidebar()
 
-def _api_url():
-    try:
-        return st.secrets["API_URL"].rstrip("/")
-    except Exception:
-        return os.getenv("API_URL", "https://proyecto-prediccion-v9qk.onrender.com").rstrip("/")
-
-
-def _call_predict(review_text, stars):
-    try:
-        r = requests.post(
-            _api_url() + "/reviews/predict_helpfulness",
-            json={"review_text": review_text, "stars": stars},
-            timeout=35,
-        )
-        r.raise_for_status()
-        return r.json()
-    except requests.exceptions.Timeout:
-        return {"error": "Timeout. Reintenta."}
-    except Exception as exc:
-        return {"error": str(exc)}
-
-
+# ── Hero ─────────────────────────────────────────────────────────────────────
 st.markdown("""
 <div style="background:linear-gradient(135deg,#16213b 0%,#1746a2 60%,#0f4c5c 100%);
-    border-radius:16px;padding:1.4rem 2rem;margin-bottom:1.4rem;color:#fff">
+    border-radius:16px;padding:1.4rem 2rem;margin-bottom:1.2rem;color:#fff">
     <div style="font-size:0.72rem;font-weight:600;letter-spacing:0.08em;
                 color:rgba(255,255,255,0.55);text-transform:uppercase;margin-bottom:0.35rem">
-        Seminario Predictivo 2026 - Caso 06
+        Seminario Predictivo 2026 · Caso 06
     </div>
     <div style="font-size:clamp(1.4rem,3vw,1.9rem);font-weight:800;
                 letter-spacing:-0.02em;line-height:1.2;margin-bottom:0.3rem">
-        Auditoria en Tiempo Real
+        Ranking y Benchmark
     </div>
     <div style="font-size:0.82rem;color:rgba(255,255,255,0.65)">
-        Evaluacion individual - Carga masiva CSV - Diagnostico de utilidad
+        Comparativa global de reseñas · Top categorías · Posición relativa en tiempo real
     </div>
-</div>""", unsafe_allow_html=True)
+</div>
+""", unsafe_allow_html=True)
 
-product_options = get_product_options()
+# ── Datos base ────────────────────────────────────────────────────────────────
+product_options  = get_product_options()
+catalog          = get_product_catalog()
+full_db          = get_corporate_audit_db()
+global_ranking   = get_global_ranking()
+saved_reviews_df = get_audited_reviews_operational_table()
+
 if not product_options:
     st.warning("No hay productos disponibles.")
     st.stop()
 
-st.markdown('<div class="section-label">Producto a auditar</div>', unsafe_allow_html=True)
-sc1, sc2, sc3 = st.columns([2, 1, 1], gap="medium")
-with sc1:
-    selected_product = st.selectbox("Producto", options=product_options, label_visibility="collapsed")
-product_detail = get_product_detail(selected_product)
-with sc2:
-    st.metric("Producto", product_detail["ProductName"][:28])
-with sc3:
-    st.metric("Categoria", product_detail["Categoria_Real"][:22])
+# Asegurar columna CreatedAt y año disponible
+if "CreatedAt" in full_db.columns:
+    full_db["CreatedAt"] = pd.to_datetime(full_db["CreatedAt"], errors="coerce")
+    full_db["Año"] = full_db["CreatedAt"].dt.year.fillna(0).astype(int)
+else:
+    full_db["Año"] = 0
 
-st.markdown("---")
-tab1, tab2 = st.tabs(["Resena individual", "Carga masiva CSV"])
+años_disponibles = sorted([y for y in full_db["Año"].unique() if y > 2000], reverse=True)
 
-# ==============================================================
-# TAB 1
-# ==============================================================
-with tab1:
-    left_col, right_col = st.columns([1.1, 1], gap="large")
+# ── Filtros globales ──────────────────────────────────────────────────────────
+st.markdown('<div class="section-label">Filtros</div>', unsafe_allow_html=True)
+fc1, fc2, fc3, fc4 = st.columns([2, 1.4, 1.2, 1], gap="medium")
 
-    with left_col:
-        st.markdown('<div class="section-label">Configuracion</div>', unsafe_allow_html=True)
+with fc1:
+    selected_product = st.selectbox("Producto", options=product_options)
+with fc2:
+    selected_status = st.selectbox(
+        "Estado",
+        options=["Todos", "APROBADA (Publicada)", "RECHAZADA (Baja Calidad)", "RECHAZADA (Punto Ciego)"]
+    )
+with fc3:
+    year_options = ["Todos los años"] + [str(y) for y in años_disponibles]
+    selected_year = st.selectbox("Año", options=year_options)
+with fc4:
+    min_stars = st.selectbox("Estrellas mín.", options=["Todas", "⭐", "⭐⭐", "⭐⭐⭐", "⭐⭐⭐⭐", "⭐⭐⭐⭐⭐"])
 
-        # Leer valor previo ANTES de renderizar el toggle
-        _prev_val = st.session_state.get("_toggle_prev_val", False)
+detail = get_product_detail(selected_product)
+st.info(f"**{detail['ProductName']}** · `{detail['ProductId']}` · Categoría: **{detail['Categoria_Real']}**")
 
-        validate_context = st.toggle(
-            "Validacion de contexto / punto ciego",
-            value=False,
-            key="_toggle_current_val",
-            help=(
-                "ON: si la resena no menciona ningun termino alimenticio, "
-                "la probabilidad cae a 0.05 (punto ciego).\n"
-                "OFF: solo evalua utilidad del texto."
-            ),
+# ── Aplicar filtros ───────────────────────────────────────────────────────────
+def _apply_filters(df: pd.DataFrame) -> pd.DataFrame:
+    out = df.copy()
+    if selected_status != "Todos" and "Estado" in out.columns:
+        out = out[out["Estado"] == selected_status]
+    if selected_year != "Todos los años" and "Año" in out.columns:
+        out = out[out["Año"] == int(selected_year)]
+    if min_stars != "Todas" and "Stars" in out.columns:
+        min_val = min_stars.count("⭐")
+        out = out[out["Stars"] >= min_val]
+    return out
+
+ranking_df   = get_local_product_ranking(selected_product)
+filtered_db  = _apply_filters(full_db)
+filtered_local = _apply_filters(ranking_df)
+
+# ── KPIs GLOBALES ─────────────────────────────────────────────────────────────
+st.markdown('<div class="section-label">Indicadores globales</div>', unsafe_allow_html=True)
+
+total_reviews   = len(filtered_db)
+approved        = int((filtered_db["Estado"] == "APROBADA (Publicada)").sum()) if "Estado" in filtered_db.columns else 0
+avg_helpfulness = float(filtered_db["Helpfulness"].mean()) if "Helpfulness" in filtered_db.columns and total_reviews > 0 else 0.0
+total_products  = int(filtered_db["ProductId"].astype(str).nunique()) if "ProductId" in filtered_db.columns else 0
+approval_rate   = approved / total_reviews if total_reviews > 0 else 0.0
+rejected        = total_reviews - approved
+
+st.markdown(f"""
+<div class="gkpi-grid">
+    <div class="gkpi-card">
+        <div class="gkpi-icon">📦</div>
+        <div class="gkpi-val">{format_compact_number(total_reviews)}</div>
+        <div class="gkpi-lbl">Reseñas en base</div>
+    </div>
+    <div class="gkpi-card">
+        <div class="gkpi-icon">✅</div>
+        <div class="gkpi-val">{format_compact_number(approved)}</div>
+        <div class="gkpi-lbl">Aprobadas · {format_percentage(approval_rate)}</div>
+    </div>
+    <div class="gkpi-card">
+        <div class="gkpi-icon">❌</div>
+        <div class="gkpi-val">{format_compact_number(rejected)}</div>
+        <div class="gkpi-lbl">Rechazadas</div>
+    </div>
+    <div class="gkpi-card">
+        <div class="gkpi-icon">📊</div>
+        <div class="gkpi-val">{format_percentage(avg_helpfulness)}</div>
+        <div class="gkpi-lbl">Utilidad media global</div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
+# ── Gráfica estados + evolución mensual ──────────────────────────────────────
+vc1, vc2 = st.columns(2, gap="medium")
+
+with vc1:
+    st.markdown('<div class="section-label">Distribución por estado</div>', unsafe_allow_html=True)
+    if "Estado" in filtered_db.columns and not filtered_db.empty:
+        estado_counts = filtered_db["Estado"].value_counts().reset_index()
+        estado_counts.columns = ["Estado", "Cantidad"]
+        color_map = {
+            "APROBADA (Publicada)":      "#15803d",
+            "RECHAZADA (Baja Calidad)":  "#b45309",
+            "RECHAZADA (Punto Ciego)":   "#991b1b",
+        }
+        fig_estado = px.pie(
+            estado_counts, values="Cantidad", names="Estado",
+            color="Estado", color_discrete_map=color_map,
+            hole=0.55, template="plotly_white",
         )
-
-        stars = st.slider("Calificacion en estrellas", min_value=1, max_value=5, value=5)
-        user_name = st.text_input("Perfil de usuario", value="Auditor_Seminario")
-        review_text = st.text_area(
-            "Texto de la resena", height=200,
-            placeholder="Escribe aqui la resena a evaluar...",
+        fig_estado.update_traces(textposition="outside", textinfo="percent+label",
+                                 textfont_size=10, pull=[0.03]*len(estado_counts))
+        fig_estado.update_layout(
+            height=240, margin=dict(l=10,r=10,t=20,b=10),
+            showlegend=False, title_font_size=11,
         )
-        analyze_clicked = st.button("Analizar resena", use_container_width=True)
+        st.plotly_chart(fig_estado, use_container_width=True, config={"displayModeBar": False})
+    else:
+        st.info("Sin datos para graficar.")
 
-        if analyze_clicked:
-            if not is_non_empty_text(review_text):
-                st.warning("Ingresa una resena antes de analizar.")
-            else:
-                with st.spinner("Analizando..."):
-                    api_r = _call_predict(review_text.strip(), stars)
-                st.session_state["_api_result"]       = api_r if "error" not in api_r else None
-                st.session_state["_last_review_text"] = review_text.strip()
-                st.session_state["_last_stars"]       = stars
-                st.session_state["_last_product"]     = selected_product
-                st.session_state["_toggle_prev_val"]  = validate_context
-                if "error" in api_r:
-                    st.error(f"API no disponible: {api_r['error']}")
-                audit_result = append_audited_review(
-                    selected_product, user_name, stars,
-                    review_text.strip(), validate_context=validate_context,
-                )
-                st.session_state["latest_audit_result"] = audit_result
-                st.session_state["latest_stars"]        = stars
-
-        # Recalcular si el toggle cambio sin re-analizar
-        last_text    = st.session_state.get("_last_review_text")
-        last_stars_v = st.session_state.get("_last_stars")
-        last_product = st.session_state.get("_last_product")
-
-        if last_text and (validate_context != _prev_val):
-            detail = get_product_detail(last_product or selected_product)
-            recalc = audit_review_text(
-                last_text,
-                last_stars_v or stars,
-                last_product or selected_product,
-                product_name=detail.get("ProductName"),
-                category_name=detail.get("Categoria_Real"),
-                validate_context=validate_context,
+with vc2:
+    st.markdown('<div class="section-label">Evolución de reseñas por año</div>', unsafe_allow_html=True)
+    if "Año" in filtered_db.columns and "CreatedAt" in filtered_db.columns and not filtered_db.empty:
+        monthly = (
+            filtered_db.dropna(subset=["CreatedAt"])
+            .assign(Mes=lambda d: d["CreatedAt"].dt.to_period("M").astype(str))
+            .groupby("Mes")
+            .agg(Total=("Helpfulness","count"), Util_Media=("Helpfulness","mean"))
+            .reset_index()
+            .tail(24)  # últimos 24 meses
+        )
+        if not monthly.empty:
+            fig_evol = go.Figure()
+            fig_evol.add_trace(go.Bar(
+                x=monthly["Mes"], y=monthly["Total"],
+                name="Reseñas", marker_color="#dbe7ff",
+                yaxis="y", opacity=0.85,
+            ))
+            fig_evol.add_trace(go.Scatter(
+                x=monthly["Mes"], y=monthly["Util_Media"],
+                name="Utilidad media", line=dict(color="#1746a2", width=2.5),
+                yaxis="y2", mode="lines+markers", marker_size=4,
+            ))
+            fig_evol.update_layout(
+                height=240, margin=dict(l=10,r=10,t=20,b=10),
+                yaxis=dict(title="Reseñas", showgrid=True, gridcolor="#f0f4f8"),
+                yaxis2=dict(title="Utilidad", overlaying="y", side="right",
+                            tickformat=".0%", range=[0,1]),
+                xaxis=dict(tickangle=-45, tickfont_size=8),
+                legend=dict(orientation="h", y=1.1, font_size=9),
+                template="plotly_white", plot_bgcolor="rgba(0,0,0,0)",
             )
-            st.session_state["latest_audit_result"] = recalc
-            st.session_state["_toggle_prev_val"]    = validate_context
-
-    # Panel derecho
-    with right_col:
-        lr   = st.session_state.get("latest_audit_result")
-        prob = lr["probability"] if lr else 0.0
-
-        st.plotly_chart(build_helpfulness_gauge(prob), use_container_width=True)
-
-        # Caracteristicas calculadas compactas
-        st.markdown(
-            '<div class="section-label" style="margin-bottom:0.3rem">Caracteristicas calculadas</div>',
-            unsafe_allow_html=True,
-        )
-        rl    = lr["review_len"]  if lr else 0
-        incoh = lr["incoherente"] if lr else False
-        sv    = st.session_state.get("latest_stars", 5)
-        sent  = lr.get("sentiment_score") if lr else None
-
-        lb = "feat-green" if rl > 60 else "feat-amber"
-        ll = "Adecuada" if rl > 60 else "Corta"
-
-        if sent is not None:
-            sl = "Positivo" if sent > 0.05 else ("Negativo" if sent < -0.05 else "Neutro")
-            sb = "feat-green" if sent > 0.05 else ("feat-amber" if sent < -0.05 else "feat-blue")
-            ss = f"{sent:.2f}"
+            st.plotly_chart(fig_evol, use_container_width=True, config={"displayModeBar": False})
         else:
-            sl, sb, ss = "Pendiente", "feat-gray", "-"
+            st.info("Sin datos temporales.")
+    else:
+        st.info("Sin columna de fecha disponible.")
 
-        filled = "&#9733;" * int(sv)
-        empty  = "&#9734;" * max(0, 5 - int(sv))
-        cl = "Coherente" if not incoh else "Incoherente"
-        cb = "feat-green" if not incoh else "feat-amber"
+# ── Top 5 Categorías ──────────────────────────────────────────────────────────
+st.markdown('<div class="section-label">Top 5 categorías por utilidad media</div>', unsafe_allow_html=True)
 
-        st.markdown(f"""
-        <div class="feat-grid">
-            <div class="feat-card">
-                <div class="feat-lbl">Longitud</div>
-                <div class="feat-val">{rl} palabras</div>
-                <div class="feat-cap">Umbral: 80 palabras</div>
-                <span class="feat-badge {lb}">{ll}</span>
-            </div>
-            <div class="feat-card">
-                <div class="feat-lbl">Sentimiento</div>
-                <div class="feat-val">{ss}</div>
-                <div class="feat-cap">VADER (-1 a +1)</div>
-                <span class="feat-badge {sb}">{sl}</span>
-            </div>
-            <div class="feat-card">
-                <div class="feat-lbl">Calificacion</div>
-                <div class="feat-val" style="color:#f59e0b">{filled}{empty}</div>
-                <div class="feat-cap">{sv} de 5 estrellas</div>
-                <span class="feat-badge feat-blue">{sv}/5</span>
-            </div>
-            <div class="feat-card">
-                <div class="feat-lbl">Coherencia</div>
-                <div class="feat-val">{cl}</div>
-                <div class="feat-cap">Tono vs. estrellas</div>
-                <span class="feat-badge {cb}">{cl}</span>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+cat_col_name = None
+if "Categoria_Real" in filtered_db.columns:
+    cat_col_name = "Categoria_Real"
+elif catalog is not None and not catalog.empty and "Categoria_Real" in catalog.columns and "ProductId" in catalog.columns:
+    # Enriquecer filtered_db con categorías desde el catálogo
+    cat_map = catalog.set_index("ProductId")["Categoria_Real"].to_dict()
+    filtered_db["Categoria_Real"] = filtered_db["ProductId"].astype(str).map(cat_map).fillna("Sin categoría")
+    cat_col_name = "Categoria_Real"
 
-        # Diagnostico
-        st.markdown(
-            '<div class="section-label" style="margin-top:0.5rem;margin-bottom:0.3rem">Diagnostico</div>',
-            unsafe_allow_html=True,
+tcc1, tcc2 = st.columns([1, 1.4], gap="medium")
+
+if cat_col_name and not filtered_db.empty:
+    cat_stats = (
+        filtered_db.groupby(cat_col_name)
+        .agg(
+            n_resenas=(cat_col_name, "count"),
+            util_media=("Helpfulness", "mean"),
+            aprobadas=("Estado", lambda x: (x == "APROBADA (Publicada)").sum()),
         )
-        if lr:
-            is_blind = "Punto Ciego" in lr["status"]
-            tone     = "danger" if is_blind else ("success" if prob >= 0.70 else "warning")
-            decision = "Revision obligatoria" if is_blind else ("Lista para publicar" if prob >= 0.70 else "Conviene mejorarla")
+        .reset_index()
+        .sort_values("util_media", ascending=False)
+        .head(5)
+        .reset_index(drop=True)
+    )
+    cat_stats["util_pct"] = cat_stats["util_media"] * 100
 
-            if is_blind:
-                razon = "La resena no tiene contexto alimenticio."
-            elif prob >= 0.70:
-                razon = "La resena supera el umbral de utilidad."
-            elif rl < 60:
-                razon = "La resena es muy corta (menos de 60 palabras)."
-            elif sent is not None and sent < -0.05:
-                razon = "El sentimiento del texto es negativo."
-            else:
-                razon = f"Utilidad {format_percentage(prob)} bajo umbral del 70%."
+    with tcc1:
+        medals = ["🥇","🥈","🥉","4️⃣","5️⃣"]
+        colors = ["#f59e0b","#94a3b8","#b45309","#64748b","#64748b"]
+        cat_html = '<div style="background:var(--surface-soft);border:1px solid var(--border);border-radius:14px;padding:0.7rem 0.9rem;">'
+        for i, row in cat_stats.iterrows():
+            bar_w = int(row["util_pct"])
+            bar_color = colors[i] if i < len(colors) else "#64748b"
+            cat_html += f"""
+            <div class="cat-row">
+                <div class="cat-rank">{medals[i]}</div>
+                <div class="cat-name">{row[cat_col_name]}</div>
+                <div class="cat-bar">
+                    <div class="gauge-bar-bg">
+                        <div class="gauge-bar-fill" style="width:{bar_w}%;background:{bar_color}"></div>
+                    </div>
+                </div>
+                <div class="cat-score">{row['util_pct']:.1f}%</div>
+            </div>"""
+        cat_html += "</div>"
+        st.markdown(cat_html, unsafe_allow_html=True)
 
-            render_status_panel(
-                "Diagnostico", decision,
-                (
-                    f"Estado: {lr['status']} | "
-                    f"Utilidad: {format_percentage(prob)} | "
-                    f"Punto ciego: {'Si' if is_blind else 'No'} | "
-                    f"Validacion: {'Activa' if lr.get('context_validation_enabled') else 'Desactivada'} | "
-                    f"Razon: {razon}"
-                ),
-                tone=tone,
-            )
-            if lr.get("context_validation_enabled"):
-                ctx  = ", ".join(lr.get("context_hits", [])) or "ninguna"
-                tech = ", ".join(lr.get("tech_hits", []))    or "ninguno"
-                st.markdown(
-                    f'<div class="highlight-card" style="margin-top:0.4rem;padding:0.5rem 0.7rem">'
-                    f'<div class="highlight-title" style="font-size:0.68rem">Contexto alimenticio</div>'
-                    f'<div class="highlight-body" style="font-size:0.7rem">'
-                    f'{lr.get("context_explanation","")}<br>'
-                    f'<b>Detectadas:</b> {ctx} | <b>Ajenas:</b> {tech}'
-                    f'</div></div>',
-                    unsafe_allow_html=True,
-                )
-        else:
-            st.info("Introduce una resena y presiona Analizar.")
+    with tcc2:
+        fig_cat = px.bar(
+            cat_stats.sort_values("util_media", ascending=True),
+            x="util_media", y=cat_col_name, orientation="h",
+            color="util_media",
+            color_continuous_scale=["#fef3c7","#f59e0b","#15803d"],
+            labels={"util_media": "Utilidad media", cat_col_name: "Categoría"},
+            template="plotly_white",
+            text=cat_stats.sort_values("util_media", ascending=True)["n_resenas"].apply(lambda x: f"{int(x)} reseñas"),
+        )
+        fig_cat.update_coloraxes(showscale=False)
+        fig_cat.update_traces(textposition="inside", textfont_size=9)
+        fig_cat.update_xaxes(tickformat=".0%", range=[0,1])
+        fig_cat.update_layout(height=220, margin=dict(l=10,r=10,t=15,b=10))
+        st.plotly_chart(fig_cat, use_container_width=True, config={"displayModeBar": False})
+else:
+    st.info("No hay datos de categorías disponibles para el filtro actual.")
 
-    st.markdown("---")
+# ── KPIs del producto seleccionado ───────────────────────────────────────────
+st.markdown('<div class="section-label">Indicadores del producto seleccionado</div>', unsafe_allow_html=True)
 
-    
-    lr   = st.session_state.get("latest_audit_result")
-    prob = lr["probability"] if lr else 0.0
+top_score    = float(filtered_local["Helpfulness"].max())  if not filtered_local.empty else 0.0
+avg_score    = float(filtered_local["Helpfulness"].mean()) if not filtered_local.empty else 0.0
+review_count = len(filtered_local)
+approved_prd = int((filtered_local["Estado"] == "APROBADA (Publicada)").sum()) if "Estado" in filtered_local.columns else 0
+rejected_prd = review_count - approved_prd
+top_user     = str(filtered_local.iloc[0]["User"]) if not filtered_local.empty else "Sin datos"
 
-    if lr:
-        recs = generate_review_recommendations(lr)
-        st.markdown('<div class="section-label">Como mejorar esta resena</div>', unsafe_allow_html=True)
-        r1, r2 = st.columns(2, gap="large")
-        with r1:
-            st.markdown(
-                f'<div class="highlight-card"><div class="highlight-title">Accion principal</div>'
-                f'<div class="highlight-body">{recs[0]}</div></div>',
-                unsafe_allow_html=True,
-            )
-        with r2:
-            if len(recs) > 1:
-                st.markdown(
-                    f'<div class="highlight-card"><div class="highlight-title">Accion adicional</div>'
-                    f'<div class="highlight-body">{recs[1]}</div></div>',
-                    unsafe_allow_html=True,
-                )
+pc1, pc2, pc3, pc4, pc5 = st.columns(5, gap="small")
+with pc1:
+    render_metric_card("Reseñas", format_compact_number(review_count), "Con los filtros activos")
+with pc2:
+    render_metric_card("Utilidad máx.", format_percentage(top_score), "Reseña mejor puntuada")
+with pc3:
+    render_metric_card("Utilidad media", format_percentage(avg_score), "Promedio del producto")
+with pc4:
+    render_metric_card("Aprobadas", str(approved_prd), "Estado APROBADA")
+with pc5:
+    render_metric_card("Rechazadas", str(rejected_prd), "Estado RECHAZADA")
 
-        sv1, _ = st.columns([0.3, 0.7])
-        with sv1:
-            if st.button("Guardar resena", use_container_width=True):
-                ok, msg = save_latest_review_to_file(selected_product)
-                (st.success if ok else st.warning)(msg)
+# ── Distribución de estrellas del producto ───────────────────────────────────
+pd1, pd2 = st.columns(2, gap="medium")
 
-    latest_review_id = st.session_state.get("latest_review_id")
-    position_summary = get_position_summary(selected_product, latest_review_id)
-    review_window_df = get_review_context_window(selected_product, latest_review_id, window_size=2)
+with pd1:
+    st.markdown('<div class="section-label">Estrellas del producto</div>', unsafe_allow_html=True)
+    if not filtered_local.empty and "Stars" in filtered_local.columns:
+        stars_cnt = filtered_local["Stars"].value_counts().sort_index().reset_index()
+        stars_cnt.columns = ["Estrellas", "Cantidad"]
+        stars_cnt["Label"] = stars_cnt["Estrellas"].apply(lambda x: "⭐"*int(x))
+        fig_stars = px.bar(
+            stars_cnt, x="Label", y="Cantidad",
+            color="Estrellas",
+            color_continuous_scale=["#fee2e2","#fef3c7","#fef9c3","#dcfce7","#15803d"],
+            template="plotly_white",
+            labels={"Label":"", "Cantidad":"Reseñas"},
+        )
+        fig_stars.update_coloraxes(showscale=False)
+        fig_stars.update_layout(height=200, margin=dict(l=10,r=10,t=15,b=10))
+        st.plotly_chart(fig_stars, use_container_width=True, config={"displayModeBar": False})
+    else:
+        st.info("Sin datos de estrellas.")
 
-    if latest_review_id and not review_window_df.empty:
-        st.markdown('<div class="section-label">Tu resena en contexto del ranking</div>', unsafe_allow_html=True)
-        p1, p2, p3 = st.columns(3, gap="medium")
-        with p1:
-            render_metric_card(
-                "Posicion local",
-                f"{position_summary['local_rank']} / {position_summary['product_count']}"
-                if position_summary["local_rank"] else "Sin resena evaluada",
-                "Lugar dentro del producto",
-            )
-        with p2:
-            render_metric_card(
-                "Posicion global",
-                f"{position_summary['global_rank']} / {position_summary['global_count']}"
-                if position_summary["global_rank"] else "Sin resena evaluada",
-                "Lugar en toda la base",
-            )
-        with p3:
-            render_metric_card(
-                "Total del producto", str(position_summary["product_count"]), "Volumen historico"
-            )
+with pd2:
+    st.markdown('<div class="section-label">Utilidad por estrella</div>', unsafe_allow_html=True)
+    if not filtered_local.empty and "Stars" in filtered_local.columns and "Helpfulness" in filtered_local.columns:
+        util_by_star = (
+            filtered_local.groupby("Stars")["Helpfulness"].mean().reset_index()
+        )
+        util_by_star.columns = ["Estrellas","Utilidad_media"]
+        util_by_star["Label"] = util_by_star["Estrellas"].apply(lambda x: f"{'⭐'*int(x)}")
+        fig_us = px.line(
+            util_by_star, x="Label", y="Utilidad_media",
+            markers=True, template="plotly_white",
+            labels={"Label":"","Utilidad_media":"Utilidad media"},
+            color_discrete_sequence=["#1746a2"],
+        )
+        fig_us.update_yaxes(tickformat=".0%", range=[0,1])
+        fig_us.update_traces(line_width=2.5, marker_size=7)
+        fig_us.update_layout(height=200, margin=dict(l=10,r=10,t=15,b=10))
+        st.plotly_chart(fig_us, use_container_width=True, config={"displayModeBar": False})
+    else:
+        st.info("Sin datos suficientes.")
 
-        with st.expander("Ver resenas del contexto de ranking"):
-            for _, row in review_window_df.iterrows():
-                is_cur     = bool(row["EsActual"])
-                badge_txt  = "Tu resena" if is_cur else str(row["Estado"])
-                full_text  = str(row["Text"])
-                short_text = full_text[:180] + ("..." if len(full_text) > 180 else "")
-                border     = "border:2px solid var(--primary);" if is_cur else ""
-                badge_cls  = "metric-badge-good" if "APROBADA" in str(row["Estado"]) else "metric-badge-warn"
-                st.markdown(
-                    f'<div class="metric-card" style="{border}margin-bottom:0.5rem">'
-                    f'<div style="display:flex;justify-content:space-between;margin-bottom:0.25rem">'
-                    f'<span style="font-size:0.72rem;color:var(--muted)">Puesto {int(row["Puesto Local"])} - {str(row["User"])}</span>'
-                    f'<span class="metric-badge {badge_cls}" style="font-size:0.6rem">{badge_txt}</span></div>'
-                    f'<div style="font-size:0.76rem;color:var(--text);margin-bottom:0.2rem">{short_text}</div>'
-                    f'<div style="font-size:0.64rem;color:var(--muted)">Utilidad: {format_percentage(float(row["Helpfulness"]))}</div>'
-                    f'</div>',
-                    unsafe_allow_html=True,
-                )
+# ── Pódium Top 3 ──────────────────────────────────────────────────────────────
+st.markdown('<div class="section-label">Pódium — Top 3 del producto</div>', unsafe_allow_html=True)
 
-# ==============================================================
-# TAB 2
-# ==============================================================
-with tab2:
-    st.markdown('<div class="section-label">Carga masiva de resenas</div>', unsafe_allow_html=True)
-    st.markdown(
-        '<div class="highlight-card"><div class="highlight-title">Formato requerido del CSV</div>'
-        '<div class="highlight-body">Columnas: '
-        '<code>ProductId</code>, <code>ProfileName</code>, <code>Score</code>, <code>Text</code>.'
-        '</div></div>',
-        unsafe_allow_html=True,
+podium_colors  = ["podium-1","podium-2","podium-3"]
+podium_medals  = ["🥇","🥈","🥉"]
+podium_labels  = ["1er lugar","2do lugar","3er lugar"]
+top3 = filtered_local.head(3) if not filtered_local.empty else pd.DataFrame()
+
+if not top3.empty:
+    cols_podium = st.columns(len(top3), gap="medium")
+    for i, (_, row) in enumerate(top3.iterrows()):
+        pclass  = podium_colors[i] if i < 3 else "podium-card"
+        medal   = podium_medals[i] if i < 3 else f"{i+1}."
+        label   = podium_labels[i] if i < 3 else f"Puesto {i+1}"
+        score   = float(row.get("Helpfulness", 0))
+        user    = str(row.get("User","—"))[:22]
+        stars_n = int(row.get("Stars",0))
+        estado  = str(row.get("Estado","—"))
+        stars_str = "⭐"*stars_n
+        bar_w = int(score * 100)
+        sp_cls = "sp-green" if "APROBADA" in estado else ("sp-red" if "Ciego" in estado else "sp-amber")
+        sp_lbl = "Publicada" if "APROBADA" in estado else "Rechazada"
+        with cols_podium[i]:
+            st.markdown(f"""
+            <div class="podium-card {pclass}">
+                <div class="podium-medal">{medal}</div>
+                <div class="podium-pos">{label}</div>
+                <div class="podium-user">{user}</div>
+                <div class="podium-score">{format_percentage(score)}</div>
+                <div class="podium-sub">{stars_str}</div>
+                <div class="gauge-bar-wrap">
+                    <div class="gauge-bar-bg">
+                        <div class="gauge-bar-fill" style="width:{bar_w}%;background:{'#15803d' if score>=.7 else '#b45309'}"></div>
+                    </div>
+                </div>
+                <div style="margin-top:0.3rem"><span class="status-pill {sp_cls}">{sp_lbl}</span></div>
+            </div>
+            """, unsafe_allow_html=True)
+
+    # Resto del top 5 como tabla compacta
+    if len(filtered_local) > 3:
+        st.markdown('<div class="section-label">Posiciones 4–10</div>', unsafe_allow_html=True)
+        rest = filtered_local.iloc[3:10].copy()
+        rest["Puesto"] = range(4, 4 + len(rest))
+        rest["Utilidad"] = rest["Helpfulness"].apply(format_percentage)
+        rest["Estrellas"] = rest["Stars"].apply(lambda x: "⭐"*int(x) if pd.notna(x) else "—")
+        st.dataframe(
+            rest[["Puesto","User","Estrellas","Utilidad","Estado"]].rename(columns={"User":"Usuario"}),
+            use_container_width=True, hide_index=True,
+        )
+else:
+    st.info("No hay reseñas para los filtros seleccionados.")
+
+# ── Tu reseña en contexto ─────────────────────────────────────────────────────
+st.markdown('<div class="section-label">Tu reseña en contexto</div>', unsafe_allow_html=True)
+
+latest_review_id = st.session_state.get("latest_review_id")
+position_summary = get_position_summary(selected_product, latest_review_id)
+review_window_df = get_review_context_window(selected_product, latest_review_id, window_size=2)
+
+p1, p2, p3 = st.columns(3, gap="medium")
+with p1:
+    render_metric_card(
+        "Posición local",
+        f"{position_summary['local_rank']} / {position_summary['product_count']}" if position_summary["local_rank"] else "Sin reseña evaluada",
+        "Lugar dentro del producto"
+    )
+with p2:
+    render_metric_card(
+        "Posición global",
+        f"{position_summary['global_rank']} / {position_summary['global_count']}" if position_summary["global_rank"] else "Sin reseña evaluada",
+        "Lugar en toda la base"
+    )
+with p3:
+    render_metric_card(
+        "Total del producto",
+        format_compact_number(position_summary["product_count"]),
+        "Volumen histórico"
     )
 
-    uc1, uc2 = st.columns([1.5, 1], gap="large")
-    with uc1:
-        uploaded_file = st.file_uploader(
-            "Selecciona el archivo CSV", type=["csv"],
-            help="Columnas: ProductId, ProfileName, Score, Text",
+if latest_review_id and not review_window_df.empty:
+    for _, row in review_window_df.iterrows():
+        render_review_card(
+            user_name=str(row["User"]),
+            stars=int(row["Stars"]),
+            review_text=str(row["Text"]),
+            meta_line=f"Puesto local {int(row['Puesto Local'])}",
+            badge="Tu reseña" if row["EsActual"] else row["Estado"],
+            helpfulness=format_percentage(float(row["Helpfulness"])),
+            highlighted=bool(row["EsActual"]),
         )
-        if st.button("Procesar lote CSV", type="primary", use_container_width=True):
-            if uploaded_file is None:
-                st.warning("Selecciona un archivo CSV antes de procesar.")
-            else:
-                with st.spinner("Procesando resenas..."):
-                    batch_df, err = process_uploaded_audit_file(uploaded_file)
-                if err:
-                    st.error(err)
-                else:
-                    st.success(f"{len(batch_df)} resenas procesadas.")
-                    st.session_state["_last_batch_df"] = batch_df
+else:
+    st.info("Analiza una reseña en Auditoría para ver tu posición aquí.")
 
+# ── Top 20 global ─────────────────────────────────────────────────────────────
+st.markdown("---")
+st.markdown('<div class="section-label">Top 20 global por utilidad</div>', unsafe_allow_html=True)
 
-    batch_result = st.session_state.get("_last_batch_df")
-    if batch_result is not None and not batch_result.empty:
-        st.markdown('<div class="section-label">Resultado del lote</div>', unsafe_allow_html=True)
-        m1, m2, m3, m4 = st.columns(4, gap="medium")
-        aprobadas  = int((batch_result["Estado"] == "APROBADA (Publicada)").sum()) if "Estado" in batch_result.columns else 0
-        rechazadas = len(batch_result) - aprobadas
-        avg_util   = float(batch_result["Helpfulness"].mean()) if "Helpfulness" in batch_result.columns else 0.0
-        with m1:
-            render_metric_card("Total", str(len(batch_result)), "Resenas en el lote")
-        with m2:
-            render_metric_card("Aprobadas", str(aprobadas), "Utilidad >= 0.70")
-        with m3:
-            render_metric_card("Rechazadas", str(rechazadas), "Baja calidad o punto ciego")
-        with m4:
-            render_metric_card("Utilidad media", format_percentage(avg_util), "Promedio del lote")
-        st.dataframe(batch_result, use_container_width=True, hide_index=True)
-        st.download_button(
-            "Descargar resultado CSV",
-            data=batch_result.to_csv(index=False).encode("utf-8-sig"),
-            file_name="resultado_lote_auditoria.csv",
-            mime="text/csv",
-            use_container_width=True,
-        )
+global_filtered = _apply_filters(global_ranking) if not global_ranking.empty else global_ranking
 
-    st.markdown('<div class="section-label">Resenas guardadas del producto</div>', unsafe_allow_html=True)
-    saved_df = get_audited_reviews_operational_table()
-    if not saved_df.empty:
-        filt = (
-            saved_df[saved_df["ProductId"].astype(str) == selected_product]
-            if "ProductId" in saved_df.columns
-            else saved_df
-        )
-        if not filt.empty:
-            filt = filt.copy()
-            if "CreatedAt" in filt.columns:
-                filt["CreatedAt"] = pd.to_datetime(filt["CreatedAt"], errors="coerce").dt.strftime("%d/%m/%Y %H:%M")
-            st.dataframe(filt, use_container_width=True, hide_index=True)
-            st.download_button(
-                "Descargar resenas guardadas",
-                data=filt.to_csv(index=False).encode("utf-8-sig"),
-                file_name="resenas_guardadas.csv",
-                mime="text/csv",
-                use_container_width=True,
-            )
-        else:
-            st.info("No hay resenas guardadas para este producto.")
-    else:
-        st.info("No hay resenas guardadas aun.")
+if not global_filtered.empty:
+    display_cols = [c for c in ["Puesto Global","ProductId","User","Stars","Helpfulness","Estado"] if c in global_filtered.columns]
+    top20 = global_filtered.head(20).copy()
+    if "Helpfulness" in top20.columns:
+        top20["Helpfulness"] = top20["Helpfulness"].apply(lambda x: format_percentage(float(x)))
+    st.dataframe(top20[display_cols], use_container_width=True, hide_index=True)
 
-st.session_state["selected_product_id"] = selected_product
-st.session_state["latest_stars"]        = stars if "stars" in dir() else 5
-st.session_state["latest_review_text"]  = review_text if "review_text" in dir() else ""
+# ── Reseñas guardadas ─────────────────────────────────────────────────────────
+st.markdown('<div class="section-label">Reseñas guardadas en archivo</div>', unsafe_allow_html=True)
+filtered_saved = saved_reviews_df.copy()
+if not filtered_saved.empty:
+    if "ProductId" in filtered_saved.columns:
+        filtered_saved = filtered_saved[filtered_saved["ProductId"].astype(str) == selected_product]
+    if selected_status != "Todos" and "Estado" in filtered_saved.columns:
+        filtered_saved = filtered_saved[filtered_saved["Estado"] == selected_status]
+
+if not filtered_saved.empty:
+    if "CreatedAt" in filtered_saved.columns:
+        filtered_saved["CreatedAt"] = pd.to_datetime(filtered_saved["CreatedAt"], errors="coerce").dt.strftime("%d/%m/%Y %H:%M")
+    st.dataframe(filtered_saved, use_container_width=True, hide_index=True)
+    st.download_button(
+        "⬇ Descargar CSV filtrado",
+        data=filtered_saved.to_csv(index=False).encode("utf-8-sig"),
+        file_name="resenas_filtradas.csv",
+        mime="text/csv",
+        use_container_width=True,
+    )
+else:
+    st.info("No hay reseñas guardadas para los filtros seleccionados.")
