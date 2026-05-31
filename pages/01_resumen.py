@@ -237,7 +237,7 @@ with h3:
 # 4 stats resumen
 st.markdown("<br>", unsafe_allow_html=True)
 s1, s2, s3, s4 = st.columns(4, gap="medium")
-roc_display = format_percentage(float(best["roc_auc"])) if best else "—"
+roc_display = format_percentage(float(best["roc_auc"])) if best is not None else "—"
 for col, val, label, sublabel, color in [
     (s1, str(avg_length),                   "palabras promedio",  "Longitud media de la base analítica",          "#1d4ed8"),
     (s2, format_percentage(useful_ratio),    "reseñas útiles",    "Clase minoritaria — razón del desbalance",     "#15803d"),
