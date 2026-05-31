@@ -214,7 +214,7 @@ def main() -> None:
     for col, name, role in zip(
         [t1, t2, t3],
         ["Arévalo José", "Cholango Mónica", "Torres Byron"],
-        ["Modelado & API", "EDA & Pipeline", "Dashboard & UI"],
+        ["EDA & Pipeline", "Modelado & API", "Dashboard & UI"],
     ):
         with col:
             st.markdown(
