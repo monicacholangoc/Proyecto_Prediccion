@@ -387,16 +387,6 @@ with tab2:
                     st.success(f"{len(batch_df)} resenas procesadas.")
                     st.session_state["_last_batch_df"] = batch_df
 
-    with uc2:
-        st.markdown(
-            '<div class="metric-card"><div class="metric-label">Columnas requeridas</div>'
-            '<div class="metric-caption" style="margin-top:0.4rem">'
-            '<b>ProductId</b> - codigo del producto<br>'
-            '<b>ProfileName</b> - nombre del autor<br>'
-            '<b>Score</b> - calificacion (1-5)<br>'
-            '<b>Text</b> - texto de la resena</div></div>',
-            unsafe_allow_html=True,
-        )
 
     batch_result = st.session_state.get("_last_batch_df")
     if batch_result is not None and not batch_result.empty:
