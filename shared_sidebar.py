@@ -132,17 +132,17 @@ section[data-testid="stSidebar"] {
 
 /* ══ Equipo al final ════════════════════════════════════════════════════════ */
 .sb-team {
-    padding: .5rem .6rem .6rem;
-    border-top: 1px solid rgba(255,255,255,.08);
-    margin-top: .6rem;
+    padding: .7rem .6rem .8rem;
+    border-top: 1px solid rgba(255,255,255,.12);
+    margin-top: 1.8rem;
 }
 .sb-team-t {
-    color:rgba(248,250,252,.4)!important; font-size:.63rem; font-weight:700;
-    text-transform:uppercase; letter-spacing:.07em; margin-bottom:.28rem;
+    color:rgba(248,250,252,.5)!important; font-size:.63rem; font-weight:700;
+    text-transform:uppercase; letter-spacing:.09em; margin-bottom:.4rem;
 }
 .sb-member {
-    color:rgba(248,250,252,.72)!important; font-size:.76rem;
-    padding:.1rem 0; display:flex; align-items:center; gap:.35rem;
+    color:rgba(248,250,252,.75)!important; font-size:.76rem;
+    padding:.15rem 0; display:flex; align-items:center; gap:.35rem;
 }
 .sb-member::before {
     content:""; width:4px; height:4px; border-radius:50%;
