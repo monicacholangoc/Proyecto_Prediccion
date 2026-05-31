@@ -24,6 +24,7 @@ from services.preprocessing_service import (
     get_position_summary,
     get_review_context_window,
 )
+from services.supabase_service import load_reviews_from_supabase, clear_supabase_cache
 from config.constants import TOPIC_NAMES
 from utils.formatters import format_compact_number, format_percentage
 
@@ -523,3 +524,63 @@ if not global_ranking.empty:
     if "Helpfulness" in top20.columns:
         top20["Helpfulness"] = top20["Helpfulness"].apply(lambda x: format_percentage(float(x)))
     st.dataframe(top20[display_cols], use_container_width=True, hide_index=True)
+# ── Reseñas guardadas en Supabase — tiempo real ───────────────────────────────
+st.markdown("---")
+st.markdown('<div class="section-label">📡 Reseñas auditadas — tiempo real (Supabase)</div>', unsafe_allow_html=True)
+
+sb_col1, sb_col2 = st.columns([3, 1], gap="medium")
+with sb_col1:
+    st.caption("Reseñas guardadas por todos los usuarios · Se actualiza automáticamente cada 30 segundos")
+with sb_col2:
+    if st.button("🔄 Actualizar ahora"):
+        clear_supabase_cache()
+        st.rerun()
+
+df_supabase = load_reviews_from_supabase()
+
+if not df_supabase.empty:
+    sb_total    = len(df_supabase)
+    sb_approved = int((df_supabase["status"].str.contains("APROBADA", na=False)).sum())
+    sb_avg_help = float(df_supabase["helpfulness"].mean()) if "helpfulness" in df_supabase.columns else 0.0
+
+    sk1, sk2, sk3 = st.columns(3, gap="medium")
+    with sk1:
+        render_metric_card("Reseñas guardadas", format_compact_number(sb_total), "Total en Supabase")
+    with sk2:
+        render_metric_card("Aprobadas", str(sb_approved), "Estado APROBADA")
+    with sk3:
+        render_metric_card("Utilidad media", format_percentage(sb_avg_help), "Promedio de probabilidad")
+
+    display_sb = df_supabase[[c for c in [
+        "id", "product_id", "usuario", "stars",
+        "helpfulness", "status", "review_len", "created_at"
+    ] if c in df_supabase.columns]].copy()
+
+    if "helpfulness" in display_sb.columns:
+        display_sb["helpfulness"] = display_sb["helpfulness"].apply(lambda x: format_percentage(float(x)))
+    if "created_at" in display_sb.columns:
+        display_sb["created_at"] = pd.to_datetime(
+            display_sb["created_at"], errors="coerce"
+        ).dt.strftime("%Y-%m-%d %H:%M")
+
+    display_sb = display_sb.rename(columns={
+        "id": "ID", "product_id": "Producto", "usuario": "Usuario",
+        "stars": "Estrellas", "helpfulness": "Utilidad",
+        "status": "Estado", "review_len": "Palabras", "created_at": "Fecha",
+    })
+    st.dataframe(display_sb, use_container_width=True, hide_index=True)
+
+    if "helpfulness" in df_supabase.columns and sb_total > 1:
+        fig_sb = px.histogram(
+            df_supabase, x="helpfulness", nbins=20,
+            title="Distribución de utilidad — reseñas en Supabase",
+            labels={"helpfulness": "Probabilidad de utilidad"},
+            color_discrete_sequence=["#1746a2"], template="plotly_white",
+        )
+        fig_sb.add_vline(x=0.70, line_dash="dash", line_color="#15803d",
+                         annotation_text="Umbral aprobación (70%)",
+                         annotation_position="top right")
+        fig_sb.update_layout(height=240, margin=dict(l=10, r=10, t=40, b=10))
+        st.plotly_chart(fig_sb, use_container_width=True, config={"displayModeBar": False})
+else:
+    st.info("Aún no hay reseñas guardadas en Supabase. Audita una reseña en la página de Auditoría para verla aquí.")
