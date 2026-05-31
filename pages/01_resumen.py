@@ -56,7 +56,6 @@ baseline_row = baseline.iloc[0] if baseline is not None and not baseline.empty e
 _CHART_LAYOUT = dict(
     paper_bgcolor="rgba(0,0,0,0)",
     plot_bgcolor="rgba(0,0,0,0)",
-    margin=dict(l=0, r=0, t=0, b=0),
     font=dict(family="inherit", size=11),
 )
 
@@ -145,7 +144,7 @@ if best is not None:
                                value=50),
             ),
         ))
-        fig.update_layout(**_CHART_LAYOUT, height=180)
+        fig.update_layout(**_CHART_LAYOUT, height=180, margin=dict(l=10, r=10, t=30, b=10))
         return fig
 
     g1, g2, g3, g4 = st.columns(4, gap="medium")
@@ -283,7 +282,7 @@ with h1:
             steps=[dict(range=[0, 100], color="#eff6ff")],
         ),
     ))
-    fig_h1.update_layout(**_CHART_LAYOUT, height=130)
+    fig_h1.update_layout(**_CHART_LAYOUT, height=130, margin=dict(l=10, r=10, t=10, b=10))
     st.plotly_chart(fig_h1, use_container_width=True, config={"displayModeBar": False})
     st.markdown(
         """<div class="highlight-card" style="margin-top:-0.4rem">
@@ -311,7 +310,7 @@ with h2:
     fig_h2.add_annotation(text="18%<br><span style='font-size:9px'>incoherentes</span>",
                           x=0.5, y=0.5, showarrow=False,
                           font=dict(size=14, color="#ef4444"))
-    fig_h2.update_layout(**_CHART_LAYOUT, height=130, showlegend=False)
+    fig_h2.update_layout(**_CHART_LAYOUT, height=130, showlegend=False, margin=dict(l=10, r=10, t=10, b=10))
     st.plotly_chart(fig_h2, use_container_width=True, config={"displayModeBar": False})
     st.markdown(
         """<div class="highlight-card" style="margin-top:-0.4rem">
