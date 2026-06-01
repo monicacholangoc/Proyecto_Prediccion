@@ -277,7 +277,7 @@ with tab_general:
     # TOP PRODUCTOS DEL CORTE
     # ══════════════════════════════════════════════════════════════════════════════
     if not df.empty and "ProductId" in df.columns and helpfulness_col:
-        st.markdown('<div class="section-label">Top productos del corte — por calificación de utilidad</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-label">Top productos del corte — por volumen de reseñas</div>', unsafe_allow_html=True)
 
         agg_dict = {"reseñas": ("ProductId", "count"), "utilidad": (helpfulness_col, "mean")}
         if score_col:
@@ -286,7 +286,7 @@ with tab_general:
             df.groupby("ProductId")
             .agg(**agg_dict)
             .reset_index()
-            .sort_values("utilidad", ascending=False)
+            .sort_values("reseñas", ascending=False)
             .head(10)
         )
 
