@@ -274,6 +274,71 @@ with tab_general:
         st.dataframe(cat_display, use_container_width=True, hide_index=True)
 
     # ══════════════════════════════════════════════════════════════════════════════
+    # TOP PRODUCTOS DEL CORTE
+    # ══════════════════════════════════════════════════════════════════════════════
+    if not df.empty and "ProductId" in df.columns and helpfulness_col:
+        st.markdown('<div class="section-label">Top productos del corte — por calificación de utilidad</div>', unsafe_allow_html=True)
+
+        agg_dict = {"reseñas": ("ProductId", "count"), "utilidad": (helpfulness_col, "mean")}
+        if score_col:
+            agg_dict["estrellas"] = (score_col, "mean")
+        top_prod = (
+            df.groupby("ProductId")
+            .agg(**agg_dict)
+            .reset_index()
+            .sort_values("utilidad", ascending=False)
+            .head(10)
+        )
+
+        if "Nombre Comercial" in df.columns:
+            name_map = df.drop_duplicates("ProductId").set_index("ProductId")["Nombre Comercial"].to_dict()
+            top_prod["Nombre"] = top_prod["ProductId"].map(name_map).fillna("Producto alimenticio")
+        else:
+            top_prod["Nombre"] = top_prod["ProductId"]
+
+        if category_col and category_col in df.columns:
+            cat_map = df.drop_duplicates("ProductId").set_index("ProductId")[category_col].to_dict()
+            top_prod["Categoría"] = top_prod["ProductId"].map(cat_map).fillna("—")
+        else:
+            top_prod["Categoría"] = "—"
+
+        header_html = """<div style="display:grid;grid-template-columns:0.4fr 1.6fr 1.2fr 0.7fr 0.8fr 1fr;
+                    gap:0;background:#1746a2;border-radius:10px 10px 0 0;padding:0.5rem 0.8rem;
+                    font-size:0.7rem;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:0.05em">
+            <div>#</div><div>Producto</div><div>Categoría</div>
+            <div style="text-align:center">Reseñas</div>
+            <div style="text-align:center">★ Media</div>
+            <div style="text-align:center">Utilidad</div></div>"""
+
+        rows_html = ""
+        for rank, (_, row) in enumerate(top_prod.iterrows(), 1):
+            util_pct = float(row["utilidad"])
+            bar_col  = "#15803d" if util_pct >= 0.70 else ("#f59e0b" if util_pct >= 0.50 else "#ef4444")
+            bg       = "#f8fafd" if rank % 2 == 0 else "#ffffff"
+            est_val  = f"{float(row['estrellas']):.1f} ★" if "estrellas" in row else "—"
+            rows_html += f"""<div style="display:grid;grid-template-columns:0.4fr 1.6fr 1.2fr 0.7fr 0.8fr 1fr;
+                        gap:0;background:{bg};padding:0.45rem 0.8rem;font-size:0.8rem;
+                        border-bottom:0.5px solid #e2e8f0;align-items:center">
+                <div style="font-weight:700;color:#1746a2">{rank}</div>
+                <div style="font-size:0.75rem;color:#0f172a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"
+                     title="{row['Nombre']}">{str(row['Nombre'])[:28]}</div>
+                <div style="font-size:0.72rem;color:#64748b">{str(row['Categoría'])[:20]}</div>
+                <div style="text-align:center;color:#475569">{int(row['reseñas'])}</div>
+                <div style="text-align:center;color:#475569">{est_val}</div>
+                <div style="text-align:center">
+                    <div style="background:#e2e8f0;border-radius:999px;height:6px;margin:0 auto 2px;width:80px;overflow:hidden">
+                        <div style="width:{int(util_pct*100)}%;height:100%;background:{bar_col};border-radius:999px"></div>
+                    </div>
+                    <span style="font-size:0.75rem;font-weight:700;color:{bar_col}">{util_pct:.1%}</span>
+                </div></div>"""
+
+        st.markdown(
+            f'<div style="border:1px solid #dbeafe;border-radius:10px;overflow:hidden;margin-bottom:1rem">'
+            f'{header_html}{rows_html}</div>',
+            unsafe_allow_html=True,
+        )
+
+    # ══════════════════════════════════════════════════════════════════════════════
     # CORRELACIÓN
     # ══════════════════════════════════════════════════════════════════════════════
     st.markdown('<div class="section-label">Correlación entre variables</div>', unsafe_allow_html=True)
