@@ -54,7 +54,7 @@ def main() -> None:
 
     best      = metrics_df.sort_values("roc_auc", ascending=False).iloc[0] if not metrics_df.empty else None
     roc_val   = format_percentage(float(best["roc_auc"])) if best is not None else "—"
-    model_val = "LightGBM"  # Modelo principal del proyecto
+    model_val = str(best["modelo"])                        if best is not None else "—"
 
     # ── Hero ─────────────────────────────────────────────────────────────────
     st.markdown(
