@@ -34,218 +34,235 @@ render_sidebar()
 
 st.markdown("""
 <style>
-/* ══ PANEL IZQUIERDO — configuración con fondo card ═══════ */
-.config-panel {
-    background:#ffffff;
-    border:1px solid #e2e8f0;
-    border-radius:16px;
-    padding:1.2rem 1.3rem;
-    height:100%;
-}
-.config-panel-header {
-    display:flex; align-items:center; gap:0.55rem;
-    padding-bottom:0.8rem;
-    border-bottom:1px solid #f1f5f9;
-    margin-bottom:1rem;
-}
-.config-panel-icon {
-    width:32px; height:32px; border-radius:8px;
-    background:linear-gradient(135deg,#1746a2,#0f4c5c);
-    display:flex; align-items:center; justify-content:center; flex-shrink:0;
-}
-.config-panel-title {
-    font-size:0.78rem; font-weight:800; color:#0f172a;
-    text-transform:uppercase; letter-spacing:0.06em;
+/* ══════════════════════════════════════════════════════════════
+   AUDITORIA — CSS sin wrappers HTML alrededor de widgets nativos.
+   Usamos un marcador HTML justo antes de las columnas para
+   apuntar al siguiente stHorizontalBlock via CSS :has().
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Columna izquierda (config) — fondo blanco con borde ─── */
+.audit-cols-marker + div div[data-testid="stHorizontalBlock"] > div[data-testid="stColumn"]:first-child > div[data-testid="stVerticalBlock"],
+div[data-testid="stVerticalBlock"]:has(> .audit-col-left) {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 1.1rem 1.2rem !important;
 }
 
-/* ══ PANEL DERECHO — fondo oscuro para gauge + KPIs ═══════ */
-.results-panel {
-    background:linear-gradient(160deg,#0f172a 0%,#18253f 100%);
-    border-radius:16px;
-    padding:1.2rem 1.3rem;
-    height:100%;
-}
-.results-panel-header {
-    font-size:0.6rem; font-weight:700; color:rgba(248,250,252,0.45);
-    text-transform:uppercase; letter-spacing:0.1em;
-    margin-bottom:0.5rem;
+/* ── Columna derecha (resultados) — fondo oscuro ─────────── */
+div[data-testid="stVerticalBlock"]:has(> .audit-col-right) {
+    background: linear-gradient(160deg, #0f172a 0%, #18253f 100%);
+    border-radius: 16px;
+    padding: 1.1rem 1.2rem !important;
 }
 
-/* Gauge title dentro del panel oscuro */
-.gauge-title-dark {
-    font-size:0.72rem; font-weight:700; color:rgba(248,250,252,0.6);
-    text-transform:uppercase; letter-spacing:0.08em;
-    text-align:center; margin-bottom:0.2rem;
+/* Textos dentro del panel oscuro */
+div[data-testid="stVerticalBlock"]:has(> .audit-col-right) label,
+div[data-testid="stVerticalBlock"]:has(> .audit-col-right) p,
+div[data-testid="stVerticalBlock"]:has(> .audit-col-right) span:not(.feat-badge),
+div[data-testid="stVerticalBlock"]:has(> .audit-col-right) .feat-lbl,
+div[data-testid="stVerticalBlock"]:has(> .audit-col-right) .feat-val,
+div[data-testid="stVerticalBlock"]:has(> .audit-col-right) .feat-bar-pct,
+div[data-testid="stVerticalBlock"]:has(> .audit-col-right) .kpi-section-lbl {
+    color: rgba(248,250,252,0.88) !important;
 }
 
-/* ══ KPI GRID — 2 columnas ════════════════════════════════ */
+/* Header de config con ícono */
+.config-header {
+    display: flex; align-items: center; gap: 0.55rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #f1f5f9;
+    margin-bottom: 0.9rem;
+}
+.config-header-icon {
+    width: 30px; height: 30px; border-radius: 8px;
+    background: linear-gradient(135deg, #1746a2, #0f4c5c);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.config-header-title {
+    font-size: 0.72rem; font-weight: 800; color: #0f172a !important;
+    text-transform: uppercase; letter-spacing: 0.07em;
+}
+
+/* ── KPI CARDS — grid 2×2 sobre fondo oscuro ─────────────── */
 .feat-grid {
-    display:grid; grid-template-columns:1fr 1fr; gap:0.55rem;
-    margin-top:0.6rem;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0.55rem;
+    margin-top: 0.5rem; margin-bottom: 0.3rem;
 }
 .feat-card {
-    background:rgba(255,255,255,0.06);
-    border:1px solid rgba(255,255,255,0.1);
-    border-radius:11px;
-    display:flex; flex-direction:row; align-items:stretch;
-    overflow:hidden; min-height:82px;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 11px;
+    display: flex; flex-direction: row; align-items: stretch;
+    overflow: hidden; min-height: 80px;
 }
-.feat-stripe { width:4px; flex-shrink:0; }
-.stripe-green { background:#1D9E75; }
-.stripe-amber { background:#EF9F27; }
-.stripe-blue  { background:#378ADD; }
-.stripe-red   { background:#E24B4A; }
+.feat-stripe { width: 4px; flex-shrink: 0; }
+.stripe-green { background: #1D9E75; }
+.stripe-amber { background: #EF9F27; }
+.stripe-blue  { background: #378ADD; }
+.stripe-red   { background: #E24B4A; }
 
 .feat-icon-wrap {
-    display:flex; align-items:center; justify-content:center;
-    width:40px; flex-shrink:0;
+    display: flex; align-items: center; justify-content: center;
+    width: 38px; flex-shrink: 0;
 }
 .icon-sq {
-    width:28px; height:28px; border-radius:6px;
-    display:flex; align-items:center; justify-content:center;
+    width: 26px; height: 26px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
 }
-.icon-green { background:rgba(29,158,117,0.2); color:#4ade80; }
-.icon-amber { background:rgba(239,159,39,0.2);  color:#fbbf24; }
-.icon-blue  { background:rgba(55,138,221,0.2);  color:#60a5fa; }
-.icon-red   { background:rgba(226,75,74,0.2);   color:#f87171; }
+.icon-green { background: rgba(29,158,117,0.22); color: #4ade80; }
+.icon-amber { background: rgba(239,159,39,0.22);  color: #fbbf24; }
+.icon-blue  { background: rgba(55,138,221,0.22);  color: #60a5fa; }
+.icon-red   { background: rgba(226,75,74,0.22);   color: #f87171; }
 
 .feat-body {
-    flex:1; padding:0.55rem 0.65rem 0.55rem 0.2rem;
-    display:flex; flex-direction:column; justify-content:space-between;
-    min-width:0;
+    flex: 1; padding: 0.5rem 0.6rem 0.5rem 0.2rem;
+    display: flex; flex-direction: column; justify-content: space-between;
+    min-width: 0;
 }
 .feat-lbl {
-    font-size:0.55rem; font-weight:700; color:rgba(248,250,252,0.4);
-    text-transform:uppercase; letter-spacing:0.09em;
-    margin-bottom:0.1rem; white-space:nowrap;
+    font-size: 0.54rem !important; font-weight: 700; color: rgba(248,250,252,0.42) !important;
+    text-transform: uppercase; letter-spacing: 0.09em;
+    margin-bottom: 0.1rem; white-space: nowrap;
 }
 .feat-val {
-    font-size:1.15rem; font-weight:800; color:#f8fafc;
-    line-height:1.1; margin-bottom:0.04rem;
+    font-size: 1.1rem !important; font-weight: 800; color: #f8fafc !important;
+    line-height: 1.1; margin-bottom: 0.04rem;
 }
-.feat-val-stars { font-size:0.95rem; letter-spacing:1px; }
-
-/* Barra con porcentaje */
-.feat-bar-wrap { position:relative; margin-bottom:0.1rem; }
+.feat-val-stars { font-size: 0.9rem !important; letter-spacing: 1px; }
+.feat-bar-wrap { position: relative; margin-bottom: 0.1rem; }
 .feat-bar-pct {
-    font-size:0.55rem; font-weight:700; color:rgba(248,250,252,0.45);
-    position:absolute; right:0; top:-13px;
+    font-size: 0.54rem; font-weight: 700; color: rgba(248,250,252,0.42) !important;
+    position: absolute; right: 0; top: -12px;
 }
 .feat-bar-bg {
-    background:rgba(255,255,255,0.1); border-radius:3px; height:4px; overflow:hidden;
+    background: rgba(255,255,255,0.12); border-radius: 3px;
+    height: 4px; overflow: hidden;
 }
-.feat-bar-fg { height:100%; border-radius:3px; }
-
-/* Badge claro sobre fondo oscuro */
+.feat-bar-fg { height: 100%; border-radius: 3px; }
 .feat-badge {
-    display:inline-block; font-size:0.56rem; font-weight:700;
-    padding:0.1rem 0.45rem; border-radius:4px; margin-top:0.28rem;
-    letter-spacing:0.03em;
+    display: inline-block; font-size: 0.54rem; font-weight: 700;
+    padding: 0.09rem 0.42rem; border-radius: 4px; margin-top: 0.25rem;
+    letter-spacing: 0.03em;
 }
-.badge-green { background:rgba(29,158,117,0.25); color:#6ee7b7; }
-.badge-amber { background:rgba(239,159,39,0.25);  color:#fcd34d; }
-.badge-blue  { background:rgba(55,138,221,0.25);  color:#93c5fd; }
-.badge-red   { background:rgba(226,75,74,0.25);   color:#fca5a5; }
+.badge-green { background: rgba(29,158,117,0.28); color: #6ee7b7 !important; }
+.badge-amber { background: rgba(239,159,39,0.28);  color: #fcd34d !important; }
+.badge-blue  { background: rgba(55,138,221,0.28);  color: #93c5fd !important; }
+.badge-red   { background: rgba(226,75,74,0.28);   color: #fca5a5 !important; }
 
-/* ══ DIAGNOSTIC SECTION ════════════════════════════════════ */
+/* KPI section label en el panel oscuro */
+.kpi-section-lbl {
+    font-size: 0.56rem; font-weight: 700;
+    color: rgba(248,250,252,0.4) !important;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    margin-bottom: 0.4rem; margin-top: 0.2rem;
+}
+
+/* ── DIAGNÓSTICO — panel completo debajo de las columnas ─── */
 .diag-section-wrap {
-    background:#ffffff; border:1px solid #e2e8f0;
-    border-radius:16px; padding:1.1rem 1.3rem; margin-top:1rem;
+    background: #ffffff; border: 1px solid #e2e8f0;
+    border-radius: 16px; padding: 1.1rem 1.3rem; margin-top: 1rem;
 }
 .diag-section-eyebrow {
-    font-size:0.6rem; font-weight:700; color:#94a3b8;
-    text-transform:uppercase; letter-spacing:0.09em;
-    border-left:3px solid #1746a2; padding-left:0.5rem;
-    margin-bottom:0.85rem;
+    font-size: 0.6rem; font-weight: 700; color: #64748b;
+    text-transform: uppercase; letter-spacing: 0.09em;
+    border-left: 3px solid #1746a2; padding-left: 0.5rem;
+    margin-bottom: 0.85rem;
 }
 .diag-card {
-    border-radius:12px; padding:1rem 1.15rem;
-    border:1px solid; position:relative; overflow:hidden;
-    display:flex; flex-direction:column; gap:0.2rem;
+    border-radius: 12px; padding: 1rem 1.1rem;
+    border: 1px solid; position: relative; overflow: hidden;
 }
 .diag-card::before {
-    content:""; position:absolute; left:0; top:0; bottom:0; width:5px;
+    content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 5px;
 }
-.diag-success { background:#f0fdf8; border-color:#6ee7b7; }
-.diag-warning { background:#fffbeb; border-color:#fcd34d; }
-.diag-danger  { background:#fff1f2; border-color:#fca5a5; }
-.diag-success::before { background:#1D9E75; }
-.diag-warning::before { background:#EF9F27; }
-.diag-danger::before  { background:#E24B4A; }
+.diag-success { background: #f0fdf8; border-color: #6ee7b7; }
+.diag-warning { background: #fffbeb; border-color: #fcd34d; }
+.diag-danger  { background: #fff1f2; border-color: #fca5a5; }
+.diag-success::before { background: #1D9E75; }
+.diag-warning::before { background: #EF9F27; }
+.diag-danger::before  { background: #E24B4A; }
 
 .diag-eyebrow {
-    font-size:0.58rem; font-weight:700; text-transform:uppercase;
-    letter-spacing:0.09em;
+    font-size: 0.58rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.09em; margin-bottom: 0.5rem;
 }
-.diag-success .diag-eyebrow { color:#059669; }
-.diag-warning .diag-eyebrow { color:#b45309; }
-.diag-danger  .diag-eyebrow { color:#dc2626; }
+.diag-success .diag-eyebrow { color: #059669; }
+.diag-warning .diag-eyebrow { color: #b45309; }
+.diag-danger  .diag-eyebrow { color: #dc2626; }
 
-.diag-row { display:flex; align-items:center; justify-content:space-between; gap:1rem; }
-.diag-left { flex:1; min-width:0; }
-.diag-decision { font-size:1.1rem; font-weight:800; color:#0f172a; }
-.diag-reason   { font-size:0.75rem; color:#475569; line-height:1.5; margin-top:0.15rem; }
-.diag-prob-block { flex-shrink:0; text-align:right; }
-.diag-prob-val {
-    font-size:2rem; font-weight:900; letter-spacing:-0.03em; line-height:1;
+.diag-row {
+    display: flex; align-items: center;
+    justify-content: space-between; gap: 1rem;
 }
-.diag-prob-lbl { font-size:0.6rem; color:#94a3b8; margin-top:2px; }
-.diag-success .diag-prob-val { color:#059669; }
-.diag-warning .diag-prob-val { color:#b45309; }
-.diag-danger  .diag-prob-val { color:#dc2626; }
+.diag-left { flex: 1; min-width: 0; }
+.diag-decision { font-size: 1.1rem; font-weight: 800; color: #0f172a; }
+.diag-reason   { font-size: 0.75rem; color: #475569; line-height: 1.5; margin-top: 0.15rem; }
+.diag-prob-block { flex-shrink: 0; text-align: right; }
+.diag-prob-val  { font-size: 2.1rem; font-weight: 900; letter-spacing: -0.03em; line-height: 1; }
+.diag-prob-lbl  { font-size: 0.6rem; color: #94a3b8; margin-top: 2px; }
+.diag-success .diag-prob-val { color: #059669; }
+.diag-warning .diag-prob-val { color: #b45309; }
+.diag-danger  .diag-prob-val { color: #dc2626; }
 
-/* ── Recomendaciones ────────────────────────────────────── */
-.rec-grid { display:grid; grid-template-columns:1fr 1fr; gap:0.65rem; margin-top:0.8rem; }
+/* Recomendaciones */
+.rec-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 0.65rem; margin-top: 0.8rem;
+}
 .rec-card {
-    background:#f8fafc; border:1px solid #e8edf4;
-    border-radius:12px; padding:0.8rem 0.9rem;
-    border-top:3px solid #1746a2;
+    background: #f8fafc; border: 1px solid #e8edf4;
+    border-radius: 11px; padding: 0.8rem 0.9rem;
+    border-top: 3px solid #1746a2;
 }
-.rec-card-warn { border-top-color:#EF9F27; }
+.rec-card-warn { border-top-color: #EF9F27; }
 .rec-eyebrow {
-    font-size:0.58rem; font-weight:700; color:#94a3b8;
-    text-transform:uppercase; letter-spacing:0.07em; margin-bottom:0.35rem;
+    font-size: 0.58rem; font-weight: 700; color: #94a3b8;
+    text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.35rem;
 }
-.rec-body { font-size:0.8rem; color:#334155; line-height:1.5; }
+.rec-body { font-size: 0.8rem; color: #334155; line-height: 1.5; }
 
-/* Contexto alimenticio */
+/* Contexto */
 .ctx-box {
-    background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px;
-    padding:0.65rem 0.9rem; margin-top:0.65rem;
+    background: #f8fafc; border: 1px solid #e2e8f0;
+    border-radius: 10px; padding: 0.65rem 0.9rem; margin-top: 0.65rem;
 }
 .ctx-lbl {
-    font-size:0.58rem; font-weight:700; color:#94a3b8;
-    text-transform:uppercase; letter-spacing:.07em; margin-bottom:0.2rem;
+    font-size: 0.58rem; font-weight: 700; color: #94a3b8;
+    text-transform: uppercase; letter-spacing: .07em; margin-bottom: 0.2rem;
 }
-.ctx-txt  { font-size:0.73rem; color:#475569; line-height:1.5; }
-.ctx-chips { display:flex; gap:0.5rem; margin-top:0.35rem; flex-wrap:wrap; }
+.ctx-txt  { font-size: 0.73rem; color: #475569; line-height: 1.5; }
+.ctx-chips { display: flex; gap: 0.5rem; margin-top: 0.35rem; flex-wrap: wrap; }
 .ctx-chip {
-    font-size:0.68rem; padding:0.1rem 0.55rem; border-radius:4px;
-    background:#fff; border:1px solid #e2e8f0; color:#64748b;
+    font-size: 0.68rem; padding: 0.1rem 0.55rem; border-radius: 4px;
+    background: #fff; border: 1px solid #e2e8f0; color: #64748b;
 }
 
-/* Selección de producto */
+/* Info del producto */
 .prod-info-bar {
-    display:flex; gap:2rem; flex-wrap:wrap; align-items:center;
-    background:#fff; border:1px solid #e2e8f0; border-radius:12px;
-    padding:0.7rem 1.1rem; margin-bottom:1rem;
+    display: flex; gap: 2rem; flex-wrap: wrap; align-items: center;
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 12px;
+    padding: 0.7rem 1.1rem; margin-bottom: 1rem;
 }
-.prod-info-field-lbl { font-size:0.6rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; }
-.prod-info-field-val { font-size:0.9rem; font-weight:700; color:#0f172a; margin-top:0.1rem; }
-.prod-info-field-val-accent { color:#1746a2; }
-.prod-info-field-val-mono { font-family:monospace; color:#64748b; font-size:0.78rem; }
+.prod-info-field-lbl {
+    font-size: 0.6rem; font-weight: 700; color: #94a3b8;
+    text-transform: uppercase; letter-spacing: 0.06em;
+}
+.prod-info-field-val { font-size: 0.9rem; font-weight: 700; color: #0f172a; margin-top: 0.1rem; }
+.prod-info-field-val-accent { color: #1746a2; }
+.prod-info-field-val-mono { font-family: monospace; color: #64748b; font-size: 0.78rem; }
 
 /* Estado vacío diagnóstico */
 .diag-empty {
-    background:#f8fafc; border:1px dashed #cbd5e1; border-radius:12px;
-    padding:1.4rem; text-align:center;
+    background: #f8fafc; border: 1px dashed #cbd5e1;
+    border-radius: 12px; padding: 1.4rem; text-align: center;
 }
 .diag-empty-icon {
-    width:40px; height:40px; border-radius:10px;
-    background:#e8edf4; display:flex; align-items:center;
-    justify-content:center; margin:0 auto 0.6rem;
+    width: 40px; height: 40px; border-radius: 10px;
+    background: #e8edf4; display: flex; align-items: center;
+    justify-content: center; margin: 0 auto 0.6rem;
 }
-.diag-empty-txt { font-size:0.8rem; color:#94a3b8; }
+.diag-empty-txt { font-size: 0.8rem; color: #94a3b8; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -357,15 +374,18 @@ with tab1:
     left_col, right_col = st.columns([1.05, 1], gap="medium")
 
     with left_col:
-        st.markdown('<div class="config-panel">', unsafe_allow_html=True)
+        # Marcador CSS para apuntar este panel (sin widgets dentro del div)
+        st.markdown('<span class="audit-col-left" style="display:none"></span>', unsafe_allow_html=True)
+        # Header visual de configuración (solo HTML estático, sin widgets dentro)
         st.markdown("""
-        <div class="config-panel-header">
-            <div class="config-panel-icon">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="3"/><path d="M19.07 4.93A10 10 0 0 0 4.93 19.07M4.93 4.93A10 10 0 0 1 19.07 19.07"/>
+        <div class="config-header">
+            <div class="config-header-icon">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="3"/>
+                    <path d="M19.07 4.93A10 10 0 0 0 4.93 19.07M4.93 4.93A10 10 0 0 1 19.07 19.07"/>
                 </svg>
             </div>
-            <div class="config-panel-title">Configuración del análisis</div>
+            <span class="config-header-title">Configuración del análisis</span>
         </div>
         """, unsafe_allow_html=True)
 
@@ -467,20 +487,18 @@ with tab1:
             st.session_state["latest_audit_result"] = recalc
             st.session_state["_toggle_prev_val"]    = validate_context
 
-        st.markdown('</div>', unsafe_allow_html=True)  # cierra .config-panel
-
-    # Panel derecho — fondo oscuro
+    # Panel derecho
     with right_col:
-        st.markdown('<div class="results-panel">', unsafe_allow_html=True)
-        st.markdown('<div class="gauge-title-dark">Probabilidad de utilidad</div>', unsafe_allow_html=True)
+        st.markdown('<span class="audit-col-right" style="display:none"></span>', unsafe_allow_html=True)
+        st.markdown('<div class="kpi-section-lbl" style="text-align:center;margin-bottom:0">Probabilidad de utilidad</div>', unsafe_allow_html=True)
         lr   = st.session_state.get("latest_audit_result")
         prob = lr["probability"] if lr else 0.0
 
-        st.plotly_chart(build_helpfulness_gauge(prob), use_container_width=True)
+        st.plotly_chart(build_helpfulness_gauge(prob), use_container_width=True, config={"displayModeBar": False})
 
 
         # Sección KPIs dentro del panel oscuro
-        st.markdown('<div style="font-size:0.58rem;font-weight:700;color:rgba(248,250,252,0.45);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.4rem">Características calculadas</div>', unsafe_allow_html=True)
+        st.markdown('<div class="kpi-section-lbl">Características calculadas</div>', unsafe_allow_html=True)
 
         rl    = lr["review_len"]  if lr else 0
         incoh = lr["incoherente"] if lr else False
@@ -573,16 +591,11 @@ with tab1:
         </div>
         """, unsafe_allow_html=True)
 
-        st.markdown('</div>', unsafe_allow_html=True)  # cierra .results-panel
-
     # ── Diagnóstico + Recomendaciones — panel completo debajo ──────────────
     _lr   = st.session_state.get("latest_audit_result")
     _prob = _lr["probability"] if _lr else 0.0
     _sent = _lr.get("sentiment_score") if _lr else None
     _rl   = _lr["review_len"] if _lr else 0
-
-    st.markdown('<div class="diag-section-wrap">', unsafe_allow_html=True)
-    st.markdown('<div class="diag-section-eyebrow">Diagnóstico del análisis</div>', unsafe_allow_html=True)
 
     if _lr:
         _is_blind = "Punto Ciego" in _lr["status"]
@@ -600,65 +613,71 @@ with tab1:
         else:
             _razon = f"Utilidad estimada de {format_percentage(_prob)}, por debajo del umbral del 70%."
 
-        st.markdown(f"""
-        <div class="diag-card {_diag_cls}">
-            <div class="diag-eyebrow">Resultado del análisis</div>
-            <div class="diag-row">
-                <div class="diag-left">
-                    <div class="diag-decision">{_decision}</div>
-                    <div class="diag-reason">{_razon}</div>
-                </div>
-                <div class="diag-prob-block">
-                    <div class="diag-prob-val">{format_percentage(_prob)}</div>
-                    <div class="diag-prob-lbl">Probabilidad</div>
-                </div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
+        _ctx_html = ""
         if _lr.get("context_validation_enabled"):
             _ctx  = ", ".join(_lr.get("context_hits", [])) or "ninguna"
             _tech = ", ".join(_lr.get("tech_hits", []))    or "ninguno"
-            st.markdown(
+            _ctx_html = (
                 f'<div class="ctx-box">'
                 f'<div class="ctx-lbl">Contexto alimenticio</div>'
                 f'<div class="ctx-txt">{_lr.get("context_explanation","")}</div>'
                 f'<div class="ctx-chips">'
                 f'<span class="ctx-chip">Detectadas: <b>{_ctx}</b></span>'
                 f'<span class="ctx-chip">Ajenas: <b>{_tech}</b></span>'
-                f'</div></div>',
-                unsafe_allow_html=True,
+                f'</div></div>'
             )
 
-        _recs = generate_review_recommendations(_lr)
+        _recs     = generate_review_recommendations(_lr)
+        _rec_html = ""
         if _recs:
-            rec_html = ""
+            _rec_html = '<div class="rec-grid">'
             if len(_recs) > 0:
-                rec_html += f'<div class="rec-card"><div class="rec-eyebrow">Acción principal</div><div class="rec-body">{_recs[0]}</div></div>'
+                _rec_html += f'<div class="rec-card"><div class="rec-eyebrow">Acción principal</div><div class="rec-body">{_recs[0]}</div></div>'
             if len(_recs) > 1:
-                rec_html += f'<div class="rec-card rec-card-warn"><div class="rec-eyebrow">Acción adicional</div><div class="rec-body">{_recs[1]}</div></div>'
-            st.markdown(f'<div class="rec-grid">{rec_html}</div>', unsafe_allow_html=True)
+                _rec_html += f'<div class="rec-card rec-card-warn"><div class="rec-eyebrow">Acción adicional</div><div class="rec-body">{_recs[1]}</div></div>'
+            _rec_html += '</div>'
 
-    else:
-        st.markdown("""
-        <div class="diag-empty">
-            <div class="diag-empty-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                </svg>
+        st.markdown(f"""
+        <div class="diag-section-wrap">
+            <div class="diag-section-eyebrow">Diagnóstico del análisis</div>
+            <div class="diag-card {_diag_cls}">
+                <div class="diag-eyebrow">Resultado del análisis</div>
+                <div class="diag-row">
+                    <div class="diag-left">
+                        <div class="diag-decision">{_decision}</div>
+                        <div class="diag-reason">{_razon}</div>
+                    </div>
+                    <div class="diag-prob-block">
+                        <div class="diag-prob-val">{format_percentage(_prob)}</div>
+                        <div class="diag-prob-lbl">Probabilidad</div>
+                    </div>
+                </div>
             </div>
-            <div class="diag-empty-txt">Escribe una reseña y presiona <b>Analizar</b> para ver el diagnóstico</div>
+            {_ctx_html}
+            {_rec_html}
         </div>
         """, unsafe_allow_html=True)
 
-    st.markdown('</div>', unsafe_allow_html=True)  # cierra .diag-section-wrap
-
-    if _lr:
-        sv1, _ = st.columns([0.25, 0.75])
+        sv1, _ = st.columns([0.22, 0.78])
         with sv1:
             if st.button("Guardar reseña", use_container_width=True):
                 ok, msg = save_latest_review_to_file(selected_product)
                 (st.success if ok else st.warning)(msg)
+
+    else:
+        st.markdown("""
+        <div class="diag-section-wrap">
+            <div class="diag-section-eyebrow">Diagnóstico del análisis</div>
+            <div class="diag-empty">
+                <div class="diag-empty-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                </div>
+                <div class="diag-empty-txt">Escribe una reseña y presiona <b>Analizar</b> para ver el diagnóstico</div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
     latest_review_id = st.session_state.get("latest_review_id")
     position_summary = get_position_summary(selected_product, latest_review_id)
