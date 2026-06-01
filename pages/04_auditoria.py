@@ -35,130 +35,123 @@ render_sidebar()
 st.markdown("""
 <style>
 /* ══════════════════════════════════════════════════════════════
-   AUDITORIA — CSS sin wrappers HTML alrededor de widgets nativos.
-   Usamos un marcador HTML justo antes de las columnas para
-   apuntar al siguiente stHorizontalBlock via CSS :has().
+   AUDITORIA — Estilos que funcionan sin wrappers alrededor
+   de widgets nativos de Streamlit.
+   Las KPI cards llevan su propio fondo oscuro auto-contenido.
    ══════════════════════════════════════════════════════════════ */
 
-/* ── Columna izquierda (config) — fondo blanco con borde ─── */
-.audit-cols-marker + div div[data-testid="stHorizontalBlock"] > div[data-testid="stColumn"]:first-child > div[data-testid="stVerticalBlock"],
-div[data-testid="stVerticalBlock"]:has(> .audit-col-left) {
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 16px;
-    padding: 1.1rem 1.2rem !important;
-}
-
-/* ── Columna derecha (resultados) — fondo oscuro ─────────── */
-div[data-testid="stVerticalBlock"]:has(> .audit-col-right) {
-    background: linear-gradient(160deg, #0f172a 0%, #18253f 100%);
-    border-radius: 16px;
-    padding: 1.1rem 1.2rem !important;
-}
-
-/* Textos dentro del panel oscuro */
-div[data-testid="stVerticalBlock"]:has(> .audit-col-right) label,
-div[data-testid="stVerticalBlock"]:has(> .audit-col-right) p,
-div[data-testid="stVerticalBlock"]:has(> .audit-col-right) span:not(.feat-badge),
-div[data-testid="stVerticalBlock"]:has(> .audit-col-right) .feat-lbl,
-div[data-testid="stVerticalBlock"]:has(> .audit-col-right) .feat-val,
-div[data-testid="stVerticalBlock"]:has(> .audit-col-right) .feat-bar-pct,
-div[data-testid="stVerticalBlock"]:has(> .audit-col-right) .kpi-section-lbl {
-    color: rgba(248,250,252,0.88) !important;
-}
-
-/* Header de config con ícono */
+/* ── Header de configuración ─────────────────────────────── */
 .config-header {
     display: flex; align-items: center; gap: 0.55rem;
-    padding-bottom: 0.75rem;
-    border-bottom: 1px solid #f1f5f9;
-    margin-bottom: 0.9rem;
+    padding: 0.7rem 0.9rem;
+    background: linear-gradient(135deg, #1746a2, #0f4c5c);
+    border-radius: 12px; margin-bottom: 1rem;
 }
 .config-header-icon {
-    width: 30px; height: 30px; border-radius: 8px;
-    background: linear-gradient(135deg, #1746a2, #0f4c5c);
+    width: 28px; height: 28px; border-radius: 7px;
+    background: rgba(255,255,255,0.15);
     display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
 .config-header-title {
-    font-size: 0.72rem; font-weight: 800; color: #0f172a !important;
+    font-size: 0.72rem; font-weight: 800; color: #fff !important;
     text-transform: uppercase; letter-spacing: 0.07em;
 }
 
-/* ── KPI CARDS — grid 2×2 sobre fondo oscuro ─────────────── */
+/* ── PANEL DERECHO: contenedor oscuro auto-contenido ─────── */
+.results-dark-panel {
+    background: linear-gradient(160deg, #0f172a 0%, #1e293b 100%);
+    border-radius: 16px;
+    padding: 1rem 1.1rem;
+    margin-bottom: 0.5rem;
+}
+.results-dark-panel * { color: #f8fafc !important; }
+
+/* Gauge title */
+.gauge-lbl {
+    font-size: 0.62rem; font-weight: 700;
+    color: rgba(248,250,252,0.5) !important;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    text-align: center; margin-bottom: 0.3rem;
+}
+
+/* ── KPI GRID ─────────────────────────────────────────────── */
 .feat-grid {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 0.55rem;
-    margin-top: 0.5rem; margin-bottom: 0.3rem;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem;
+    margin-top: 0.6rem;
 }
 .feat-card {
-    background: rgba(255,255,255,0.07);
-    border: 1px solid rgba(255,255,255,0.12);
-    border-radius: 11px;
-    display: flex; flex-direction: row; align-items: stretch;
-    overflow: hidden; min-height: 80px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.13);
+    border-radius: 12px;
+    display: flex; flex-direction: row;
+    overflow: hidden; min-height: 84px;
 }
-.feat-stripe { width: 4px; flex-shrink: 0; }
-.stripe-green { background: #1D9E75; }
-.stripe-amber { background: #EF9F27; }
-.stripe-blue  { background: #378ADD; }
-.stripe-red   { background: #E24B4A; }
+.feat-stripe { width: 5px; flex-shrink: 0; }
+.stripe-green { background: #22c55e; }
+.stripe-amber { background: #f59e0b; }
+.stripe-blue  { background: #60a5fa; }
+.stripe-red   { background: #f87171; }
 
 .feat-icon-wrap {
     display: flex; align-items: center; justify-content: center;
-    width: 38px; flex-shrink: 0;
+    width: 40px; flex-shrink: 0;
 }
 .icon-sq {
-    width: 26px; height: 26px; border-radius: 6px;
+    width: 28px; height: 28px; border-radius: 7px;
     display: flex; align-items: center; justify-content: center;
 }
-.icon-green { background: rgba(29,158,117,0.22); color: #4ade80; }
-.icon-amber { background: rgba(239,159,39,0.22);  color: #fbbf24; }
-.icon-blue  { background: rgba(55,138,221,0.22);  color: #60a5fa; }
-.icon-red   { background: rgba(226,75,74,0.22);   color: #f87171; }
+.icon-green { background: rgba(34,197,94,0.2);  color: #4ade80 !important; }
+.icon-amber { background: rgba(245,158,11,0.2); color: #fbbf24 !important; }
+.icon-blue  { background: rgba(96,165,250,0.2); color: #93c5fd !important; }
+.icon-red   { background: rgba(248,113,113,0.2);color: #fca5a5 !important; }
 
 .feat-body {
-    flex: 1; padding: 0.5rem 0.6rem 0.5rem 0.2rem;
+    flex: 1; padding: 0.55rem 0.65rem 0.55rem 0.25rem;
     display: flex; flex-direction: column; justify-content: space-between;
     min-width: 0;
 }
 .feat-lbl {
-    font-size: 0.54rem !important; font-weight: 700; color: rgba(248,250,252,0.42) !important;
-    text-transform: uppercase; letter-spacing: 0.09em;
-    margin-bottom: 0.1rem; white-space: nowrap;
+    font-size: 0.56rem; font-weight: 700;
+    color: rgba(248,250,252,0.45) !important;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    margin-bottom: 0.1rem;
 }
 .feat-val {
-    font-size: 1.1rem !important; font-weight: 800; color: #f8fafc !important;
-    line-height: 1.1; margin-bottom: 0.04rem;
+    font-size: 1.15rem; font-weight: 800;
+    color: #f8fafc !important; line-height: 1.1;
 }
-.feat-val-stars { font-size: 0.9rem !important; letter-spacing: 1px; }
-.feat-bar-wrap { position: relative; margin-bottom: 0.1rem; }
+.feat-stars-val { font-size: 1rem; color: #fbbf24 !important; letter-spacing: 2px; }
+
+.feat-bar-wrap { position: relative; padding-top: 14px; }
 .feat-bar-pct {
-    font-size: 0.54rem; font-weight: 700; color: rgba(248,250,252,0.42) !important;
-    position: absolute; right: 0; top: -12px;
+    font-size: 0.55rem; font-weight: 700;
+    color: rgba(248,250,252,0.4) !important;
+    position: absolute; right: 0; top: 0;
 }
 .feat-bar-bg {
-    background: rgba(255,255,255,0.12); border-radius: 3px;
-    height: 4px; overflow: hidden;
+    background: rgba(255,255,255,0.1);
+    border-radius: 3px; height: 4px; overflow: hidden;
 }
 .feat-bar-fg { height: 100%; border-radius: 3px; }
+
 .feat-badge {
-    display: inline-block; font-size: 0.54rem; font-weight: 700;
-    padding: 0.09rem 0.42rem; border-radius: 4px; margin-top: 0.25rem;
-    letter-spacing: 0.03em;
+    display: inline-block; font-size: 0.56rem; font-weight: 700;
+    padding: 0.12rem 0.5rem; border-radius: 4px; margin-top: 0.3rem;
+    letter-spacing: 0.02em;
 }
-.badge-green { background: rgba(29,158,117,0.28); color: #6ee7b7 !important; }
-.badge-amber { background: rgba(239,159,39,0.28);  color: #fcd34d !important; }
-.badge-blue  { background: rgba(55,138,221,0.28);  color: #93c5fd !important; }
-.badge-red   { background: rgba(226,75,74,0.28);   color: #fca5a5 !important; }
+.badge-green { background: rgba(34,197,94,0.22);  color: #86efac !important; }
+.badge-amber { background: rgba(245,158,11,0.22); color: #fde68a !important; }
+.badge-blue  { background: rgba(96,165,250,0.22); color: #bfdbfe !important; }
+.badge-red   { background: rgba(248,113,113,0.22);color: #fecaca !important; }
 
-/* KPI section label en el panel oscuro */
 .kpi-section-lbl {
-    font-size: 0.56rem; font-weight: 700;
-    color: rgba(248,250,252,0.4) !important;
+    font-size: 0.58rem; font-weight: 700;
+    color: rgba(248,250,252,0.45) !important;
     text-transform: uppercase; letter-spacing: 0.1em;
-    margin-bottom: 0.4rem; margin-top: 0.2rem;
+    margin: 0.6rem 0 0.3rem;
 }
 
-/* ── DIAGNÓSTICO — panel completo debajo de las columnas ─── */
+/* ── DIAGNÓSTICO ──────────────────────────────────────────── */
 .diag-section-wrap {
     background: #ffffff; border: 1px solid #e2e8f0;
     border-radius: 16px; padding: 1.1rem 1.3rem; margin-top: 1rem;
@@ -179,9 +172,9 @@ div[data-testid="stVerticalBlock"]:has(> .audit-col-right) .kpi-section-lbl {
 .diag-success { background: #f0fdf8; border-color: #6ee7b7; }
 .diag-warning { background: #fffbeb; border-color: #fcd34d; }
 .diag-danger  { background: #fff1f2; border-color: #fca5a5; }
-.diag-success::before { background: #1D9E75; }
-.diag-warning::before { background: #EF9F27; }
-.diag-danger::before  { background: #E24B4A; }
+.diag-success::before { background: #22c55e; }
+.diag-warning::before { background: #f59e0b; }
+.diag-danger::before  { background: #f87171; }
 
 .diag-eyebrow {
     font-size: 0.58rem; font-weight: 700; text-transform: uppercase;
@@ -191,36 +184,30 @@ div[data-testid="stVerticalBlock"]:has(> .audit-col-right) .kpi-section-lbl {
 .diag-warning .diag-eyebrow { color: #b45309; }
 .diag-danger  .diag-eyebrow { color: #dc2626; }
 
-.diag-row {
-    display: flex; align-items: center;
-    justify-content: space-between; gap: 1rem;
-}
+.diag-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
 .diag-left { flex: 1; min-width: 0; }
 .diag-decision { font-size: 1.1rem; font-weight: 800; color: #0f172a; }
 .diag-reason   { font-size: 0.75rem; color: #475569; line-height: 1.5; margin-top: 0.15rem; }
 .diag-prob-block { flex-shrink: 0; text-align: right; }
-.diag-prob-val  { font-size: 2.1rem; font-weight: 900; letter-spacing: -0.03em; line-height: 1; }
+.diag-prob-val  { font-size: 2.2rem; font-weight: 900; letter-spacing: -0.03em; line-height: 1; }
 .diag-prob-lbl  { font-size: 0.6rem; color: #94a3b8; margin-top: 2px; }
 .diag-success .diag-prob-val { color: #059669; }
 .diag-warning .diag-prob-val { color: #b45309; }
 .diag-danger  .diag-prob-val { color: #dc2626; }
 
 /* Recomendaciones */
-.rec-grid {
-    display: grid; grid-template-columns: 1fr 1fr;
-    gap: 0.65rem; margin-top: 0.8rem;
-}
+.rec-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem; margin-top: 0.85rem; }
 .rec-card {
     background: #f8fafc; border: 1px solid #e8edf4;
-    border-radius: 11px; padding: 0.8rem 0.9rem;
+    border-radius: 11px; padding: 0.85rem 0.95rem;
     border-top: 3px solid #1746a2;
 }
-.rec-card-warn { border-top-color: #EF9F27; }
+.rec-card-warn { border-top-color: #f59e0b; }
 .rec-eyebrow {
     font-size: 0.58rem; font-weight: 700; color: #94a3b8;
-    text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.35rem;
+    text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.4rem;
 }
-.rec-body { font-size: 0.8rem; color: #334155; line-height: 1.5; }
+.rec-body { font-size: 0.82rem; color: #334155; line-height: 1.5; }
 
 /* Contexto */
 .ctx-box {
@@ -374,9 +361,7 @@ with tab1:
     left_col, right_col = st.columns([1.05, 1], gap="medium")
 
     with left_col:
-        # Marcador CSS para apuntar este panel (sin widgets dentro del div)
-        st.markdown('<span class="audit-col-left" style="display:none"></span>', unsafe_allow_html=True)
-        # Header visual de configuración (solo HTML estático, sin widgets dentro)
+        # Header visual de configuración
         st.markdown("""
         <div class="config-header">
             <div class="config-header-icon">
@@ -487,22 +472,13 @@ with tab1:
             st.session_state["latest_audit_result"] = recalc
             st.session_state["_toggle_prev_val"]    = validate_context
 
-    # Panel derecho
+    # Panel derecho — todo en un único bloque HTML oscuro auto-contenido
     with right_col:
-        st.markdown('<span class="audit-col-right" style="display:none"></span>', unsafe_allow_html=True)
-        st.markdown('<div class="kpi-section-lbl" style="text-align:center;margin-bottom:0">Probabilidad de utilidad</div>', unsafe_allow_html=True)
         lr   = st.session_state.get("latest_audit_result")
         prob = lr["probability"] if lr else 0.0
-
-        st.plotly_chart(build_helpfulness_gauge(prob), use_container_width=True, config={"displayModeBar": False})
-
-
-        # Sección KPIs dentro del panel oscuro
-        st.markdown('<div class="kpi-section-lbl">Características calculadas</div>', unsafe_allow_html=True)
-
-        rl    = lr["review_len"]  if lr else 0
+        rl   = lr["review_len"]  if lr else 0
         incoh = lr["incoherente"] if lr else False
-        sv    = st.session_state.get("latest_stars", 5)
+        sv   = st.session_state.get("latest_stars", 5)
         sent  = lr.get("sentiment_score") if lr else None
 
         if sent is not None:
@@ -513,80 +489,133 @@ with tab1:
 
         cl      = "Coherente" if not incoh else "Incoherente"
         len_pct = min(int(rl / 80 * 100), 100)
+        prob_pct = int(prob * 100)
 
-        len_color   = "#1D9E75" if rl > 80 else ("#EF9F27" if rl > 40 else "#E24B4A")
-        len_top     = "green"   if rl > 60 else "amber"
-        len_ico_lbl = "Adecuada" if rl > 60 else "Corta"
-        len_badge   = "badge-green" if rl > 60 else "badge-amber"
+        # Colores dinámicos
+        len_color = "#22c55e" if rl > 80 else ("#f59e0b" if rl > 40 else "#f87171")
+        len_top   = "green"   if rl > 60 else "amber"
+        len_lbl   = "Adecuada" if rl > 60 else "Corta"
+        len_badge = "badge-green" if rl > 60 else "badge-amber"
 
         sent_top     = "green" if (sent is not None and sent > 0.05) else ("red" if (sent is not None and sent < -0.05) else "blue")
         sent_badge   = "badge-green" if sent_top == "green" else ("badge-red" if sent_top == "red" else "badge-blue")
-        sent_bar_clr = "#1D9E75" if sent_top == "green" else ("#E24B4A" if sent_top == "red" else "#378ADD")
+        sent_bar_clr = "#22c55e" if sent_top == "green" else ("#f87171" if sent_top == "red" else "#60a5fa")
         sent_bar_pct = min(int((float(ss) + 1) / 2 * 100), 100) if ss != "-" else 50
 
         coh_top     = "green" if not incoh else "amber"
         coh_badge   = "badge-green" if not incoh else "badge-amber"
         coh_bar_pct = 100 if not incoh else 30
-        coh_bar_clr = "#1D9E75" if not incoh else "#EF9F27"
+        coh_bar_clr = "#22c55e" if not incoh else "#f59e0b"
 
-        _ico_ruler = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="13" x2="12" y2="13"/></svg>'
-        _ico_wave  = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>'
-        _ico_star  = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>'
-        _ico_check = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
+        star_bar_pct = int(sv / 5 * 100)
+
+        # Gauge SVG inline — funciona siempre sin Plotly
+        gauge_angle   = prob_pct / 100 * 180
+        gauge_rad     = (180 - gauge_angle) * 3.14159 / 180
+        needle_x      = 110 + 68 * (-1 if gauge_angle > 90 else 1) * abs(round(__import__('math').cos(gauge_rad), 3))
+        needle_y      = 110 - 68 * round(__import__('math').sin(gauge_rad), 3)
+        gauge_color   = "#22c55e" if prob >= 0.70 else ("#f59e0b" if prob >= 0.40 else "#f87171")
+
+        _ico_ruler = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="13" x2="12" y2="13"/></svg>'
+        _ico_wave  = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>'
+        _ico_star  = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>'
+        _ico_check = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
 
         st.markdown(f"""
-        <div class="feat-grid">
-          <div class="feat-card">
-            <div class="feat-stripe stripe-{len_top}"></div>
-            <div class="feat-icon-wrap"><div class="icon-sq icon-{'green' if len_top=='green' else 'amber'}">{_ico_ruler}</div></div>
-            <div class="feat-body">
-              <div class="feat-lbl">Longitud</div>
-              <div class="feat-val">{rl} <span style="font-size:0.7rem;font-weight:500;opacity:.55">pal.</span></div>
-              <div class="feat-bar-wrap">
-                <span class="feat-bar-pct">{len_pct}%</span>
-                <div class="feat-bar-bg"><div class="feat-bar-fg" style="width:{len_pct}%;background:{len_color}"></div></div>
-              </div>
-              <span class="feat-badge {len_badge}">{len_ico_lbl} · umbral 80</span>
-            </div>
+        <div class="results-dark-panel">
+
+          <div class="gauge-lbl">Probabilidad de utilidad</div>
+
+          <!-- Gauge SVG inline -->
+          <div style="text-align:center;margin-bottom:4px">
+            <svg width="220" height="120" viewBox="0 0 220 120">
+              <!-- Arco fondo -->
+              <path d="M 18 110 A 92 92 0 0 1 202 110"
+                fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="14" stroke-linecap="round"/>
+              <!-- Zona roja -->
+              <path d="M 18 110 A 92 92 0 0 1 80 27"
+                fill="none" stroke="rgba(248,113,113,0.25)" stroke-width="14" stroke-linecap="round"/>
+              <!-- Zona ámbar -->
+              <path d="M 80 27 A 92 92 0 0 1 155 32"
+                fill="none" stroke="rgba(245,158,11,0.25)" stroke-width="14" stroke-linecap="round"/>
+              <!-- Zona verde -->
+              <path d="M 155 32 A 92 92 0 0 1 202 110"
+                fill="none" stroke="rgba(34,197,94,0.25)" stroke-width="14" stroke-linecap="round"/>
+              <!-- Arco de valor -->
+              <path d="M 18 110 A 92 92 0 0 1 202 110"
+                fill="none" stroke="{gauge_color}" stroke-width="14" stroke-linecap="round"
+                stroke-dasharray="289" stroke-dashoffset="{round(289 * (1 - prob), 1)}"/>
+              <!-- Ticks -->
+              <text x="12" y="122" font-size="9" fill="rgba(255,255,255,0.3)" font-family="sans-serif">0</text>
+              <text x="104" y="16" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.3)" font-family="sans-serif">50</text>
+              <text x="208" y="122" text-anchor="end" font-size="9" fill="rgba(255,255,255,0.3)" font-family="sans-serif">100</text>
+            </svg>
           </div>
-          <div class="feat-card">
-            <div class="feat-stripe stripe-{sent_top}"></div>
-            <div class="feat-icon-wrap"><div class="icon-sq icon-{sent_top}">{_ico_wave}</div></div>
-            <div class="feat-body">
-              <div class="feat-lbl">Sentimiento</div>
-              <div class="feat-val">{ss}</div>
-              <div class="feat-bar-wrap">
-                <span class="feat-bar-pct">{sent_bar_pct}%</span>
-                <div class="feat-bar-bg"><div class="feat-bar-fg" style="width:{sent_bar_pct}%;background:{sent_bar_clr}"></div></div>
-              </div>
-              <span class="feat-badge {sent_badge}">{sl} · VADER</span>
-            </div>
+          <div style="text-align:center;font-size:2.2rem;font-weight:800;color:{gauge_color};
+                      line-height:1;margin-bottom:2px;letter-spacing:-0.03em">{prob_pct}%</div>
+          <div style="text-align:center;font-size:0.62rem;color:rgba(248,250,252,0.35);margin-bottom:0.8rem">
+            {"Supera" if prob >= 0.70 else "Por debajo de"} el umbral de utilidad (70%)
           </div>
-          <div class="feat-card">
-            <div class="feat-stripe stripe-amber"></div>
-            <div class="feat-icon-wrap"><div class="icon-sq icon-amber">{_ico_star}</div></div>
-            <div class="feat-body">
-              <div class="feat-lbl">Calificación</div>
-              <div class="feat-val feat-val-stars" style="color:#fbbf24">{"★"*int(sv)}{"☆"*(5-int(sv))}</div>
-              <div class="feat-bar-wrap">
-                <span class="feat-bar-pct">{int(sv/5*100)}%</span>
-                <div class="feat-bar-bg"><div class="feat-bar-fg" style="width:{int(sv/5*100)}%;background:#EF9F27"></div></div>
+
+          <div class="kpi-section-lbl">Características calculadas</div>
+          <div class="feat-grid">
+
+            <div class="feat-card">
+              <div class="feat-stripe stripe-{len_top}"></div>
+              <div class="feat-icon-wrap"><div class="icon-sq icon-{'green' if len_top=='green' else 'amber'}">{_ico_ruler}</div></div>
+              <div class="feat-body">
+                <div class="feat-lbl">Longitud</div>
+                <div class="feat-val">{rl} <span style="font-size:0.68rem;opacity:.5">pal.</span></div>
+                <div class="feat-bar-wrap">
+                  <span class="feat-bar-pct">{len_pct}%</span>
+                  <div class="feat-bar-bg"><div class="feat-bar-fg" style="width:{len_pct}%;background:{len_color}"></div></div>
+                </div>
+                <span class="feat-badge {len_badge}">{len_lbl} · umbral 80</span>
               </div>
-              <span class="feat-badge badge-amber">{sv} / 5 estrellas</span>
             </div>
-          </div>
-          <div class="feat-card">
-            <div class="feat-stripe stripe-{coh_top}"></div>
-            <div class="feat-icon-wrap"><div class="icon-sq icon-{'green' if coh_top=='green' else 'amber'}">{_ico_check}</div></div>
-            <div class="feat-body">
-              <div class="feat-lbl">Coherencia</div>
-              <div class="feat-val" style="font-size:0.95rem">{cl}</div>
-              <div class="feat-bar-wrap">
-                <span class="feat-bar-pct">{coh_bar_pct}%</span>
-                <div class="feat-bar-bg"><div class="feat-bar-fg" style="width:{coh_bar_pct}%;background:{coh_bar_clr}"></div></div>
+
+            <div class="feat-card">
+              <div class="feat-stripe stripe-{sent_top}"></div>
+              <div class="feat-icon-wrap"><div class="icon-sq icon-{sent_top}">{_ico_wave}</div></div>
+              <div class="feat-body">
+                <div class="feat-lbl">Sentimiento</div>
+                <div class="feat-val">{ss}</div>
+                <div class="feat-bar-wrap">
+                  <span class="feat-bar-pct">{sent_bar_pct}%</span>
+                  <div class="feat-bar-bg"><div class="feat-bar-fg" style="width:{sent_bar_pct}%;background:{sent_bar_clr}"></div></div>
+                </div>
+                <span class="feat-badge {sent_badge}">{sl} · VADER</span>
               </div>
-              <span class="feat-badge {coh_badge}">Tono vs. estrellas</span>
             </div>
+
+            <div class="feat-card">
+              <div class="feat-stripe stripe-amber"></div>
+              <div class="feat-icon-wrap"><div class="icon-sq icon-amber">{_ico_star}</div></div>
+              <div class="feat-body">
+                <div class="feat-lbl">Calificación</div>
+                <div class="feat-stars-val">{"★"*int(sv)}{"☆"*(5-int(sv))}</div>
+                <div class="feat-bar-wrap">
+                  <span class="feat-bar-pct">{star_bar_pct}%</span>
+                  <div class="feat-bar-bg"><div class="feat-bar-fg" style="width:{star_bar_pct}%;background:#f59e0b"></div></div>
+                </div>
+                <span class="feat-badge badge-amber">{sv} / 5 estrellas</span>
+              </div>
+            </div>
+
+            <div class="feat-card">
+              <div class="feat-stripe stripe-{coh_top}"></div>
+              <div class="feat-icon-wrap"><div class="icon-sq icon-{'green' if coh_top=='green' else 'amber'}">{_ico_check}</div></div>
+              <div class="feat-body">
+                <div class="feat-lbl">Coherencia</div>
+                <div class="feat-val" style="font-size:0.9rem">{cl}</div>
+                <div class="feat-bar-wrap">
+                  <span class="feat-bar-pct">{coh_bar_pct}%</span>
+                  <div class="feat-bar-bg"><div class="feat-bar-fg" style="width:{coh_bar_pct}%;background:{coh_bar_clr}"></div></div>
+                </div>
+                <span class="feat-badge {coh_badge}">Tono vs. estrellas</span>
+              </div>
+            </div>
+
           </div>
         </div>
         """, unsafe_allow_html=True)
