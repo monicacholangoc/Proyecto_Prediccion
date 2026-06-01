@@ -75,7 +75,7 @@ for col, (_, row) in zip(cols, metrics_df.iterrows()):
 
     winner = (f'<div style="background:{color};color:#fff;font-size:0.6rem;font-weight:800;'
               f'padding:0.2rem 0.5rem;border-radius:999px;display:inline-block;margin-bottom:0.4rem">'
-              f'🏆 GANADOR</div>' if is_best else
+              f'Seleccionado</div>' if is_best else
               f'<div style="background:#f1f5f9;color:#64748b;font-size:0.6rem;font-weight:700;'
               f'padding:0.2rem 0.5rem;border-radius:999px;display:inline-block;margin-bottom:0.4rem">'
               f'Referencia</div>')
