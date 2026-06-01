@@ -301,12 +301,6 @@ else:
     df_export = df_export.rename(columns={k: v for k, v in rename_map.items() if k and k in df_export.columns})
 
     n_filas = len(df_export)
-    st.markdown(
-        f'<div class="highlight-card"><div class="highlight-body">'
-        f'El corte actual tiene <strong>{format_compact_number(n_filas)} reseñas</strong>. '
-        f'Elige el formato para descargarlas.</div></div>',
-        unsafe_allow_html=True,
-    )
 
     import io, re
 
