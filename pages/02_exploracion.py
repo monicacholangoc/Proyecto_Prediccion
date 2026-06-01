@@ -161,8 +161,9 @@ try:
 except Exception:
     _sb_extra = 0
 
-n_total   = len(df) + _sb_extra
-n_base    = len(df)
+_base_total = len(source)
+n_total     = _base_total + _sb_extra
+n_base      = len(df)
 products  = int(df["ProductId"].astype(str).nunique()) if "ProductId" in df.columns else 0
 ratio     = float(df[helpfulness_col].ge(0.70).mean()) if helpfulness_col and n_base > 0 else 0.0
 avg_len   = int(df["review_len"].fillna(0).mean()) if "review_len" in df.columns and n_base > 0 else 0
