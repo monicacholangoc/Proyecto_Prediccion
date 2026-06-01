@@ -437,112 +437,112 @@ with tab1:
             unsafe_allow_html=True,
         )
 
-    # ── Diagnóstico + Recomendaciones — panel completo debajo ──────────────
-    _lr   = st.session_state.get("latest_audit_result")
-    _prob = _lr["probability"] if _lr else 0.0
-    _sent = _lr.get("sentiment_score") if _lr else None
-    _rl   = _lr["review_len"] if _lr else 0
+        # ── Diagnóstico — debajo de las KPIs en la columna derecha ────────
+        _lr2   = st.session_state.get("latest_audit_result")
+        _prob2 = _lr2["probability"] if _lr2 else 0.0
+        _sent2 = _lr2.get("sentiment_score") if _lr2 else None
+        _rl2   = _lr2["review_len"] if _lr2 else 0
 
-    if _lr:
-        _is_blind = "Punto Ciego" in _lr["status"]
-        _diag_cls = "diag-danger" if _is_blind else ("diag-success" if _prob >= 0.70 else "diag-warning")
-        _decision = "Revision obligatoria" if _is_blind else ("Lista para publicar" if _prob >= 0.70 else "Conviene mejorarla")
+        if _lr2:
+            _is_blind2 = "Punto Ciego" in _lr2["status"]
+            _diag_cls2 = "diag-danger" if _is_blind2 else ("diag-success" if _prob2 >= 0.70 else "diag-warning")
+            _decision2 = "Revision obligatoria" if _is_blind2 else ("Lista para publicar" if _prob2 >= 0.70 else "Conviene mejorarla")
+            if _is_blind2:
+                _razon2 = "La resena no menciona contexto alimenticio relevante."
+            elif _prob2 >= 0.70:
+                _razon2 = "La resena supera el umbral de utilidad del 70%."
+            elif _rl2 < 60:
+                _razon2 = "La resena es muy corta. Se recomienda superar las 80 palabras."
+            elif _sent2 is not None and _sent2 < -0.05:
+                _razon2 = "El sentimiento del texto es negativo. Revisa la coherencia con las estrellas."
+            else:
+                _razon2 = f"Utilidad estimada de {format_percentage(_prob2)}, por debajo del umbral del 70%."
 
-        if _is_blind:
-            _razon = "La resena no menciona contexto alimenticio relevante."
-        elif _prob >= 0.70:
-            _razon = "La resena supera el umbral de utilidad del 70%."
-        elif _rl < 60:
-            _razon = "La resena es muy corta. Se recomienda superar las 80 palabras."
-        elif _sent is not None and _sent < -0.05:
-            _razon = "El sentimiento del texto es negativo. Revisa la coherencia con las estrellas."
-        else:
-            _razon = f"Utilidad estimada de {format_percentage(_prob)}, por debajo del umbral del 70%."
+            _ctx2_html = ""
+            if _lr2.get("context_validation_enabled"):
+                _ctx2  = ", ".join(_lr2.get("context_hits", [])) or "ninguna"
+                _tech2 = ", ".join(_lr2.get("tech_hits", []))    or "ninguno"
+                _ctx2_html = (
+                    '<div class="ctx-box">'
+                    '<div class="ctx-lbl">Contexto alimenticio</div>'
+                    f'<div class="ctx-txt">{_lr2.get("context_explanation","")}</div>'
+                    '<div class="ctx-chips">'
+                    f'<span class="ctx-chip">Detectadas: <b>{_ctx2}</b></span>'
+                    f'<span class="ctx-chip">Ajenas: <b>{_tech2}</b></span>'
+                    '</div></div>'
+                )
 
-        # Renderizar card de diagnóstico
-        st.markdown(
-            '<div class="diag-section-wrap">'
-            '<div class="diag-section-eyebrow">Diagn\u00f3stico del an\u00e1lisis</div>'
-            f'<div class="diag-card {_diag_cls}">'
-            '<div class="diag-eyebrow">Resultado del an\u00e1lisis</div>'
-            '<div class="diag-row">'
-            '<div class="diag-left">'
-            f'<div class="diag-decision">{_decision}</div>'
-            f'<div class="diag-reason">{_razon}</div>'
-            '</div>'
-            '<div class="diag-prob-block">'
-            f'<div class="diag-prob-val">{format_percentage(_prob)}</div>'
-            '<div class="diag-prob-lbl">Probabilidad</div>'
-            '</div>'
-            '</div>'
-            '</div>',
-            unsafe_allow_html=True,
-        )
-
-        # Contexto alimenticio (opcional)
-        if _lr.get("context_validation_enabled"):
-            _ctx  = ", ".join(_lr.get("context_hits", [])) or "ninguna"
-            _tech = ", ".join(_lr.get("tech_hits", []))    or "ninguno"
             st.markdown(
-                '<div class="ctx-box">'
-                '<div class="ctx-lbl">Contexto alimenticio</div>'
-                f'<div class="ctx-txt">{_lr.get("context_explanation","")}</div>'
-                '<div class="ctx-chips">'
-                f'<span class="ctx-chip">Detectadas: <b>{_ctx}</b></span>'
-                f'<span class="ctx-chip">Ajenas: <b>{_tech}</b></span>'
-                '</div></div>',
+                '<div class="diag-section-wrap">'
+                '<div class="diag-section-eyebrow">Diagn\u00f3stico del an\u00e1lisis</div>'
+                f'<div class="diag-card {_diag_cls2}">'
+                '<div class="diag-eyebrow">Resultado del an\u00e1lisis</div>'
+                '<div class="diag-row">'
+                '<div class="diag-left">'
+                f'<div class="diag-decision">{_decision2}</div>'
+                f'<div class="diag-reason">{_razon2}</div>'
+                '</div>'
+                '<div class="diag-prob-block">'
+                f'<div class="diag-prob-val">{format_percentage(_prob2)}</div>'
+                '<div class="diag-prob-lbl">Probabilidad</div>'
+                '</div>'
+                '</div>'
+                '</div>'
+                f'{_ctx2_html}'
+                '</div>',
+                unsafe_allow_html=True,
+            )
+        else:
+            st.markdown(
+                '<div class="diag-section-wrap">'
+                '<div class="diag-section-eyebrow">Diagn\u00f3stico del an\u00e1lisis</div>'
+                '<div class="diag-empty">'
+                '<div class="diag-empty-icon">'
+                '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" '
+                'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+                '<circle cx="11" cy="11" r="8"/>'
+                '<line x1="21" y1="21" x2="16.65" y2="16.65"/>'
+                '</svg>'
+                '</div>'
+                '<div class="diag-empty-txt">Escribe una rese\u00f1a y presiona <b>Analizar</b> para ver el diagn\u00f3stico</div>'
+                '</div>'
+                '</div>',
                 unsafe_allow_html=True,
             )
 
-        # Recomendaciones
-        _recs = generate_review_recommendations(_lr)
-        if _recs:
-            _r0 = _recs[0] if len(_recs) > 0 else ""
-            _r1 = _recs[1] if len(_recs) > 1 else ""
-            _rec_cols = (
+    # ── Recomendaciones + Guardar — debajo del botón Analizar (left_col) ──
+    # Se ejecutan fuera de los with-cols, pero Streamlit los coloca
+    # después del último widget de left_col gracias al orden de ejecución.
+    # Usamos un contenedor de ancho completo para recomendaciones.
+    _lr3 = st.session_state.get("latest_audit_result")
+    if _lr3:
+        _recs3 = generate_review_recommendations(_lr3)
+        if _recs3:
+            _r0 = _recs3[0] if len(_recs3) > 0 else ""
+            _r1 = _recs3[1] if len(_recs3) > 1 else ""
+            _rec_html3 = (
                 '<div class="rec-card">'
                 '<div class="rec-eyebrow">Acci\u00f3n principal</div>'
                 f'<div class="rec-body">{_r0}</div>'
                 '</div>'
             )
             if _r1:
-                _rec_cols += (
+                _rec_html3 += (
                     '<div class="rec-card rec-card-warn">'
                     '<div class="rec-eyebrow">Acci\u00f3n adicional</div>'
                     f'<div class="rec-body">{_r1}</div>'
                     '</div>'
                 )
-            st.markdown(
-                f'<div class="rec-grid">{_rec_cols}</div>'
-                '</div>',  # cierra diag-section-wrap
-                unsafe_allow_html=True,
-            )
-        else:
-            st.markdown('</div>', unsafe_allow_html=True)  # cierra diag-section-wrap
-
-        sv1, _ = st.columns([0.22, 0.78])
-        with sv1:
-            if st.button("Guardar rese\u00f1a", use_container_width=True):
-                ok, msg = save_latest_review_to_file(selected_product)
-                (st.success if ok else st.warning)(msg)
-
-    else:
-        st.markdown(
-            '<div class="diag-section-wrap">'
-            '<div class="diag-section-eyebrow">Diagn\u00f3stico del an\u00e1lisis</div>'
-            '<div class="diag-empty">'
-            '<div class="diag-empty-icon">'
-            '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" '
-            'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
-            '<circle cx="11" cy="11" r="8"/>'
-            '<line x1="21" y1="21" x2="16.65" y2="16.65"/>'
-            '</svg>'
-            '</div>'
-            '<div class="diag-empty-txt">Escribe una rese\u00f1a y presiona <b>Analizar</b> para ver el diagn\u00f3stico</div>'
-            '</div>'
-            '</div>',
-            unsafe_allow_html=True,
-        )
+            with left_col:
+                st.markdown(
+                    f'<div class="rec-grid" style="margin-top:0.6rem">{_rec_html3}</div>',
+                    unsafe_allow_html=True,
+                )
+                sv1, _ = st.columns([0.4, 0.6])
+                with sv1:
+                    if st.button("Guardar rese\u00f1a", use_container_width=True):
+                        ok, msg = save_latest_review_to_file(selected_product)
+                        (st.success if ok else st.warning)(msg)
 
     latest_review_id = st.session_state.get("latest_review_id")
     position_summary = get_position_summary(selected_product, latest_review_id)
