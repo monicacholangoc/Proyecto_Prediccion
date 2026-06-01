@@ -4,10 +4,9 @@ import plotly.graph_objects as go
 
 
 def build_helpfulness_gauge(probability: float) -> go.Figure:
-    """Construye un gauge para comunicar utilidad predicha — fondo transparente para panel oscuro."""
+    """Gauge de utilidad — colores vivos, legible sobre fondo claro."""
     pct = probability * 100
-    # Color dinámico del arco según umbral
-    bar_color = "#1D9E75" if pct >= 70 else ("#EF9F27" if pct >= 40 else "#E24B4A")
+    bar_color = "#22c55e" if pct >= 70 else ("#f59e0b" if pct >= 40 else "#f87171")
 
     figure = go.Figure(
         go.Indicator(
@@ -15,35 +14,41 @@ def build_helpfulness_gauge(probability: float) -> go.Figure:
             value=pct,
             number={
                 "suffix": "%",
-                "font": {"size": 38, "color": "#f8fafc", "family": "Inter, sans-serif"},
+                "font": {"size": 42, "color": "#0f172a", "family": "Inter, sans-serif"},
+                "valueformat": ".1f",
+            },
+            title={
+                "text": "Probabilidad de utilidad",
+                "font": {"size": 13, "color": "#64748b"},
             },
             gauge={
                 "axis": {
                     "range": [0, 100],
-                    "tickcolor": "rgba(248,250,252,0.3)",
-                    "tickfont": {"color": "rgba(248,250,252,0.4)", "size": 10},
+                    "tickcolor": "#cbd5e1",
+                    "tickfont": {"color": "#94a3b8", "size": 10},
+                    "tickwidth": 1,
                 },
-                "bar": {"color": bar_color, "thickness": 0.65},
+                "bar": {"color": bar_color, "thickness": 0.7},
                 "bgcolor": "rgba(0,0,0,0)",
                 "borderwidth": 0,
                 "steps": [
-                    {"range": [0,  40], "color": "rgba(226,75,74,0.15)"},
-                    {"range": [40, 70], "color": "rgba(239,159,39,0.15)"},
-                    {"range": [70,100], "color": "rgba(29,158,117,0.15)"},
+                    {"range": [0,  40], "color": "#fee2e2"},
+                    {"range": [40, 70], "color": "#fef9c3"},
+                    {"range": [70,100], "color": "#dcfce7"},
                 ],
                 "threshold": {
-                    "line": {"color": "rgba(248,250,252,0.4)", "width": 2},
-                    "thickness": 0.75,
+                    "line": {"color": "#475569", "width": 2},
+                    "thickness": 0.8,
                     "value": 70,
                 },
             },
         )
     )
     figure.update_layout(
-        margin=dict(l=16, r=16, t=40, b=10),
-        height=200,
+        margin=dict(l=20, r=20, t=50, b=10),
+        height=240,
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
-        font={"color": "rgba(248,250,252,0.5)"},
+        font={"color": "#64748b"},
     )
     return figure

@@ -34,222 +34,148 @@ render_sidebar()
 
 st.markdown("""
 <style>
-/* ══════════════════════════════════════════════════════════════
-   AUDITORIA — Estilos que funcionan sin wrappers alrededor
-   de widgets nativos de Streamlit.
-   Las KPI cards llevan su propio fondo oscuro auto-contenido.
-   ══════════════════════════════════════════════════════════════ */
-
-/* ── Header de configuración ─────────────────────────────── */
+/* ── Config header ───────────────────────────────────────── */
 .config-header {
-    display: flex; align-items: center; gap: 0.55rem;
-    padding: 0.7rem 0.9rem;
-    background: linear-gradient(135deg, #1746a2, #0f4c5c);
-    border-radius: 12px; margin-bottom: 1rem;
+    display:flex; align-items:center; gap:0.5rem;
+    background:linear-gradient(135deg,#1746a2,#0f4c5c);
+    border-radius:10px; padding:0.6rem 0.9rem; margin-bottom:0.9rem;
 }
 .config-header-icon {
-    width: 28px; height: 28px; border-radius: 7px;
-    background: rgba(255,255,255,0.15);
-    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    width:26px; height:26px; border-radius:7px;
+    background:rgba(255,255,255,.18);
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
 }
 .config-header-title {
-    font-size: 0.72rem; font-weight: 800; color: #fff !important;
-    text-transform: uppercase; letter-spacing: 0.07em;
+    font-size:0.7rem; font-weight:800; color:#fff !important;
+    text-transform:uppercase; letter-spacing:0.07em;
 }
 
-/* ── PANEL DERECHO: contenedor oscuro auto-contenido ─────── */
-.results-dark-panel {
-    background: linear-gradient(160deg, #0f172a 0%, #1e293b 100%);
-    border-radius: 16px;
-    padding: 1rem 1.1rem;
-    margin-bottom: 0.5rem;
-}
-.results-dark-panel * { color: #f8fafc !important; }
-
-/* Gauge title */
-.gauge-lbl {
-    font-size: 0.62rem; font-weight: 700;
-    color: rgba(248,250,252,0.5) !important;
-    text-transform: uppercase; letter-spacing: 0.1em;
-    text-align: center; margin-bottom: 0.3rem;
-}
-
-/* ── KPI GRID ─────────────────────────────────────────────── */
+/* ── KPI cards — fondo oscuro auto-contenido ─────────────── */
 .feat-grid {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem;
-    margin-top: 0.6rem;
+    display:grid; grid-template-columns:1fr 1fr; gap:0.55rem;
+    margin-bottom:0.5rem;
 }
 .feat-card {
-    background: rgba(255,255,255,0.06);
-    border: 1px solid rgba(255,255,255,0.13);
-    border-radius: 12px;
-    display: flex; flex-direction: row;
-    overflow: hidden; min-height: 84px;
+    background:#1e293b;
+    border:1px solid rgba(255,255,255,0.1);
+    border-radius:12px;
+    display:flex; flex-direction:row;
+    overflow:hidden; min-height:82px;
 }
-.feat-stripe { width: 5px; flex-shrink: 0; }
-.stripe-green { background: #22c55e; }
-.stripe-amber { background: #f59e0b; }
-.stripe-blue  { background: #60a5fa; }
-.stripe-red   { background: #f87171; }
+.feat-stripe { width:5px; flex-shrink:0; }
+.stripe-green { background:#22c55e; }
+.stripe-amber { background:#f59e0b; }
+.stripe-blue  { background:#60a5fa; }
+.stripe-red   { background:#f87171; }
 
 .feat-icon-wrap {
-    display: flex; align-items: center; justify-content: center;
-    width: 40px; flex-shrink: 0;
+    display:flex; align-items:center; justify-content:center;
+    width:38px; flex-shrink:0;
 }
 .icon-sq {
-    width: 28px; height: 28px; border-radius: 7px;
-    display: flex; align-items: center; justify-content: center;
+    width:26px; height:26px; border-radius:6px;
+    display:flex; align-items:center; justify-content:center;
 }
-.icon-green { background: rgba(34,197,94,0.2);  color: #4ade80 !important; }
-.icon-amber { background: rgba(245,158,11,0.2); color: #fbbf24 !important; }
-.icon-blue  { background: rgba(96,165,250,0.2); color: #93c5fd !important; }
-.icon-red   { background: rgba(248,113,113,0.2);color: #fca5a5 !important; }
+.icon-green { background:rgba(34,197,94,.2);   color:#4ade80; }
+.icon-amber { background:rgba(245,158,11,.2);  color:#fbbf24; }
+.icon-blue  { background:rgba(96,165,250,.2);  color:#93c5fd; }
+.icon-red   { background:rgba(248,113,113,.2); color:#fca5a5; }
 
 .feat-body {
-    flex: 1; padding: 0.55rem 0.65rem 0.55rem 0.25rem;
-    display: flex; flex-direction: column; justify-content: space-between;
-    min-width: 0;
+    flex:1; padding:0.5rem 0.6rem 0.5rem 0.2rem;
+    display:flex; flex-direction:column; justify-content:space-between; min-width:0;
 }
 .feat-lbl {
-    font-size: 0.56rem; font-weight: 700;
-    color: rgba(248,250,252,0.45) !important;
-    text-transform: uppercase; letter-spacing: 0.08em;
-    margin-bottom: 0.1rem;
+    font-size:0.55rem; font-weight:700;
+    color:rgba(148,163,184,1) !important;
+    text-transform:uppercase; letter-spacing:0.08em; margin-bottom:0.08rem;
 }
 .feat-val {
-    font-size: 1.15rem; font-weight: 800;
-    color: #f8fafc !important; line-height: 1.1;
+    font-size:1.1rem; font-weight:800;
+    color:#f1f5f9 !important; line-height:1.1;
 }
-.feat-stars-val { font-size: 1rem; color: #fbbf24 !important; letter-spacing: 2px; }
-
-.feat-bar-wrap { position: relative; padding-top: 14px; }
+.feat-stars { font-size:0.95rem; color:#fbbf24 !important; letter-spacing:2px; }
+.feat-bar-wrap { position:relative; padding-top:14px; }
 .feat-bar-pct {
-    font-size: 0.55rem; font-weight: 700;
-    color: rgba(248,250,252,0.4) !important;
-    position: absolute; right: 0; top: 0;
+    font-size:0.55rem; font-weight:700;
+    color:rgba(148,163,184,.8) !important;
+    position:absolute; right:0; top:1px;
 }
-.feat-bar-bg {
-    background: rgba(255,255,255,0.1);
-    border-radius: 3px; height: 4px; overflow: hidden;
-}
-.feat-bar-fg { height: 100%; border-radius: 3px; }
-
+.feat-bar-bg { background:rgba(255,255,255,.1); border-radius:3px; height:4px; overflow:hidden; }
+.feat-bar-fg { height:100%; border-radius:3px; }
 .feat-badge {
-    display: inline-block; font-size: 0.56rem; font-weight: 700;
-    padding: 0.12rem 0.5rem; border-radius: 4px; margin-top: 0.3rem;
-    letter-spacing: 0.02em;
+    display:inline-block; font-size:0.55rem; font-weight:700;
+    padding:0.1rem 0.45rem; border-radius:4px; margin-top:0.28rem;
 }
-.badge-green { background: rgba(34,197,94,0.22);  color: #86efac !important; }
-.badge-amber { background: rgba(245,158,11,0.22); color: #fde68a !important; }
-.badge-blue  { background: rgba(96,165,250,0.22); color: #bfdbfe !important; }
-.badge-red   { background: rgba(248,113,113,0.22);color: #fecaca !important; }
+.badge-green { background:rgba(34,197,94,.18);   color:#86efac !important; }
+.badge-amber { background:rgba(245,158,11,.18);  color:#fde68a !important; }
+.badge-blue  { background:rgba(96,165,250,.18);  color:#bfdbfe !important; }
+.badge-red   { background:rgba(248,113,113,.18); color:#fecaca !important; }
 
-.kpi-section-lbl {
-    font-size: 0.58rem; font-weight: 700;
-    color: rgba(248,250,252,0.45) !important;
-    text-transform: uppercase; letter-spacing: 0.1em;
-    margin: 0.6rem 0 0.3rem;
+/* Título KPI section */
+.kpi-sec-lbl {
+    font-size:0.58rem; font-weight:700; color:#64748b;
+    text-transform:uppercase; letter-spacing:0.08em;
+    border-left:3px solid #1746a2; padding-left:0.45rem;
+    margin:0.6rem 0 0.4rem;
 }
 
-/* ── DIAGNÓSTICO ──────────────────────────────────────────── */
+/* ── Diagnóstico ─────────────────────────────────────────── */
 .diag-section-wrap {
-    background: #ffffff; border: 1px solid #e2e8f0;
-    border-radius: 16px; padding: 1.1rem 1.3rem; margin-top: 1rem;
+    background:#fff; border:1px solid #e2e8f0;
+    border-radius:16px; padding:1.1rem 1.3rem; margin-top:0.8rem;
 }
 .diag-section-eyebrow {
-    font-size: 0.6rem; font-weight: 700; color: #64748b;
-    text-transform: uppercase; letter-spacing: 0.09em;
-    border-left: 3px solid #1746a2; padding-left: 0.5rem;
-    margin-bottom: 0.85rem;
+    font-size:0.6rem; font-weight:700; color:#64748b;
+    text-transform:uppercase; letter-spacing:0.09em;
+    border-left:3px solid #1746a2; padding-left:0.5rem;
+    margin-bottom:0.85rem;
 }
 .diag-card {
-    border-radius: 12px; padding: 1rem 1.1rem;
-    border: 1px solid; position: relative; overflow: hidden;
+    border-radius:12px; padding:1rem 1.1rem;
+    border:1px solid; position:relative; overflow:hidden;
 }
 .diag-card::before {
-    content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 5px;
+    content:""; position:absolute; left:0; top:0; bottom:0; width:5px;
 }
-.diag-success { background: #f0fdf8; border-color: #6ee7b7; }
-.diag-warning { background: #fffbeb; border-color: #fcd34d; }
-.diag-danger  { background: #fff1f2; border-color: #fca5a5; }
-.diag-success::before { background: #22c55e; }
-.diag-warning::before { background: #f59e0b; }
-.diag-danger::before  { background: #f87171; }
-
-.diag-eyebrow {
-    font-size: 0.58rem; font-weight: 700; text-transform: uppercase;
-    letter-spacing: 0.09em; margin-bottom: 0.5rem;
-}
-.diag-success .diag-eyebrow { color: #059669; }
-.diag-warning .diag-eyebrow { color: #b45309; }
-.diag-danger  .diag-eyebrow { color: #dc2626; }
-
-.diag-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
-.diag-left { flex: 1; min-width: 0; }
-.diag-decision { font-size: 1.1rem; font-weight: 800; color: #0f172a; }
-.diag-reason   { font-size: 0.75rem; color: #475569; line-height: 1.5; margin-top: 0.15rem; }
-.diag-prob-block { flex-shrink: 0; text-align: right; }
-.diag-prob-val  { font-size: 2.2rem; font-weight: 900; letter-spacing: -0.03em; line-height: 1; }
-.diag-prob-lbl  { font-size: 0.6rem; color: #94a3b8; margin-top: 2px; }
-.diag-success .diag-prob-val { color: #059669; }
-.diag-warning .diag-prob-val { color: #b45309; }
-.diag-danger  .diag-prob-val { color: #dc2626; }
-
-/* Recomendaciones */
-.rec-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem; margin-top: 0.85rem; }
-.rec-card {
-    background: #f8fafc; border: 1px solid #e8edf4;
-    border-radius: 11px; padding: 0.85rem 0.95rem;
-    border-top: 3px solid #1746a2;
-}
-.rec-card-warn { border-top-color: #f59e0b; }
-.rec-eyebrow {
-    font-size: 0.58rem; font-weight: 700; color: #94a3b8;
-    text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.4rem;
-}
-.rec-body { font-size: 0.82rem; color: #334155; line-height: 1.5; }
-
-/* Contexto */
-.ctx-box {
-    background: #f8fafc; border: 1px solid #e2e8f0;
-    border-radius: 10px; padding: 0.65rem 0.9rem; margin-top: 0.65rem;
-}
-.ctx-lbl {
-    font-size: 0.58rem; font-weight: 700; color: #94a3b8;
-    text-transform: uppercase; letter-spacing: .07em; margin-bottom: 0.2rem;
-}
-.ctx-txt  { font-size: 0.73rem; color: #475569; line-height: 1.5; }
-.ctx-chips { display: flex; gap: 0.5rem; margin-top: 0.35rem; flex-wrap: wrap; }
-.ctx-chip {
-    font-size: 0.68rem; padding: 0.1rem 0.55rem; border-radius: 4px;
-    background: #fff; border: 1px solid #e2e8f0; color: #64748b;
-}
-
-/* Info del producto */
-.prod-info-bar {
-    display: flex; gap: 2rem; flex-wrap: wrap; align-items: center;
-    background: #fff; border: 1px solid #e2e8f0; border-radius: 12px;
-    padding: 0.7rem 1.1rem; margin-bottom: 1rem;
-}
-.prod-info-field-lbl {
-    font-size: 0.6rem; font-weight: 700; color: #94a3b8;
-    text-transform: uppercase; letter-spacing: 0.06em;
-}
-.prod-info-field-val { font-size: 0.9rem; font-weight: 700; color: #0f172a; margin-top: 0.1rem; }
-.prod-info-field-val-accent { color: #1746a2; }
-.prod-info-field-val-mono { font-family: monospace; color: #64748b; font-size: 0.78rem; }
-
-/* Estado vacío diagnóstico */
-.diag-empty {
-    background: #f8fafc; border: 1px dashed #cbd5e1;
-    border-radius: 12px; padding: 1.4rem; text-align: center;
-}
-.diag-empty-icon {
-    width: 40px; height: 40px; border-radius: 10px;
-    background: #e8edf4; display: flex; align-items: center;
-    justify-content: center; margin: 0 auto 0.6rem;
-}
-.diag-empty-txt { font-size: 0.8rem; color: #94a3b8; }
+.diag-success { background:#f0fdf8; border-color:#6ee7b7; }
+.diag-warning { background:#fffbeb; border-color:#fcd34d; }
+.diag-danger  { background:#fff1f2; border-color:#fca5a5; }
+.diag-success::before { background:#22c55e; }
+.diag-warning::before { background:#f59e0b; }
+.diag-danger::before  { background:#f87171; }
+.diag-eyebrow { font-size:0.58rem; font-weight:700; text-transform:uppercase; letter-spacing:0.09em; margin-bottom:0.45rem; }
+.diag-success .diag-eyebrow { color:#059669; }
+.diag-warning .diag-eyebrow { color:#b45309; }
+.diag-danger  .diag-eyebrow { color:#dc2626; }
+.diag-row { display:flex; align-items:center; justify-content:space-between; gap:1rem; }
+.diag-left { flex:1; min-width:0; }
+.diag-decision { font-size:1.05rem; font-weight:800; color:#0f172a; }
+.diag-reason   { font-size:0.74rem; color:#475569; line-height:1.5; margin-top:0.15rem; }
+.diag-prob-block { flex-shrink:0; text-align:right; }
+.diag-prob-val  { font-size:2.2rem; font-weight:900; letter-spacing:-0.03em; line-height:1; }
+.diag-prob-lbl  { font-size:0.6rem; color:#94a3b8; margin-top:2px; }
+.diag-success .diag-prob-val { color:#059669; }
+.diag-warning .diag-prob-val { color:#b45309; }
+.diag-danger  .diag-prob-val { color:#dc2626; }
+.rec-grid { display:grid; grid-template-columns:1fr 1fr; gap:0.65rem; margin-top:0.85rem; }
+.rec-card { background:#f8fafc; border:1px solid #e8edf4; border-radius:11px; padding:0.8rem 0.9rem; border-top:3px solid #1746a2; }
+.rec-card-warn { border-top-color:#f59e0b; }
+.rec-eyebrow { font-size:0.58rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:0.07em; margin-bottom:0.35rem; }
+.rec-body { font-size:0.8rem; color:#334155; line-height:1.5; }
+.ctx-box { background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:0.65rem 0.9rem; margin-top:0.65rem; }
+.ctx-lbl { font-size:0.58rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:.07em; margin-bottom:0.2rem; }
+.ctx-txt  { font-size:0.73rem; color:#475569; line-height:1.5; }
+.ctx-chips { display:flex; gap:0.5rem; margin-top:0.35rem; flex-wrap:wrap; }
+.ctx-chip { font-size:0.68rem; padding:0.1rem 0.55rem; border-radius:4px; background:#fff; border:1px solid #e2e8f0; color:#64748b; }
+.prod-info-bar { display:flex; gap:2rem; flex-wrap:wrap; align-items:center; background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:0.7rem 1.1rem; margin-bottom:1rem; }
+.prod-info-field-lbl { font-size:0.6rem; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em; }
+.prod-info-field-val { font-size:0.9rem; font-weight:700; color:#0f172a; margin-top:0.1rem; }
+.prod-info-field-val-accent { color:#1746a2; }
+.prod-info-field-val-mono { font-family:monospace; color:#64748b; font-size:0.78rem; }
+.diag-empty { background:#f8fafc; border:1px dashed #cbd5e1; border-radius:12px; padding:1.4rem; text-align:center; }
+.diag-empty-icon { width:40px; height:40px; border-radius:10px; background:#e8edf4; display:flex; align-items:center; justify-content:center; margin:0 auto 0.6rem; }
+.diag-empty-txt { font-size:0.8rem; color:#94a3b8; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -361,7 +287,9 @@ with tab1:
     left_col, right_col = st.columns([1.05, 1], gap="medium")
 
     with left_col:
-        # Header visual de configuración
+        # Marcador CSS para apuntar este panel (sin widgets dentro del div)
+        st.markdown('<span class="audit-col-left" style="display:none"></span>', unsafe_allow_html=True)
+        # Header visual de configuración (solo HTML estático, sin widgets dentro)
         st.markdown("""
         <div class="config-header">
             <div class="config-header-icon">
@@ -472,13 +400,18 @@ with tab1:
             st.session_state["latest_audit_result"] = recalc
             st.session_state["_toggle_prev_val"]    = validate_context
 
-    # Panel derecho — todo en un único bloque HTML oscuro auto-contenido
+    # Panel derecho — gauge Plotly + KPIs en bloque HTML propio
     with right_col:
         lr   = st.session_state.get("latest_audit_result")
         prob = lr["probability"] if lr else 0.0
-        rl   = lr["review_len"]  if lr else 0
+
+        st.plotly_chart(build_helpfulness_gauge(prob), use_container_width=True,
+                        config={"displayModeBar": False})
+
+        # ── KPIs — bloque HTML auto-contenido con fondo oscuro ──
+        rl    = lr["review_len"]  if lr else 0
         incoh = lr["incoherente"] if lr else False
-        sv   = st.session_state.get("latest_stars", 5)
+        sv    = st.session_state.get("latest_stars", 5)
         sent  = lr.get("sentiment_score") if lr else None
 
         if sent is not None:
@@ -489,9 +422,7 @@ with tab1:
 
         cl      = "Coherente" if not incoh else "Incoherente"
         len_pct = min(int(rl / 80 * 100), 100)
-        prob_pct = int(prob * 100)
 
-        # Colores dinámicos
         len_color = "#22c55e" if rl > 80 else ("#f59e0b" if rl > 40 else "#f87171")
         len_top   = "green"   if rl > 60 else "amber"
         len_lbl   = "Adecuada" if rl > 60 else "Corta"
@@ -507,118 +438,62 @@ with tab1:
         coh_bar_pct = 100 if not incoh else 30
         coh_bar_clr = "#22c55e" if not incoh else "#f59e0b"
 
-        star_bar_pct = int(sv / 5 * 100)
-
-        # Gauge SVG inline — funciona siempre sin Plotly
-        gauge_angle   = prob_pct / 100 * 180
-        gauge_rad     = (180 - gauge_angle) * 3.14159 / 180
-        needle_x      = 110 + 68 * (-1 if gauge_angle > 90 else 1) * abs(round(__import__('math').cos(gauge_rad), 3))
-        needle_y      = 110 - 68 * round(__import__('math').sin(gauge_rad), 3)
-        gauge_color   = "#22c55e" if prob >= 0.70 else ("#f59e0b" if prob >= 0.40 else "#f87171")
-
         _ico_ruler = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="13" x2="12" y2="13"/></svg>'
         _ico_wave  = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>'
         _ico_star  = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>'
         _ico_check = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
 
-        st.markdown(f"""
-        <div class="results-dark-panel">
+        st.markdown(
+            f'<div class="kpi-sec-lbl">Características calculadas</div>'
+            f'<div class="feat-grid">'
 
-          <div class="gauge-lbl">Probabilidad de utilidad</div>
+            f'<div class="feat-card">'
+            f'<div class="feat-stripe stripe-{len_top}"></div>'
+            f'<div class="feat-icon-wrap"><div class="icon-sq icon-{"green" if len_top=="green" else "amber"}">{_ico_ruler}</div></div>'
+            f'<div class="feat-body">'
+            f'<div class="feat-lbl">Longitud</div>'
+            f'<div class="feat-val">{rl} <span style="font-size:.68rem;opacity:.6">pal.</span></div>'
+            f'<div class="feat-bar-wrap"><span class="feat-bar-pct">{len_pct}%</span>'
+            f'<div class="feat-bar-bg"><div class="feat-bar-fg" style="width:{len_pct}%;background:{len_color}"></div></div></div>'
+            f'<span class="feat-badge {len_badge}">{len_lbl} · umbral 80</span>'
+            f'</div></div>'
 
-          <!-- Gauge SVG inline -->
-          <div style="text-align:center;margin-bottom:4px">
-            <svg width="220" height="120" viewBox="0 0 220 120">
-              <!-- Arco fondo -->
-              <path d="M 18 110 A 92 92 0 0 1 202 110"
-                fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="14" stroke-linecap="round"/>
-              <!-- Zona roja -->
-              <path d="M 18 110 A 92 92 0 0 1 80 27"
-                fill="none" stroke="rgba(248,113,113,0.25)" stroke-width="14" stroke-linecap="round"/>
-              <!-- Zona ámbar -->
-              <path d="M 80 27 A 92 92 0 0 1 155 32"
-                fill="none" stroke="rgba(245,158,11,0.25)" stroke-width="14" stroke-linecap="round"/>
-              <!-- Zona verde -->
-              <path d="M 155 32 A 92 92 0 0 1 202 110"
-                fill="none" stroke="rgba(34,197,94,0.25)" stroke-width="14" stroke-linecap="round"/>
-              <!-- Arco de valor -->
-              <path d="M 18 110 A 92 92 0 0 1 202 110"
-                fill="none" stroke="{gauge_color}" stroke-width="14" stroke-linecap="round"
-                stroke-dasharray="289" stroke-dashoffset="{round(289 * (1 - prob), 1)}"/>
-              <!-- Ticks -->
-              <text x="12" y="122" font-size="9" fill="rgba(255,255,255,0.3)" font-family="sans-serif">0</text>
-              <text x="104" y="16" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.3)" font-family="sans-serif">50</text>
-              <text x="208" y="122" text-anchor="end" font-size="9" fill="rgba(255,255,255,0.3)" font-family="sans-serif">100</text>
-            </svg>
-          </div>
-          <div style="text-align:center;font-size:2.2rem;font-weight:800;color:{gauge_color};
-                      line-height:1;margin-bottom:2px;letter-spacing:-0.03em">{prob_pct}%</div>
-          <div style="text-align:center;font-size:0.62rem;color:rgba(248,250,252,0.35);margin-bottom:0.8rem">
-            {"Supera" if prob >= 0.70 else "Por debajo de"} el umbral de utilidad (70%)
-          </div>
+            f'<div class="feat-card">'
+            f'<div class="feat-stripe stripe-{sent_top}"></div>'
+            f'<div class="feat-icon-wrap"><div class="icon-sq icon-{sent_top}">{_ico_wave}</div></div>'
+            f'<div class="feat-body">'
+            f'<div class="feat-lbl">Sentimiento</div>'
+            f'<div class="feat-val">{ss}</div>'
+            f'<div class="feat-bar-wrap"><span class="feat-bar-pct">{sent_bar_pct}%</span>'
+            f'<div class="feat-bar-bg"><div class="feat-bar-fg" style="width:{sent_bar_pct}%;background:{sent_bar_clr}"></div></div></div>'
+            f'<span class="feat-badge {sent_badge}">{sl} · VADER</span>'
+            f'</div></div>'
 
-          <div class="kpi-section-lbl">Características calculadas</div>
-          <div class="feat-grid">
+            f'<div class="feat-card">'
+            f'<div class="feat-stripe stripe-amber"></div>'
+            f'<div class="feat-icon-wrap"><div class="icon-sq icon-amber">{_ico_star}</div></div>'
+            f'<div class="feat-body">'
+            f'<div class="feat-lbl">Calificación</div>'
+            f'<div class="feat-stars">{"★"*int(sv)}{"☆"*(5-int(sv))}</div>'
+            f'<div class="feat-bar-wrap"><span class="feat-bar-pct">{int(sv/5*100)}%</span>'
+            f'<div class="feat-bar-bg"><div class="feat-bar-fg" style="width:{int(sv/5*100)}%;background:#f59e0b"></div></div></div>'
+            f'<span class="feat-badge badge-amber">{sv} / 5 estrellas</span>'
+            f'</div></div>'
 
-            <div class="feat-card">
-              <div class="feat-stripe stripe-{len_top}"></div>
-              <div class="feat-icon-wrap"><div class="icon-sq icon-{'green' if len_top=='green' else 'amber'}">{_ico_ruler}</div></div>
-              <div class="feat-body">
-                <div class="feat-lbl">Longitud</div>
-                <div class="feat-val">{rl} <span style="font-size:0.68rem;opacity:.5">pal.</span></div>
-                <div class="feat-bar-wrap">
-                  <span class="feat-bar-pct">{len_pct}%</span>
-                  <div class="feat-bar-bg"><div class="feat-bar-fg" style="width:{len_pct}%;background:{len_color}"></div></div>
-                </div>
-                <span class="feat-badge {len_badge}">{len_lbl} · umbral 80</span>
-              </div>
-            </div>
+            f'<div class="feat-card">'
+            f'<div class="feat-stripe stripe-{coh_top}"></div>'
+            f'<div class="feat-icon-wrap"><div class="icon-sq icon-{"green" if coh_top=="green" else "amber"}">{_ico_check}</div></div>'
+            f'<div class="feat-body">'
+            f'<div class="feat-lbl">Coherencia</div>'
+            f'<div class="feat-val" style="font-size:.88rem">{cl}</div>'
+            f'<div class="feat-bar-wrap"><span class="feat-bar-pct">{coh_bar_pct}%</span>'
+            f'<div class="feat-bar-bg"><div class="feat-bar-fg" style="width:{coh_bar_pct}%;background:{coh_bar_clr}"></div></div></div>'
+            f'<span class="feat-badge {coh_badge}">Tono vs. estrellas</span>'
+            f'</div></div>'
 
-            <div class="feat-card">
-              <div class="feat-stripe stripe-{sent_top}"></div>
-              <div class="feat-icon-wrap"><div class="icon-sq icon-{sent_top}">{_ico_wave}</div></div>
-              <div class="feat-body">
-                <div class="feat-lbl">Sentimiento</div>
-                <div class="feat-val">{ss}</div>
-                <div class="feat-bar-wrap">
-                  <span class="feat-bar-pct">{sent_bar_pct}%</span>
-                  <div class="feat-bar-bg"><div class="feat-bar-fg" style="width:{sent_bar_pct}%;background:{sent_bar_clr}"></div></div>
-                </div>
-                <span class="feat-badge {sent_badge}">{sl} · VADER</span>
-              </div>
-            </div>
-
-            <div class="feat-card">
-              <div class="feat-stripe stripe-amber"></div>
-              <div class="feat-icon-wrap"><div class="icon-sq icon-amber">{_ico_star}</div></div>
-              <div class="feat-body">
-                <div class="feat-lbl">Calificación</div>
-                <div class="feat-stars-val">{"★"*int(sv)}{"☆"*(5-int(sv))}</div>
-                <div class="feat-bar-wrap">
-                  <span class="feat-bar-pct">{star_bar_pct}%</span>
-                  <div class="feat-bar-bg"><div class="feat-bar-fg" style="width:{star_bar_pct}%;background:#f59e0b"></div></div>
-                </div>
-                <span class="feat-badge badge-amber">{sv} / 5 estrellas</span>
-              </div>
-            </div>
-
-            <div class="feat-card">
-              <div class="feat-stripe stripe-{coh_top}"></div>
-              <div class="feat-icon-wrap"><div class="icon-sq icon-{'green' if coh_top=='green' else 'amber'}">{_ico_check}</div></div>
-              <div class="feat-body">
-                <div class="feat-lbl">Coherencia</div>
-                <div class="feat-val" style="font-size:0.9rem">{cl}</div>
-                <div class="feat-bar-wrap">
-                  <span class="feat-bar-pct">{coh_bar_pct}%</span>
-                  <div class="feat-bar-bg"><div class="feat-bar-fg" style="width:{coh_bar_pct}%;background:{coh_bar_clr}"></div></div>
-                </div>
-                <span class="feat-badge {coh_badge}">Tono vs. estrellas</span>
-              </div>
-            </div>
-
-          </div>
-        </div>
-        """, unsafe_allow_html=True)
+            f'</div>',
+            unsafe_allow_html=True,
+        )
 
     # ── Diagnóstico + Recomendaciones — panel completo debajo ──────────────
     _lr   = st.session_state.get("latest_audit_result")
