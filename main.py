@@ -3,8 +3,8 @@
 import os
 import requests
 import streamlit as st
+import streamlit.components.v1 as components
 
-from config.constants import DEFAULT_METRICS
 from config.theme import PAGE_CONFIG
 from services.data_loader import load_processed_reviews
 from services.supabase_service import load_reviews_from_supabase
@@ -36,6 +36,280 @@ def _get_api_status() -> dict:
         return {"status": "error", "detalle": str(exc)}
 
 
+def _build_page_html(
+    reviews_label: str,
+    roc_val: str,
+    model_val: str,
+    api_ok: bool,
+    lgb_ok: bool,
+) -> str:
+    api_badge_cls  = "badge-ok"  if api_ok  else "badge-warn"
+    api_badge_txt  = "Activa"    if api_ok  else "Sin respuesta"
+    lgb_badge_cls  = "badge-ok"  if lgb_ok  else "badge-warn"
+    lgb_badge_txt  = "Cargado"   if lgb_ok  else "Heurística"
+
+    return f"""
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<style>
+  *, *::before, *::after {{ box-sizing: border-box; margin: 0; padding: 0; }}
+  html, body {{ background: transparent; overflow-x: hidden; }}
+  body {{
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color: #1a1a1a;
+    padding: 0 2px 32px;
+  }}
+
+  /* ── Hero ── */
+  .eyebrow {{
+    font-size: 0.65rem; font-weight: 600; letter-spacing: 0.14em;
+    text-transform: uppercase; color: #888; margin-bottom: 1rem;
+    padding-top: 2rem;
+  }}
+  .headline {{
+    font-size: clamp(1.8rem, 5vw, 2.8rem); font-weight: 800;
+    letter-spacing: -0.04em; line-height: 1.1; margin-bottom: 1.1rem;
+    color: #111;
+  }}
+  .headline .sub {{ color: #999; font-weight: 400; }}
+  .body-text {{
+    font-size: 0.9rem; color: #777; max-width: 500px;
+    line-height: 1.75; margin-bottom: 2.2rem;
+  }}
+  .stats {{
+    display: flex; gap: 0;
+    border-top: 1px solid rgba(0,0,0,0.08);
+    margin-bottom: 2.4rem;
+  }}
+  .stat {{
+    padding: 1.2rem 2rem 1.2rem 0;
+    border-right: 1px solid rgba(0,0,0,0.08);
+    margin-right: 2rem;
+  }}
+  .stat:last-child {{ border-right: none; margin-right: 0; }}
+  .stat-val {{
+    font-size: 1.7rem; font-weight: 700; color: #111;
+    letter-spacing: -0.03em; line-height: 1;
+  }}
+  .stat-lbl {{
+    font-size: 0.62rem; text-transform: uppercase;
+    letter-spacing: 0.09em; color: #999; margin-top: 0.3rem;
+  }}
+
+  /* ── Section label ── */
+  .section-lbl {{
+    font-size: 0.62rem; font-weight: 600; letter-spacing: 0.12em;
+    text-transform: uppercase; color: #999; margin-bottom: 1rem;
+  }}
+
+  /* ── Arquitectura ── */
+  .arch {{
+    display: flex; align-items: center;
+    gap: 0; margin-bottom: 2.4rem; flex-wrap: nowrap;
+    overflow-x: auto; padding-bottom: 4px;
+  }}
+  .node {{
+    border: 1px solid rgba(0,0,0,0.1);
+    border-radius: 10px; padding: 10px 14px;
+    flex-shrink: 0; background: #fff;
+  }}
+  .node-title {{ font-size: 11.5px; font-weight: 600; color: #1a1a1a; margin-bottom: 3px; white-space: nowrap; }}
+  .node-sub   {{ font-size: 10px; color: #999; line-height: 1.6; white-space: nowrap; }}
+  .node-tag {{
+    display: inline-block; margin-top: 5px;
+    font-size: 9px; font-weight: 600; letter-spacing: 0.06em;
+    text-transform: uppercase; padding: 2px 7px; border-radius: 99px;
+    background: rgba(0,0,0,0.05); color: #888;
+  }}
+  .arrow {{ flex-shrink: 0; padding: 0 4px; color: #ccc; font-size: 14px; }}
+  .branch {{
+    display: flex; flex-direction: column;
+    align-items: flex-end; flex-shrink: 0; width: 28px;
+  }}
+  .branch .hl {{ height: 1px; width: 100%; background: rgba(0,0,0,0.12); }}
+  .branch .vl {{ width: 1px; flex: 1; background: rgba(0,0,0,0.12); align-self: flex-end; }}
+  .merge {{
+    display: flex; flex-direction: column;
+    align-items: flex-start; flex-shrink: 0; width: 28px;
+  }}
+  .merge .hl {{ height: 1px; width: 100%; background: rgba(0,0,0,0.12); }}
+  .merge .vl {{ width: 1px; flex: 1; background: rgba(0,0,0,0.12); align-self: flex-start; }}
+  .services {{ display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }}
+
+  /* ── API status grid ── */
+  .api-grid {{
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 10px; margin-bottom: 2.2rem;
+  }}
+  .api-card {{
+    border: 1px solid rgba(0,0,0,0.08); border-radius: 10px;
+    padding: 14px 16px;
+  }}
+  .api-lbl  {{ font-size: 10.5px; color: #999; margin-bottom: 4px; }}
+  .api-val  {{ font-size: 13px; font-weight: 600; color: #111; margin-bottom: 8px; }}
+  .badge-ok   {{ display:inline-block; font-size:10px; font-weight:600; padding:2px 10px; border-radius:99px; background:#dcfce7; color:#166534; }}
+  .badge-warn {{ display:inline-block; font-size:10px; font-weight:600; padding:2px 10px; border-radius:99px; background:#fef9c3; color:#854d0e; }}
+
+  /* ── Equipo ── */
+  .team-grid {{
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+  }}
+  .team-card {{
+    border: 1px solid rgba(0,0,0,0.08); border-radius: 10px;
+    padding: 14px 14px; display: flex; align-items: center; gap: 12px;
+  }}
+  .avatar {{
+    width: 34px; height: 34px; border-radius: 50%;
+    background: rgba(0,0,0,0.05);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 700; color: #888; flex-shrink: 0;
+    letter-spacing: 0.03em;
+  }}
+  .team-name {{ font-size: 13px; font-weight: 600; color: #111; }}
+  .team-role {{ font-size: 11px; color: #999; margin-top: 2px; }}
+</style>
+</head>
+<body>
+
+<!-- ── Hero ────────────────────────────────────────────────────────────── -->
+<div class="eyebrow">Seminario Predictivo 2026 &nbsp;·&nbsp; Caso 06</div>
+
+<div class="headline">
+  Predicción de utilidad<br>
+  <span class="sub">en reseñas de Amazon</span>
+</div>
+
+<p class="body-text">
+  No todas las reseñas ayudan por igual. Este proyecto identifica qué
+  características textuales separan una reseña percibida como útil de una que
+  pasa desapercibida — y construye un modelo que lo predice antes de que los
+  usuarios voten.
+</p>
+
+<div class="stats">
+  <div class="stat">
+    <div class="stat-val">{reviews_label}</div>
+    <div class="stat-lbl">Reseñas analizadas</div>
+  </div>
+  <div class="stat">
+    <div class="stat-val">{roc_val}</div>
+    <div class="stat-lbl">ROC-AUC &nbsp;·&nbsp; {model_val}</div>
+  </div>
+  <div class="stat">
+    <div class="stat-val">4</div>
+    <div class="stat-lbl">Features textuales</div>
+  </div>
+</div>
+
+<!-- ── Arquitectura ─────────────────────────────────────────────────────── -->
+<div class="section-lbl">Arquitectura del proyecto</div>
+
+<div class="arch">
+
+  <!-- Dataset -->
+  <div class="node" style="min-width:108px">
+    <div class="node-title">Dataset</div>
+    <div class="node-sub">Amazon Reviews<br>~100 K filas</div>
+  </div>
+
+  <div class="arrow">&#8594;</div>
+
+  <!-- Pipeline -->
+  <div class="node" style="min-width:148px">
+    <div class="node-title">Pipeline Python</div>
+    <div class="node-sub">
+      Limpieza &amp; dedup<br>
+      Feature engineering<br>
+      LogReg · LightGBM
+    </div>
+  </div>
+
+  <!-- Bifurcación -->
+  <div class="branch" style="height:86px">
+    <div class="hl"></div>
+    <div class="vl"></div>
+    <div class="hl"></div>
+  </div>
+
+  <!-- FastAPI + Supabase -->
+  <div class="services">
+    <div class="node" style="min-width:148px">
+      <div class="node-title">FastAPI</div>
+      <div class="node-sub">POST /predict_helpfulness<br>GET /top_words</div>
+      <span class="node-tag">Render</span>
+    </div>
+    <div class="node" style="min-width:148px">
+      <div class="node-title">Supabase</div>
+      <div class="node-sub">Auditorías · historial<br>PostgreSQL</div>
+      <span class="node-tag">Supabase Cloud</span>
+    </div>
+  </div>
+
+  <!-- Convergencia -->
+  <div class="merge" style="height:86px">
+    <div class="hl"></div>
+    <div class="vl"></div>
+    <div class="hl"></div>
+  </div>
+
+  <div class="arrow">&#8594;</div>
+
+  <!-- Dashboard -->
+  <div class="node" style="min-width:120px">
+    <div class="node-title">Dashboard</div>
+    <div class="node-sub">5 secciones<br>Streamlit</div>
+    <span class="node-tag">Streamlit Cloud</span>
+  </div>
+
+</div>
+
+<!-- ── Estado de la API ──────────────────────────────────────────────────── -->
+<div class="section-lbl">Estado de la API</div>
+<div class="api-grid">
+  <div class="api-card">
+    <div class="api-lbl">FastAPI · Render</div>
+    <div class="api-val">proyecto-prediccion-v9qk</div>
+    <span class="{api_badge_cls}">{api_badge_txt}</span>
+  </div>
+  <div class="api-card">
+    <div class="api-lbl">Modelo en API</div>
+    <div class="api-val">LightGBM</div>
+    <span class="{lgb_badge_cls}">{lgb_badge_txt}</span>
+  </div>
+  <div class="api-card">
+    <div class="api-lbl">Endpoint predicción</div>
+    <div class="api-val">POST /reviews/predict_helpfulness</div>
+  </div>
+  <div class="api-card">
+    <div class="api-lbl">Endpoint palabras clave</div>
+    <div class="api-val">GET /reviews/top_words</div>
+  </div>
+</div>
+
+<!-- ── Equipo ────────────────────────────────────────────────────────────── -->
+<div class="section-lbl">Equipo</div>
+<div class="team-grid">
+  <div class="team-card">
+    <div class="avatar">AJ</div>
+    <div><div class="team-name">Arévalo José</div><div class="team-role">EDA &amp; Pipeline</div></div>
+  </div>
+  <div class="team-card">
+    <div class="avatar">CM</div>
+    <div><div class="team-name">Cholango Mónica</div><div class="team-role">Modelado &amp; API</div></div>
+  </div>
+  <div class="team-card">
+    <div class="avatar">TB</div>
+    <div><div class="team-name">Torres Byron</div><div class="team-role">Dashboard &amp; UI</div></div>
+  </div>
+</div>
+
+</body>
+</html>
+"""
+
+
 def main() -> None:
     st.set_page_config(**PAGE_CONFIG)
     _setup()
@@ -53,277 +327,29 @@ def main() -> None:
         sb_count = 0
     total_reviews_count = len(reviews) + sb_count
 
-    best      = metrics_df.sort_values("roc_auc", ascending=False).iloc[0] if not metrics_df.empty else None
-    roc_val   = format_percentage(float(best["roc_auc"])) if best is not None else "—"
-    model_val = str(best["modelo"])                        if best is not None else "—"
+    best          = metrics_df.sort_values("roc_auc", ascending=False).iloc[0] if not metrics_df.empty else None
+    roc_val       = format_percentage(float(best["roc_auc"])) if best is not None else "—"
+    model_val     = str(best["modelo"])                        if best is not None else "—"
     reviews_label = format_compact_number(total_reviews_count) if has_reviews else "~100 K"
 
-    # ── Hero ─────────────────────────────────────────────────────────────────
-    st.markdown(
-        f"""
-        <div style="padding: 2.8rem 0 2rem;">
-
-            <div style="
-                font-size: 0.68rem;
-                font-weight: 600;
-                letter-spacing: 0.14em;
-                text-transform: uppercase;
-                color: var(--muted);
-                margin-bottom: 1.1rem;
-            ">
-                Seminario Predictivo 2026 &nbsp;·&nbsp; Caso 06
-            </div>
-
-            <div style="
-                font-size: clamp(2rem, 5vw, 3rem);
-                font-weight: 800;
-                letter-spacing: -0.04em;
-                line-height: 1.1;
-                color: var(--text);
-                margin-bottom: 1.2rem;
-            ">
-                Predicción de utilidad<br>
-                <span style="color: var(--muted); font-weight: 400;">en reseñas de Amazon</span>
-            </div>
-
-            <div style="
-                font-size: 0.95rem;
-                color: var(--muted);
-                max-width: 520px;
-                line-height: 1.75;
-                margin-bottom: 2.4rem;
-            ">
-                No todas las reseñas ayudan por igual. Este proyecto identifica
-                qué características textuales separan una reseña percibida como útil
-                de una que pasa desapercibida — y construye un modelo que lo predice
-                antes de que los usuarios voten.
-            </div>
-
-            <div style="display: flex; gap: 0; border-top: 1px solid var(--border, rgba(0,0,0,0.08));">
-                <div style="padding: 1.4rem 2.5rem 1.4rem 0; border-right: 1px solid var(--border, rgba(0,0,0,0.08));">
-                    <div style="font-size: 1.8rem; font-weight: 700; color: var(--text); letter-spacing: -0.03em; line-height: 1;">
-                        {reviews_label}
-                    </div>
-                    <div style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.09em; color: var(--muted); margin-top: 0.35rem;">
-                        Reseñas analizadas
-                    </div>
-                </div>
-                <div style="padding: 1.4rem 2.5rem; border-right: 1px solid var(--border, rgba(0,0,0,0.08));">
-                    <div style="font-size: 1.8rem; font-weight: 700; color: var(--text); letter-spacing: -0.03em; line-height: 1;">
-                        {roc_val}
-                    </div>
-                    <div style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.09em; color: var(--muted); margin-top: 0.35rem;">
-                        ROC-AUC &nbsp;·&nbsp; {model_val}
-                    </div>
-                </div>
-                <div style="padding: 1.4rem 2.5rem;">
-                    <div style="font-size: 1.8rem; font-weight: 700; color: var(--text); letter-spacing: -0.03em; line-height: 1;">
-                        4
-                    </div>
-                    <div style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.09em; color: var(--muted); margin-top: 0.35rem;">
-                        Features textuales
-                    </div>
-                </div>
-            </div>
-
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    # ── Separador ────────────────────────────────────────────────────────────
-    st.markdown("<div style='height: 0.5rem'></div>", unsafe_allow_html=True)
-
-    # ── Arquitectura del proyecto ─────────────────────────────────────────────
-    st.markdown(
-        '<div style="font-size:0.68rem;font-weight:600;letter-spacing:0.12em;'
-        'text-transform:uppercase;color:var(--muted);margin-bottom:1.2rem;">'
-        'Arquitectura del proyecto</div>',
-        unsafe_allow_html=True,
-    )
-
-    st.markdown(
-        """
-        <svg width="100%" viewBox="0 0 760 210" role="img"
-             xmlns="http://www.w3.org/2000/svg"
-             style="display:block; max-width:760px;">
-
-            <title>Arquitectura del proyecto</title>
-            <desc>Flujo de datos: Dataset → Pipeline Python → FastAPI + Supabase → Dashboard Streamlit</desc>
-
-            <defs>
-                <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5"
-                        markerWidth="5" markerHeight="5" orient="auto-start-reverse">
-                    <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke"
-                          stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-                </marker>
-            </defs>
-
-            <!-- ── Nodo 1: Dataset ── -->
-            <rect x="20" y="72" width="116" height="64" rx="10"
-                  fill="none" stroke="rgba(128,128,128,0.25)" stroke-width="1"/>
-            <text x="78" y="97" text-anchor="middle"
-                  font-size="12" font-weight="600"
-                  fill="var(--text, #1a1a1a)">Dataset</text>
-            <text x="78" y="114" text-anchor="middle"
-                  font-size="10" fill="var(--muted, #6b6b6b)">Amazon Reviews</text>
-            <text x="78" y="128" text-anchor="middle"
-                  font-size="10" fill="var(--muted, #6b6b6b)">~100 K filas</text>
-
-            <!-- ── Flecha 1→2 ── -->
-            <line x1="136" y1="104" x2="172" y2="104"
-                  stroke="rgba(128,128,128,0.35)" stroke-width="1.2"
-                  marker-end="url(#arr)" fill="none"/>
-
-            <!-- ── Nodo 2: Pipeline ── -->
-            <rect x="172" y="52" width="160" height="104" rx="10"
-                  fill="none" stroke="rgba(128,128,128,0.25)" stroke-width="1"/>
-            <text x="252" y="78" text-anchor="middle"
-                  font-size="12" font-weight="600"
-                  fill="var(--text, #1a1a1a)">Pipeline Python</text>
-            <text x="252" y="97"  text-anchor="middle" font-size="10" fill="var(--muted, #6b6b6b)">Limpieza · dedup</text>
-            <text x="252" y="112" text-anchor="middle" font-size="10" fill="var(--muted, #6b6b6b)">Feature engineering</text>
-            <text x="252" y="127" text-anchor="middle" font-size="10" fill="var(--muted, #6b6b6b)">LogReg · LightGBM</text>
-            <text x="252" y="142" text-anchor="middle" font-size="10" fill="var(--muted, #6b6b6b)">scikit-learn · pandas</text>
-
-            <!-- ── Flecha 2→3a ── -->
-            <line x1="332" y1="84" x2="400" y2="84"
-                  stroke="rgba(128,128,128,0.35)" stroke-width="1.2"
-                  marker-end="url(#arr)" fill="none"/>
-
-            <!-- ── Flecha 2→3b ── -->
-            <line x1="332" y1="124" x2="400" y2="124"
-                  stroke="rgba(128,128,128,0.35)" stroke-width="1.2"
-                  marker-end="url(#arr)" fill="none"/>
-
-            <!-- ── Nodo 3a: FastAPI ── -->
-            <rect x="400" y="52" width="140" height="56" rx="10"
-                  fill="none" stroke="rgba(128,128,128,0.25)" stroke-width="1"/>
-            <text x="470" y="76" text-anchor="middle"
-                  font-size="12" font-weight="600"
-                  fill="var(--text, #1a1a1a)">FastAPI</text>
-            <text x="470" y="93" text-anchor="middle"
-                  font-size="10" fill="var(--muted, #6b6b6b)">Render · predicción</text>
-
-            <!-- ── Nodo 3b: Supabase ── -->
-            <rect x="400" y="100" width="140" height="56" rx="10"
-                  fill="none" stroke="rgba(128,128,128,0.25)" stroke-width="1"/>
-            <text x="470" y="124" text-anchor="middle"
-                  font-size="12" font-weight="600"
-                  fill="var(--text, #1a1a1a)">Supabase</text>
-            <text x="470" y="141" text-anchor="middle"
-                  font-size="10" fill="var(--muted, #6b6b6b)">Auditorías · historial</text>
-
-            <!-- ── Flecha 3→4 (desde FastAPI y Supabase hacia Dashboard) ── -->
-            <line x1="540" y1="80" x2="576" y2="80"
-                  stroke="rgba(128,128,128,0.35)" stroke-width="1.2" fill="none"/>
-            <line x1="540" y1="128" x2="576" y2="128"
-                  stroke="rgba(128,128,128,0.35)" stroke-width="1.2" fill="none"/>
-            <line x1="576" y1="80" x2="576" y2="128"
-                  stroke="rgba(128,128,128,0.35)" stroke-width="1.2" fill="none"/>
-            <line x1="576" y1="104" x2="610" y2="104"
-                  stroke="rgba(128,128,128,0.35)" stroke-width="1.2"
-                  marker-end="url(#arr)" fill="none"/>
-
-            <!-- ── Nodo 4: Dashboard ── -->
-            <rect x="610" y="72" width="130" height="64" rx="10"
-                  fill="none" stroke="rgba(128,128,128,0.25)" stroke-width="1"/>
-            <text x="675" y="97" text-anchor="middle"
-                  font-size="12" font-weight="600"
-                  fill="var(--text, #1a1a1a)">Dashboard</text>
-            <text x="675" y="114" text-anchor="middle"
-                  font-size="10" fill="var(--muted, #6b6b6b)">Streamlit Cloud</text>
-            <text x="675" y="128" text-anchor="middle"
-                  font-size="10" fill="var(--muted, #6b6b6b)">5 secciones</text>
-
-        </svg>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    # ── Separador ────────────────────────────────────────────────────────────
-    st.markdown("<div style='height: 1.5rem'></div>", unsafe_allow_html=True)
-
-    # ── Estado de la API ──────────────────────────────────────────────────────
     with st.spinner(""):
         api_status = _get_api_status()
     api_ok = api_status.get("status") == "ok"
     lgb_ok = "✓" in api_status.get("modelos", {}).get("lgb_model", "") if api_ok else False
 
-    st.markdown(
-        f"""
-        <div class="api-status-grid">
-            <div class="api-card">
-                <div class="api-card-label">FastAPI · Render</div>
-                <div class="api-card-value">proyecto-prediccion-v9qk</div>
-                <span class="metric-badge {'metric-badge-good' if api_ok else 'metric-badge-warn'}">
-                    {'Activa' if api_ok else 'Sin respuesta'}
-                </span>
-            </div>
-            <div class="api-card">
-                <div class="api-card-label">Modelo en API</div>
-                <div class="api-card-value">LightGBM</div>
-                <span class="metric-badge {'metric-badge-good' if lgb_ok else 'metric-badge-warn'}">
-                    {'Cargado' if lgb_ok else 'Heurística'}
-                </span>
-            </div>
-            <div class="api-card">
-                <div class="api-card-label">Endpoint predicción</div>
-                <div class="api-card-value">POST /reviews/predict_helpfulness</div>
-            </div>
-            <div class="api-card">
-                <div class="api-card-label">Endpoint palabras clave</div>
-                <div class="api-card-value">GET /reviews/top_words</div>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
+    # Todo el contenido de inicio en un único components.html
+    # para evitar que st.markdown sanitice el HTML/CSS
+    components.html(
+        _build_page_html(
+            reviews_label=reviews_label,
+            roc_val=roc_val,
+            model_val=model_val,
+            api_ok=api_ok,
+            lgb_ok=lgb_ok,
+        ),
+        height=980,
+        scrolling=False,
     )
-
-    # ── Equipo ────────────────────────────────────────────────────────────────
-    st.markdown("<div style='height: 1.5rem'></div>", unsafe_allow_html=True)
-    st.markdown(
-        '<div style="font-size:0.68rem;font-weight:600;letter-spacing:0.12em;'
-        'text-transform:uppercase;color:var(--muted);margin-bottom:1rem;">'
-        'Equipo</div>',
-        unsafe_allow_html=True,
-    )
-
-    t1, t2, t3 = st.columns(3, gap="medium")
-    team = [
-        ("Arévalo José",   "EDA & Pipeline"),
-        ("Cholango Mónica", "Modelado & API"),
-        ("Torres Byron",    "Dashboard & UI"),
-    ]
-    for col, (name, role) in zip([t1, t2, t3], team):
-        initials = "".join(p[0] for p in name.split())
-        with col:
-            st.markdown(
-                f"""
-                <div style="
-                    padding: 1.2rem 1rem;
-                    border: 1px solid var(--border, rgba(0,0,0,0.08));
-                    border-radius: 10px;
-                    display: flex;
-                    align-items: center;
-                    gap: 0.9rem;
-                ">
-                    <div style="
-                        width: 36px; height: 36px; border-radius: 50%;
-                        background: var(--border, rgba(0,0,0,0.06));
-                        display: flex; align-items: center; justify-content: center;
-                        font-size: 0.7rem; font-weight: 700;
-                        color: var(--muted); flex-shrink: 0;
-                        letter-spacing: 0.03em;
-                    ">{initials}</div>
-                    <div>
-                        <div style="font-size: 0.85rem; font-weight: 600; color: var(--text);">{name}</div>
-                        <div style="font-size: 0.75rem; color: var(--muted); margin-top: 0.1rem;">{role}</div>
-                    </div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
 
 
 if __name__ == "__main__":
