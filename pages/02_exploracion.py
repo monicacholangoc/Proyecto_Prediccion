@@ -302,13 +302,15 @@ with tab_general:
         else:
             top_prod["Categoría"] = "—"
 
-        header_html = """<div style="display:grid;grid-template-columns:0.4fr 1.6fr 1.2fr 0.7fr 0.8fr 1fr;
-                    gap:0;background:#1746a2;border-radius:10px 10px 0 0;padding:0.5rem 0.8rem;
-                    font-size:0.7rem;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:0.05em">
-            <div>#</div><div>Producto</div><div>Categoría</div>
-            <div style="text-align:center">Reseñas</div>
-            <div style="text-align:center">★ Media</div>
-            <div style="text-align:center">Utilidad</div></div>"""
+        header_html = """<table style="width:100%;border-collapse:collapse">
+            <thead><tr style="background:#1746a2">
+                <th style="padding:0.5rem 0.7rem;font-size:0.7rem;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:0.05em;text-align:left;width:5%">#</th>
+                <th style="padding:0.5rem 0.7rem;font-size:0.7rem;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:0.05em;text-align:left;width:28%">Producto</th>
+                <th style="padding:0.5rem 0.7rem;font-size:0.7rem;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:0.05em;text-align:left;width:25%">Categoría</th>
+                <th style="padding:0.5rem 0.7rem;font-size:0.7rem;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:0.05em;text-align:center;width:12%">Reseñas</th>
+                <th style="padding:0.5rem 0.7rem;font-size:0.7rem;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:0.05em;text-align:center;width:12%">★ Media</th>
+                <th style="padding:0.5rem 0.7rem;font-size:0.7rem;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:0.05em;text-align:center;width:18%">Utilidad</th>
+            </tr></thead><tbody>"""
 
         rows_html = ""
         for rank, (_, row) in enumerate(top_prod.iterrows(), 1):
@@ -316,21 +318,21 @@ with tab_general:
             bar_col  = "#15803d" if util_pct >= 0.70 else ("#f59e0b" if util_pct >= 0.50 else "#ef4444")
             bg       = "#f8fafd" if rank % 2 == 0 else "#ffffff"
             est_val  = f"{float(row['estrellas']):.1f} ★" if "estrellas" in row else "—"
-            rows_html += f"""<div style="display:grid;grid-template-columns:0.4fr 1.6fr 1.2fr 0.7fr 0.8fr 1fr;
-                        gap:0;background:{bg};padding:0.45rem 0.8rem;font-size:0.8rem;
-                        border-bottom:0.5px solid #e2e8f0;align-items:center">
-                <div style="font-weight:700;color:#1746a2">{rank}</div>
-                <div style="font-size:0.75rem;color:#0f172a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"
-                     title="{row['Nombre']}">{str(row['Nombre'])[:28]}</div>
-                <div style="font-size:0.72rem;color:#64748b">{str(row['Categoría'])[:20]}</div>
-                <div style="text-align:center;color:#475569">{int(row['reseñas'])}</div>
-                <div style="text-align:center;color:#475569">{est_val}</div>
-                <div style="text-align:center">
-                    <div style="background:#e2e8f0;border-radius:999px;height:6px;margin:0 auto 2px;width:80px;overflow:hidden">
+            rows_html += f"""<tr style="background:{bg};border-bottom:0.5px solid #e2e8f0">
+                <td style="padding:0.45rem 0.7rem;font-size:0.82rem;font-weight:700;color:#1746a2">{rank}</td>
+                <td style="padding:0.45rem 0.7rem;font-size:0.78rem;color:#0f172a" title="{row['Nombre']}">{str(row['Nombre'])[:30]}</td>
+                <td style="padding:0.45rem 0.7rem;font-size:0.75rem;color:#64748b">{str(row['Categoría'])[:25]}</td>
+                <td style="padding:0.45rem 0.7rem;font-size:0.78rem;color:#475569;text-align:center">{int(row['reseñas'])}</td>
+                <td style="padding:0.45rem 0.7rem;font-size:0.78rem;color:#475569;text-align:center">{est_val}</td>
+                <td style="padding:0.45rem 0.7rem;text-align:center">
+                    <div style="background:#e2e8f0;border-radius:999px;height:5px;margin:0 auto 3px;width:70px;overflow:hidden">
                         <div style="width:{int(util_pct*100)}%;height:100%;background:{bar_col};border-radius:999px"></div>
                     </div>
                     <span style="font-size:0.75rem;font-weight:700;color:{bar_col}">{util_pct:.1%}</span>
-                </div></div>"""
+                </td>
+            </tr>"""
+
+        rows_html += "</tbody></table>"
 
         st.markdown(
             f'<div style="border:1px solid #dbeafe;border-radius:10px;overflow:hidden;margin-bottom:1rem">'
