@@ -248,26 +248,12 @@ with tab1:
         </div>
         """, unsafe_allow_html=True)
 
-        # ── Selector de modelo ────────────────────────────────────────────
-        MODEL_OPTIONS = {
-            "LightGBM (Principal)":        "lgbm",
-            "Logistic Regression":         "logistic",
-            "Heurística (sin modelo)":     "heuristic",
-        }
-        selected_model_label = st.selectbox(
-            "Modelo de predicción",
-            options=list(MODEL_OPTIONS.keys()),
-            help="Selecciona el modelo que evaluará la utilidad de la reseña. LightGBM es el modelo ganador del proyecto.",
-        )
-        selected_model = MODEL_OPTIONS[selected_model_label]
-
-        # Badge visual del modelo seleccionado
-        model_colors = {"lgbm": "#15803d", "logistic": "#1d4ed8", "heuristic": "#b45309"}
-        model_color  = model_colors.get(selected_model, "#64748b")
+        # Modelo fijo: LightGBM (mejor ROC-AUC del proyecto)
+        selected_model = "lgbm"
         st.markdown(
-            f'<span style="background:{model_color};color:#fff;font-size:0.7rem;'
-            f'font-weight:700;padding:0.2rem 0.6rem;border-radius:999px">'
-            f'✓ {selected_model_label}</span>',
+            '<span style="background:#15803d;color:#fff;font-size:0.7rem;'
+            'font-weight:700;padding:0.2rem 0.6rem;border-radius:999px">'
+            '✓ LightGBM (Principal)</span>',
             unsafe_allow_html=True,
         )
 
