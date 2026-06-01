@@ -18,8 +18,6 @@ from services.ml_service import generate_review_recommendations, audit_review_te
 from services.preprocessing_service import (
     append_audited_review,
     get_product_benchmark,
-    get_position_summary,
-    get_review_context_window,
     get_audited_reviews_operational_table,
     process_uploaded_audit_file,
     save_latest_review_to_file,
@@ -534,9 +532,6 @@ with tab1:
                             st.session_state["latest_audit_result"] = None
                             st.rerun()
 
-    latest_review_id = st.session_state.get("latest_review_id")
-    position_summary = get_position_summary(selected_product, latest_review_id)
-    review_window_df = get_review_context_window(selected_product, latest_review_id, window_size=2)
 
 
 # ==============================================================
