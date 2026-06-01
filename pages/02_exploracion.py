@@ -101,7 +101,7 @@ except Exception:
 
 años_disponibles = sorted([y for y in source["Año"].unique() if y > 2000])
 
-tab_general, tab_producto = st.tabs(["📊 Exploración General", "🔍 Análisis por Producto"])
+tab_general, tab_producto = st.tabs(["Exploración General", "Análisis por Producto"])
 
 with tab_general:
     # ══════════════════════════════════════════════════════════════════════════════
@@ -441,8 +441,27 @@ with tab_producto:
     st.markdown('<div class="section-label">Selecciona un producto para analizar</div>', unsafe_allow_html=True)
 
     from services.catalog_service import get_product_detail, get_product_options
+    from services.catalog_service import get_product_catalog
 
-    prod_options = get_product_options()
+    # Filtro por categoría primero
+    catalog_full = get_product_catalog()
+    categorias_disp = ["Todas las categorías"]
+    if not catalog_full.empty and "Categoria_Real" in catalog_full.columns:
+        categorias_disp += sorted(catalog_full["Categoria_Real"].dropna().unique().tolist())
+
+    cat_filter = st.selectbox(
+        "Categoría",
+        options=categorias_disp,
+        key="_eda_cat_filter",
+    )
+
+    # Filtrar productos según categoría
+    if cat_filter != "Todas las categorías" and not catalog_full.empty and "Categoria_Real" in catalog_full.columns:
+        catalog_filtered = catalog_full[catalog_full["Categoria_Real"] == cat_filter]
+        prod_options = sorted(catalog_filtered["ProductId"].dropna().astype(str).unique().tolist())
+    else:
+        prod_options = get_product_options()
+
     if not prod_options:
         st.warning("No hay productos disponibles en el catálogo.")
     else:
