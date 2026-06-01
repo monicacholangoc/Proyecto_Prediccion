@@ -34,7 +34,7 @@ render_sidebar()
 
 st.markdown("""
 <style>
-/* ── Config header ───────────────────────────────────────── */
+/* ── Config header ───────────────────────────────── */
 .config-header {
     display:flex; align-items:center; gap:0.5rem;
     background:linear-gradient(135deg,#1746a2,#0f4c5c);
@@ -49,95 +49,42 @@ st.markdown("""
     font-size:0.7rem; font-weight:800; color:#fff !important;
     text-transform:uppercase; letter-spacing:0.07em;
 }
-
-/* ── KPI cards — fondo oscuro auto-contenido ─────────────── */
-.feat-grid {
-    display:grid; grid-template-columns:1fr 1fr; gap:0.55rem;
-    margin-bottom:0.5rem;
-}
+/* ── KPI cards — fondo oscuro auto-contenido ──── */
+.feat-grid { display:grid; grid-template-columns:1fr 1fr; gap:0.55rem; margin-bottom:0.5rem; }
 .feat-card {
-    background:#1e293b;
-    border:1px solid rgba(255,255,255,0.1);
-    border-radius:12px;
-    display:flex; flex-direction:row;
-    overflow:hidden; min-height:82px;
+    background:#1e293b; border:1px solid rgba(255,255,255,0.1);
+    border-radius:12px; display:flex; flex-direction:row; overflow:hidden; min-height:82px;
 }
 .feat-stripe { width:5px; flex-shrink:0; }
 .stripe-green { background:#22c55e; }
 .stripe-amber { background:#f59e0b; }
 .stripe-blue  { background:#60a5fa; }
 .stripe-red   { background:#f87171; }
-
-.feat-icon-wrap {
-    display:flex; align-items:center; justify-content:center;
-    width:38px; flex-shrink:0;
-}
-.icon-sq {
-    width:26px; height:26px; border-radius:6px;
-    display:flex; align-items:center; justify-content:center;
-}
+.feat-icon-wrap { display:flex; align-items:center; justify-content:center; width:38px; flex-shrink:0; }
+.icon-sq { width:26px; height:26px; border-radius:6px; display:flex; align-items:center; justify-content:center; }
 .icon-green { background:rgba(34,197,94,.2);   color:#4ade80; }
 .icon-amber { background:rgba(245,158,11,.2);  color:#fbbf24; }
 .icon-blue  { background:rgba(96,165,250,.2);  color:#93c5fd; }
 .icon-red   { background:rgba(248,113,113,.2); color:#fca5a5; }
-
-.feat-body {
-    flex:1; padding:0.5rem 0.6rem 0.5rem 0.2rem;
-    display:flex; flex-direction:column; justify-content:space-between; min-width:0;
-}
-.feat-lbl {
-    font-size:0.55rem; font-weight:700;
-    color:rgba(148,163,184,1) !important;
-    text-transform:uppercase; letter-spacing:0.08em; margin-bottom:0.08rem;
-}
-.feat-val {
-    font-size:1.1rem; font-weight:800;
-    color:#f1f5f9 !important; line-height:1.1;
-}
+.feat-body { flex:1; padding:0.5rem 0.6rem 0.5rem 0.2rem; display:flex; flex-direction:column; justify-content:space-between; min-width:0; }
+.feat-lbl { font-size:0.55rem; font-weight:700; color:#94a3b8 !important; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:0.08rem; }
+.feat-val { font-size:1.1rem; font-weight:800; color:#f1f5f9 !important; line-height:1.1; }
 .feat-stars { font-size:0.95rem; color:#fbbf24 !important; letter-spacing:2px; }
 .feat-bar-wrap { position:relative; padding-top:14px; }
-.feat-bar-pct {
-    font-size:0.55rem; font-weight:700;
-    color:rgba(148,163,184,.8) !important;
-    position:absolute; right:0; top:1px;
-}
+.feat-bar-pct { font-size:0.55rem; font-weight:700; color:#94a3b8 !important; position:absolute; right:0; top:1px; }
 .feat-bar-bg { background:rgba(255,255,255,.1); border-radius:3px; height:4px; overflow:hidden; }
 .feat-bar-fg { height:100%; border-radius:3px; }
-.feat-badge {
-    display:inline-block; font-size:0.55rem; font-weight:700;
-    padding:0.1rem 0.45rem; border-radius:4px; margin-top:0.28rem;
-}
+.feat-badge { display:inline-block; font-size:0.55rem; font-weight:700; padding:0.1rem 0.45rem; border-radius:4px; margin-top:0.28rem; }
 .badge-green { background:rgba(34,197,94,.18);   color:#86efac !important; }
 .badge-amber { background:rgba(245,158,11,.18);  color:#fde68a !important; }
 .badge-blue  { background:rgba(96,165,250,.18);  color:#bfdbfe !important; }
 .badge-red   { background:rgba(248,113,113,.18); color:#fecaca !important; }
-
-/* Título KPI section */
-.kpi-sec-lbl {
-    font-size:0.58rem; font-weight:700; color:#64748b;
-    text-transform:uppercase; letter-spacing:0.08em;
-    border-left:3px solid #1746a2; padding-left:0.45rem;
-    margin:0.6rem 0 0.4rem;
-}
-
-/* ── Diagnóstico ─────────────────────────────────────────── */
-.diag-section-wrap {
-    background:#fff; border:1px solid #e2e8f0;
-    border-radius:16px; padding:1.1rem 1.3rem; margin-top:0.8rem;
-}
-.diag-section-eyebrow {
-    font-size:0.6rem; font-weight:700; color:#64748b;
-    text-transform:uppercase; letter-spacing:0.09em;
-    border-left:3px solid #1746a2; padding-left:0.5rem;
-    margin-bottom:0.85rem;
-}
-.diag-card {
-    border-radius:12px; padding:1rem 1.1rem;
-    border:1px solid; position:relative; overflow:hidden;
-}
-.diag-card::before {
-    content:""; position:absolute; left:0; top:0; bottom:0; width:5px;
-}
+.kpi-sec-lbl { font-size:0.58rem; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.08em; border-left:3px solid #1746a2; padding-left:0.45rem; margin:0.6rem 0 0.4rem; }
+/* ── Diagnóstico ─────────────────────────────── */
+.diag-section-wrap { background:#fff; border:1px solid #e2e8f0; border-radius:16px; padding:1.1rem 1.3rem; margin-top:0.8rem; }
+.diag-section-eyebrow { font-size:0.6rem; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.09em; border-left:3px solid #1746a2; padding-left:0.5rem; margin-bottom:0.85rem; }
+.diag-card { border-radius:12px; padding:1rem 1.1rem; border:1px solid; position:relative; overflow:hidden; }
+.diag-card::before { content:""; position:absolute; left:0; top:0; bottom:0; width:5px; }
 .diag-success { background:#f0fdf8; border-color:#6ee7b7; }
 .diag-warning { background:#fffbeb; border-color:#fcd34d; }
 .diag-danger  { background:#fff1f2; border-color:#fca5a5; }
@@ -400,7 +347,7 @@ with tab1:
             st.session_state["latest_audit_result"] = recalc
             st.session_state["_toggle_prev_val"]    = validate_context
 
-    # Panel derecho — gauge Plotly + KPIs en bloque HTML propio
+    # Panel derecho — gauge Plotly + KPIs en HTML oscuro auto-contenido
     with right_col:
         lr   = st.session_state.get("latest_audit_result")
         prob = lr["probability"] if lr else 0.0
@@ -408,7 +355,6 @@ with tab1:
         st.plotly_chart(build_helpfulness_gauge(prob), use_container_width=True,
                         config={"displayModeBar": False})
 
-        # ── KPIs — bloque HTML auto-contenido con fondo oscuro ──
         rl    = lr["review_len"]  if lr else 0
         incoh = lr["incoherente"] if lr else False
         sv    = st.session_state.get("latest_stars", 5)
@@ -443,55 +389,51 @@ with tab1:
         _ico_star  = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>'
         _ico_check = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
 
-        st.markdown(
-            f'<div class="kpi-sec-lbl">Características calculadas</div>'
-            f'<div class="feat-grid">'
+        _icon_len  = "green" if len_top == "green" else "amber"
+        _icon_coh  = "green" if coh_top == "green" else "amber"
+        _stars_str = "★" * int(sv) + "☆" * (5 - int(sv))
 
-            f'<div class="feat-card">'
-            f'<div class="feat-stripe stripe-{len_top}"></div>'
-            f'<div class="feat-icon-wrap"><div class="icon-sq icon-{"green" if len_top=="green" else "amber"}">{_ico_ruler}</div></div>'
-            f'<div class="feat-body">'
-            f'<div class="feat-lbl">Longitud</div>'
+        st.markdown(
+            '<div class="kpi-sec-lbl">Características calculadas</div>'
+            '<div class="feat-grid">'
+
+            f'<div class="feat-card"><div class="feat-stripe stripe-{len_top}"></div>'
+            f'<div class="feat-icon-wrap"><div class="icon-sq icon-{_icon_len}">{_ico_ruler}</div></div>'
+            '<div class="feat-body"><div class="feat-lbl">Longitud</div>'
             f'<div class="feat-val">{rl} <span style="font-size:.68rem;opacity:.6">pal.</span></div>'
             f'<div class="feat-bar-wrap"><span class="feat-bar-pct">{len_pct}%</span>'
             f'<div class="feat-bar-bg"><div class="feat-bar-fg" style="width:{len_pct}%;background:{len_color}"></div></div></div>'
             f'<span class="feat-badge {len_badge}">{len_lbl} · umbral 80</span>'
-            f'</div></div>'
+            '</div></div>'
 
-            f'<div class="feat-card">'
-            f'<div class="feat-stripe stripe-{sent_top}"></div>'
+            f'<div class="feat-card"><div class="feat-stripe stripe-{sent_top}"></div>'
             f'<div class="feat-icon-wrap"><div class="icon-sq icon-{sent_top}">{_ico_wave}</div></div>'
-            f'<div class="feat-body">'
-            f'<div class="feat-lbl">Sentimiento</div>'
+            '<div class="feat-body"><div class="feat-lbl">Sentimiento</div>'
             f'<div class="feat-val">{ss}</div>'
             f'<div class="feat-bar-wrap"><span class="feat-bar-pct">{sent_bar_pct}%</span>'
             f'<div class="feat-bar-bg"><div class="feat-bar-fg" style="width:{sent_bar_pct}%;background:{sent_bar_clr}"></div></div></div>'
             f'<span class="feat-badge {sent_badge}">{sl} · VADER</span>'
-            f'</div></div>'
+            '</div></div>'
 
-            f'<div class="feat-card">'
-            f'<div class="feat-stripe stripe-amber"></div>'
+            f'<div class="feat-card"><div class="feat-stripe stripe-amber"></div>'
             f'<div class="feat-icon-wrap"><div class="icon-sq icon-amber">{_ico_star}</div></div>'
-            f'<div class="feat-body">'
-            f'<div class="feat-lbl">Calificación</div>'
-            f'<div class="feat-stars">{"★"*int(sv)}{"☆"*(5-int(sv))}</div>'
+            '<div class="feat-body"><div class="feat-lbl">Calificación</div>'
+            f'<div class="feat-stars">{_stars_str}</div>'
             f'<div class="feat-bar-wrap"><span class="feat-bar-pct">{int(sv/5*100)}%</span>'
             f'<div class="feat-bar-bg"><div class="feat-bar-fg" style="width:{int(sv/5*100)}%;background:#f59e0b"></div></div></div>'
             f'<span class="feat-badge badge-amber">{sv} / 5 estrellas</span>'
-            f'</div></div>'
+            '</div></div>'
 
-            f'<div class="feat-card">'
-            f'<div class="feat-stripe stripe-{coh_top}"></div>'
-            f'<div class="feat-icon-wrap"><div class="icon-sq icon-{"green" if coh_top=="green" else "amber"}">{_ico_check}</div></div>'
-            f'<div class="feat-body">'
-            f'<div class="feat-lbl">Coherencia</div>'
+            f'<div class="feat-card"><div class="feat-stripe stripe-{coh_top}"></div>'
+            f'<div class="feat-icon-wrap"><div class="icon-sq icon-{_icon_coh}">{_ico_check}</div></div>'
+            '<div class="feat-body"><div class="feat-lbl">Coherencia</div>'
             f'<div class="feat-val" style="font-size:.88rem">{cl}</div>'
             f'<div class="feat-bar-wrap"><span class="feat-bar-pct">{coh_bar_pct}%</span>'
             f'<div class="feat-bar-bg"><div class="feat-bar-fg" style="width:{coh_bar_pct}%;background:{coh_bar_clr}"></div></div></div>'
             f'<span class="feat-badge {coh_badge}">Tono vs. estrellas</span>'
-            f'</div></div>'
+            '</div></div>'
 
-            f'</div>',
+            '</div>',
             unsafe_allow_html=True,
         )
 
@@ -517,71 +459,90 @@ with tab1:
         else:
             _razon = f"Utilidad estimada de {format_percentage(_prob)}, por debajo del umbral del 70%."
 
-        _ctx_html = ""
+        # Renderizar card de diagnóstico
+        st.markdown(
+            '<div class="diag-section-wrap">'
+            '<div class="diag-section-eyebrow">Diagn\u00f3stico del an\u00e1lisis</div>'
+            f'<div class="diag-card {_diag_cls}">'
+            '<div class="diag-eyebrow">Resultado del an\u00e1lisis</div>'
+            '<div class="diag-row">'
+            '<div class="diag-left">'
+            f'<div class="diag-decision">{_decision}</div>'
+            f'<div class="diag-reason">{_razon}</div>'
+            '</div>'
+            '<div class="diag-prob-block">'
+            f'<div class="diag-prob-val">{format_percentage(_prob)}</div>'
+            '<div class="diag-prob-lbl">Probabilidad</div>'
+            '</div>'
+            '</div>'
+            '</div>',
+            unsafe_allow_html=True,
+        )
+
+        # Contexto alimenticio (opcional)
         if _lr.get("context_validation_enabled"):
             _ctx  = ", ".join(_lr.get("context_hits", [])) or "ninguna"
             _tech = ", ".join(_lr.get("tech_hits", []))    or "ninguno"
-            _ctx_html = (
-                f'<div class="ctx-box">'
-                f'<div class="ctx-lbl">Contexto alimenticio</div>'
+            st.markdown(
+                '<div class="ctx-box">'
+                '<div class="ctx-lbl">Contexto alimenticio</div>'
                 f'<div class="ctx-txt">{_lr.get("context_explanation","")}</div>'
-                f'<div class="ctx-chips">'
+                '<div class="ctx-chips">'
                 f'<span class="ctx-chip">Detectadas: <b>{_ctx}</b></span>'
                 f'<span class="ctx-chip">Ajenas: <b>{_tech}</b></span>'
-                f'</div></div>'
+                '</div></div>',
+                unsafe_allow_html=True,
             )
 
-        _recs     = generate_review_recommendations(_lr)
-        _rec_html = ""
+        # Recomendaciones
+        _recs = generate_review_recommendations(_lr)
         if _recs:
-            _rec_html = '<div class="rec-grid">'
-            if len(_recs) > 0:
-                _rec_html += f'<div class="rec-card"><div class="rec-eyebrow">Acción principal</div><div class="rec-body">{_recs[0]}</div></div>'
-            if len(_recs) > 1:
-                _rec_html += f'<div class="rec-card rec-card-warn"><div class="rec-eyebrow">Acción adicional</div><div class="rec-body">{_recs[1]}</div></div>'
-            _rec_html += '</div>'
-
-        st.markdown(f"""
-        <div class="diag-section-wrap">
-            <div class="diag-section-eyebrow">Diagnóstico del análisis</div>
-            <div class="diag-card {_diag_cls}">
-                <div class="diag-eyebrow">Resultado del análisis</div>
-                <div class="diag-row">
-                    <div class="diag-left">
-                        <div class="diag-decision">{_decision}</div>
-                        <div class="diag-reason">{_razon}</div>
-                    </div>
-                    <div class="diag-prob-block">
-                        <div class="diag-prob-val">{format_percentage(_prob)}</div>
-                        <div class="diag-prob-lbl">Probabilidad</div>
-                    </div>
-                </div>
-            </div>
-            {_ctx_html}
-            {_rec_html}
-        </div>
-        """, unsafe_allow_html=True)
+            _r0 = _recs[0] if len(_recs) > 0 else ""
+            _r1 = _recs[1] if len(_recs) > 1 else ""
+            _rec_cols = (
+                '<div class="rec-card">'
+                '<div class="rec-eyebrow">Acci\u00f3n principal</div>'
+                f'<div class="rec-body">{_r0}</div>'
+                '</div>'
+            )
+            if _r1:
+                _rec_cols += (
+                    '<div class="rec-card rec-card-warn">'
+                    '<div class="rec-eyebrow">Acci\u00f3n adicional</div>'
+                    f'<div class="rec-body">{_r1}</div>'
+                    '</div>'
+                )
+            st.markdown(
+                f'<div class="rec-grid">{_rec_cols}</div>'
+                '</div>',  # cierra diag-section-wrap
+                unsafe_allow_html=True,
+            )
+        else:
+            st.markdown('</div>', unsafe_allow_html=True)  # cierra diag-section-wrap
 
         sv1, _ = st.columns([0.22, 0.78])
         with sv1:
-            if st.button("Guardar reseña", use_container_width=True):
+            if st.button("Guardar rese\u00f1a", use_container_width=True):
                 ok, msg = save_latest_review_to_file(selected_product)
                 (st.success if ok else st.warning)(msg)
 
     else:
-        st.markdown("""
-        <div class="diag-section-wrap">
-            <div class="diag-section-eyebrow">Diagnóstico del análisis</div>
-            <div class="diag-empty">
-                <div class="diag-empty-icon">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                    </svg>
-                </div>
-                <div class="diag-empty-txt">Escribe una reseña y presiona <b>Analizar</b> para ver el diagnóstico</div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown(
+            '<div class="diag-section-wrap">'
+            '<div class="diag-section-eyebrow">Diagn\u00f3stico del an\u00e1lisis</div>'
+            '<div class="diag-empty">'
+            '<div class="diag-empty-icon">'
+            '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" '
+            'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+            '<circle cx="11" cy="11" r="8"/>'
+            '<line x1="21" y1="21" x2="16.65" y2="16.65"/>'
+            '</svg>'
+            '</div>'
+            '<div class="diag-empty-txt">Escribe una rese\u00f1a y presiona <b>Analizar</b> para ver el diagn\u00f3stico</div>'
+            '</div>'
+            '</div>',
+            unsafe_allow_html=True,
+        )
 
     latest_review_id = st.session_state.get("latest_review_id")
     position_summary = get_position_summary(selected_product, latest_review_id)
