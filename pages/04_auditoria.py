@@ -233,20 +233,11 @@ with tab1:
     left_col, right_col = st.columns([1.05, 1], gap="medium")
 
     with left_col:
+        st.session_state.setdefault("_review_reset_counter", 0)
+
         # Marcador CSS para apuntar este panel (sin widgets dentro del div)
         st.markdown('<span class="audit-col-left" style="display:none"></span>', unsafe_allow_html=True)
-        # Header visual de configuración (solo HTML estático, sin widgets dentro)
-        st.markdown("""
-        <div class="config-header">
-            <div class="config-header-icon">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="3"/>
-                    <path d="M19.07 4.93A10 10 0 0 0 4.93 19.07M4.93 4.93A10 10 0 0 1 19.07 19.07"/>
-                </svg>
-            </div>
-            <span class="config-header-title">Configuración del análisis</span>
-        </div>
-        """, unsafe_allow_html=True)
+
 
         # Modelo fijo: LightGBM (mejor ROC-AUC del proyecto)
         selected_model = "lgbm"
@@ -272,15 +263,23 @@ with tab1:
         )
 
         stars = st.slider("Calificacion en estrellas", min_value=1, max_value=5, value=5)
-        user_name = st.text_input("Perfil de usuario", value="Auditor_Seminario")
+        user_name = st.text_input(
+            "Perfil de usuario *",
+            value=st.session_state.get("_user_name_input", ""),
+            placeholder="Escriba su nombre",
+            key="_user_name_input",
+        )
         review_text = st.text_area(
             "Texto de la resena", height=200,
             placeholder="Escribe aqui la resena a evaluar...",
+            key=f"_review_text_{st.session_state.get('_review_reset_counter', 0)}",
         )
         analyze_clicked = st.button("Analizar resena", use_container_width=True)
 
         if analyze_clicked:
-            if not is_non_empty_text(review_text):
+            if not is_non_empty_text(user_name):
+                st.warning("El nombre de usuario es obligatorio.")
+            elif not is_non_empty_text(review_text):
                 st.warning("Ingresa una resena antes de analizar.")
             else:
                 with st.spinner("Analizando..."):
@@ -528,6 +527,12 @@ with tab1:
                     if st.button("Guardar rese\u00f1a", use_container_width=True):
                         ok, msg = save_latest_review_to_file(selected_product)
                         (st.success if ok else st.warning)(msg)
+                        if ok:
+                            st.session_state["_review_reset_counter"] = st.session_state.get("_review_reset_counter", 0) + 1
+                            st.session_state["_user_name_input"] = ""
+                            st.session_state["_last_review_text"] = ""
+                            st.session_state["latest_audit_result"] = None
+                            st.rerun()
 
     latest_review_id = st.session_state.get("latest_review_id")
     position_summary = get_position_summary(selected_product, latest_review_id)

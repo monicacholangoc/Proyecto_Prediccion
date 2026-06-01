@@ -201,8 +201,8 @@ def render_sidebar() -> None:
         # ── Navegación ─────────────────────────────────────────────────────
         _nav("main.py",            ICONS["home"],   "Inicio")
         _nav(pages["resumen"],     ICONS["file"],   "Resumen Ejecutivo")
-        _nav(pages["exploracion"], ICONS["search"], "Exploración de Datos")
         _nav(pages["modelos"],     ICONS["chart"],  "Modelos y Evaluación")
+        _nav(pages["exploracion"], ICONS["search"], "Exploración de Datos")
         _nav(pages["auditoria"],   ICONS["shield"], "Auditoría en Tiempo Real")
         _nav(pages["ranking"],     ICONS["bar"],    "Ranking y Benchmark")
 
