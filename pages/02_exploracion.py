@@ -268,3 +268,87 @@ if category_col and not df.empty:
 # ══════════════════════════════════════════════════════════════════════════════
 st.markdown('<div class="section-label">Correlación entre variables</div>', unsafe_allow_html=True)
 st.plotly_chart(build_correlation_heatmap(df), use_container_width=True)
+
+# ══════════════════════════════════════════════════════════════════════════════
+# DESCARGA DE DATOS FILTRADOS
+# ══════════════════════════════════════════════════════════════════════════════
+st.markdown('<div class="section-label">Descargar datos del corte actual</div>', unsafe_allow_html=True)
+
+if df.empty:
+    st.info("No hay datos con los filtros actuales para descargar.")
+else:
+    # Columnas legibles para exportar
+    export_cols = [c for c in [
+        score_col, "review_len", "sentiment_score", "incoherente",
+        "y_util", helpfulness_col, "Text", "ProductId",
+        category_col, "Año",
+    ] if c and c in df.columns]
+    df_export = df[export_cols].copy()
+
+    # Renombrar columnas a nombres legibles
+    rename_map = {
+        score_col:        "Estrellas",
+        "review_len":     "Longitud (palabras)",
+        "sentiment_score":"Sentimiento VADER",
+        "incoherente":    "Incoherente",
+        "y_util":         "Es útil (1/0)",
+        helpfulness_col:  "Tasa de utilidad",
+        "Text":           "Texto de la reseña",
+        "ProductId":      "ID Producto",
+        category_col:     "Categoría",
+        "Año":            "Año",
+    }
+    df_export = df_export.rename(columns={k: v for k, v in rename_map.items() if k and k in df_export.columns})
+
+    n_filas = len(df_export)
+    st.markdown(
+        f'<div class="highlight-card"><div class="highlight-body">'
+        f'El corte actual tiene <strong>{format_compact_number(n_filas)} reseñas</strong>. '
+        f'Elige el formato para descargarlas.</div></div>',
+        unsafe_allow_html=True,
+    )
+
+    dl1, dl2, dl3 = st.columns(3, gap="medium")
+
+    # ── CSV ──────────────────────────────────────────────────────────────────
+    with dl1:
+        csv_bytes = df_export.to_csv(index=False).encode("utf-8")
+        st.download_button(
+            label="⬇ Descargar CSV",
+            data=csv_bytes,
+            file_name="resenas_filtradas.csv",
+            mime="text/csv",
+            use_container_width=True,
+            help="Formato compatible con Excel, Google Sheets y cualquier herramienta de análisis.",
+        )
+        st.caption("Compatible con Excel y Google Sheets.")
+
+    # ── JSON ─────────────────────────────────────────────────────────────────
+    with dl2:
+        json_bytes = df_export.to_json(orient="records", force_ascii=False, indent=2).encode("utf-8")
+        st.download_button(
+            label="⬇ Descargar JSON",
+            data=json_bytes,
+            file_name="resenas_filtradas.json",
+            mime="application/json",
+            use_container_width=True,
+            help="Formato ideal para consumir desde una API o sistema externo.",
+        )
+        st.caption("Ideal para integraciones y APIs.")
+
+    # ── Excel ─────────────────────────────────────────────────────────────────
+    with dl3:
+        import io
+        buffer = io.BytesIO()
+        with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
+            df_export.to_excel(writer, index=False, sheet_name="Reseñas filtradas")
+        excel_bytes = buffer.getvalue()
+        st.download_button(
+            label="⬇ Descargar Excel",
+            data=excel_bytes,
+            file_name="resenas_filtradas.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            use_container_width=True,
+            help="Archivo Excel con hoja nombrada y columnas formateadas.",
+        )
+        st.caption("Archivo Excel con columnas formateadas.")
