@@ -19,8 +19,6 @@ from services.preprocessing_service import (
     get_corporate_audit_db,
     get_global_ranking,
     get_local_product_ranking,
-    get_position_summary,
-    get_review_context_window,
 )
 from services.supabase_service import load_reviews_from_supabase, clear_supabase_cache
 from config.constants import TOPIC_NAMES
@@ -643,45 +641,6 @@ with tab_producto:
             unsafe_allow_html=True,
         )
 
-    st.markdown("---")
 
-    # ── Seccion D: Tu resena en contexto ─────────────────────────────────────
-    st.markdown('<div class="section-label">Tu resena en contexto</div>', unsafe_allow_html=True)
-    position_summary = get_position_summary(selected_product, latest_review_id)
-    review_window_df = get_review_context_window(selected_product, latest_review_id, window_size=2)
-
-    p1, p2, p3 = st.columns(3, gap="medium")
-    with p1:
-        render_metric_card(
-            "Posicion local",
-            f"{position_summary['local_rank']} / {position_summary['product_count']}" if position_summary["local_rank"] else "Sin resena evaluada",
-            "Lugar dentro del producto",
-        )
-    with p2:
-        render_metric_card(
-            "Posicion global",
-            f"{position_summary['global_rank']} / {position_summary['global_count']}" if position_summary["global_rank"] else "Sin resena evaluada",
-            "Lugar en toda la base",
-        )
-    with p3:
-        render_metric_card(
-            "Total del producto",
-            format_compact_number(position_summary["product_count"]),
-            "Volumen historico",
-        )
-
-    if latest_review_id and not review_window_df.empty:
-        for _, row in review_window_df.iterrows():
-            render_review_card(
-                user_name=str(row["User"]),
-                stars=int(row["Stars"]),
-                review_text=str(row["Text"]),
-                meta_line=f"Puesto local {int(row['Puesto Local'])}",
-                badge="Tu resena" if row["EsActual"] else row["Estado"],
-                helpfulness=format_percentage(float(row["Helpfulness"])),
-                highlighted=bool(row["EsActual"]),
-            )
-    else:
-        st.info("Analiza una resena en Auditoria para ver tu posicion aqui.")
 
 st.session_state["selected_product_id"] = selected_product if "selected_product" in dir() else (product_options[0] if product_options else None)
