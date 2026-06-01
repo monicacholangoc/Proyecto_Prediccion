@@ -109,7 +109,7 @@ with tab_general:
     # ══════════════════════════════════════════════════════════════════════════════
     st.markdown('<div class="section-label">Filtros</div>', unsafe_allow_html=True)
 
-    fc1, fc2, fc3, fc4, fc5 = st.columns([1, 1.4, 1, 1, 1], gap="medium")
+    fc1, fc2, fc3, fc4, fc5, fc6 = st.columns([1, 1.4, 1.2, 1, 1, 1], gap="medium")
 
     with fc1:
         star_options = [str(x) for x in sorted(source[score_col].dropna().astype(int).unique())] if score_col else []
@@ -120,16 +120,20 @@ with tab_general:
         sel_cats = st.multiselect(category_label, options=cat_options, placeholder="Todas")
 
     with fc3:
+        prod_options_gen = ["Todos"] + sorted(source["ProductId"].dropna().astype(str).unique().tolist()) if "ProductId" in source.columns else ["Todos"]
+        sel_product = st.selectbox("Producto", options=prod_options_gen)
+
+    with fc4:
         year_options = [str(y) for y in años_disponibles]
         sel_years = st.multiselect("Año", options=year_options, placeholder="Todos")
 
-    with fc4:
+    with fc5:
         min_l = int(source["review_len"].min()) if "review_len" in source.columns else 0
         max_l = int(source["review_len"].max()) if "review_len" in source.columns else 500
         max_l = max(max_l, min_l + 1)
         sel_len = st.slider("Longitud (palabras)", min_value=min_l, max_value=max_l, value=(min_l, max_l))
 
-    with fc5:
+    with fc6:
         sel_util = st.selectbox("Utilidad", options=["Todas", "Útiles (≥ 0.70)", "No útiles (< 0.70)"])
 
     # ── Aplicar filtros ───────────────────────────────────────────────────────────
@@ -138,6 +142,8 @@ with tab_general:
         df = df[df[score_col].astype(str).isin(sel_stars)]
     if sel_cats and category_col:
         df = df[df[category_col].isin(sel_cats)]
+    if sel_product != "Todos" and "ProductId" in df.columns:
+        df = df[df["ProductId"].astype(str) == sel_product]
     if sel_years:
         df = df[df["Año"].astype(str).isin(sel_years)]
     if "review_len" in df.columns:
@@ -147,10 +153,11 @@ with tab_general:
 
     # Badge de filtros activos
     filtros_activos = []
-    if sel_stars:    filtros_activos.append(f"Estrellas: {', '.join(sel_stars)}")
-    if sel_cats:     filtros_activos.append(f"Categorías: {len(sel_cats)} seleccionadas")
-    if sel_years:    filtros_activos.append(f"Años: {', '.join(sel_years)}")
-    if sel_util != "Todas": filtros_activos.append(sel_util)
+    if sel_stars:                filtros_activos.append(f"Estrellas: {', '.join(sel_stars)}")
+    if sel_cats:                 filtros_activos.append(f"Categorías: {len(sel_cats)} seleccionadas")
+    if sel_product != "Todos":   filtros_activos.append(f"Producto: {sel_product}")
+    if sel_years:                filtros_activos.append(f"Años: {', '.join(sel_years)}")
+    if sel_util != "Todas":      filtros_activos.append(sel_util)
 
     if filtros_activos:
         badges = " &nbsp;·&nbsp; ".join(f'<span style="background:#dbeafe;color:#1d4ed8;font-size:0.72rem;font-weight:600;padding:0.2rem 0.6rem;border-radius:999px">{f}</span>' for f in filtros_activos)
