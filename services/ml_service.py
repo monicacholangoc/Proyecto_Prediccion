@@ -1,11 +1,3 @@
-"""Servicios relacionados con inferencia y auditoria.
-
-Este modulo encapsula:
-- carga del modelo entrenado
-- prediccion de utilidad
-- reglas de auditoria para la experiencia en tiempo real
-"""
-
 import re
 
 import joblib

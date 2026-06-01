@@ -1,5 +1,3 @@
-"""Paneles de texto explicativo y retroalimentacion visual."""
-
 import streamlit as st
 
 

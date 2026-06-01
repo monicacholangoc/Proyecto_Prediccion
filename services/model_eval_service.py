@@ -1,8 +1,3 @@
-"""Servicios para evaluar modelos con datos reales del proyecto.
-
-Compara 4 clasificadores: Logistic Regression, LightGBM, XGBoost y CatBoost.
-"""
-
 from __future__ import annotations
 
 import pandas as pd

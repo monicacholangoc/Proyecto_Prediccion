@@ -1,8 +1,3 @@
-"""Graficos de EDA reutilizables.
-
-Las paginas solo llaman estas funciones y reciben figuras listas para mostrar.
-"""
-
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go

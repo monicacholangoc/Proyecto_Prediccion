@@ -1,5 +1,3 @@
-"""Construccion de features ligeras para exploracion y scoring."""
-
 import pandas as pd
 
 

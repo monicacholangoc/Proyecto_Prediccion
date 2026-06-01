@@ -1,5 +1,3 @@
-"""Configuracion visual base de Streamlit y colores de estado."""
-
 PAGE_CONFIG = {
     "page_title": "Seminario Predictivo",
     "page_icon": "📊",

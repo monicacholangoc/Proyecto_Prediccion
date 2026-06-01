@@ -1,8 +1,3 @@
-"""Helpers para inicializar y centralizar session state.
-
-La idea es evitar claves sueltas repartidas por todas las paginas.
-"""
-
 import pandas as pd
 import streamlit as st
 

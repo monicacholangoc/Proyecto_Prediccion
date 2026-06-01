@@ -1,12 +1,3 @@
-"""Servicios de preparacion y base operativa para la app.
-
-Este modulo conecta la data historica con la experiencia del dashboard:
-- filtra y deduplica
-- inicializa una base corporativa en memoria
-- agrega nuevas reseñas auditadas
-- prepara tablas de ranking y vistas globales
-"""
-
 import pandas as pd
 import numpy as np
 import streamlit as st

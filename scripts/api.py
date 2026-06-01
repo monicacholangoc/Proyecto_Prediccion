@@ -1,16 +1,3 @@
-"""
-API FastAPI — Predicción de Utilidad de Reseñas Amazon Fine Food
-Caso 06 · Seminario EDA 2026
-
-Basado en el api.py original del proyecto, extendido con:
-- CORS abierto (necesario para Streamlit Cloud)
-- GET /reviews/top_words (requerido por el caso)
-- Carga correcta del modelo usando la ruta real: modelos/modelo_lgb.joblib
-- Health check en GET /
-
-URL Render: https://proyecto-prediccion-v9qk.onrender.com
-"""
-
 import os
 import pathlib
 

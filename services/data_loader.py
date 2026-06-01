@@ -1,9 +1,3 @@
-"""Carga de datos desde artefactos locales.
-
-Este modulo solo lee archivos; no transforma negocio ni construye UI.
-Se apoya en cache de Streamlit para evitar lecturas repetidas.
-"""
-
 import pandas as pd
 import streamlit as st
 

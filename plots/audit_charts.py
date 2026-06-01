@@ -1,5 +1,3 @@
-"""Graficos orientados a la experiencia de auditoria en tiempo real."""
-
 import plotly.graph_objects as go
 
 

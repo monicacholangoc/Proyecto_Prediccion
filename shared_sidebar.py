@@ -1,13 +1,4 @@
-﻿"""
-shared_sidebar.py — Sidebar oscuro + nav funcional + logo + equipo al final.
-
-Cambios:
-- Equipo movido al FINAL del sidebar (después del nav)
-- Eliminados los botones de tema (Streamlit lo maneja nativamente en la toolbar)
-- CSS del sidebar limpio sin duplicados
-"""
-
-import os
+﻿import os
 import base64
 import streamlit as st
 

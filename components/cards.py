@@ -1,5 +1,3 @@
-"""Tarjetas reutilizables para KPIs y metricas resumidas."""
-
 import streamlit as st
 
 

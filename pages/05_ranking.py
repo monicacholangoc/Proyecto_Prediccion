@@ -1,5 +1,3 @@
-"""Ranking y Benchmark — Tab 1: Ranking Global · Tab 2: Analisis por Producto."""
-
 try:
     import streamlit as _st
     if not _st.session_state.get("app_initialized"):

@@ -1,5 +1,4 @@
-﻿"""Resumen ejecutivo — limpio, sin duplicados, orientado a hallazgos."""
-import plotly.graph_objects as go
+﻿import plotly.graph_objects as go
 import streamlit as st
 from shared_sidebar import render_sidebar
 from services.data_loader import load_processed_reviews

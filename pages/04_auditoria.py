@@ -1,4 +1,3 @@
-"""Auditoria en tiempo real."""
 try:
     import streamlit as _st
     if not _st.session_state.get("app_initialized"):

@@ -1,5 +1,3 @@
-"""Constantes semanticas y de negocio usadas por varias capas."""
-
 TOPIC_NAMES = {
     0: "Bebidas e infusiones",
     1: "Alimentos y premios para mascotas",

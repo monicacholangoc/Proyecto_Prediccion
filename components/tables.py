@@ -1,5 +1,3 @@
-"""Wrappers visuales para tablas de Streamlit."""
-
 import pandas as pd
 import streamlit as st
 

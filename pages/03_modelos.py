@@ -1,5 +1,4 @@
-﻿"""Modelos y evaluación."""
-import plotly.express as px
+﻿import plotly.express as px
 import streamlit as st
 from shared_sidebar import render_sidebar
 from components.cards import render_metric_card

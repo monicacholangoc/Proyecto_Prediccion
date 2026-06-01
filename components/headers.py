@@ -1,5 +1,3 @@
-"""Componentes visuales de encabezado reutilizables."""
-
 import streamlit as st
 
 

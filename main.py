@@ -1,5 +1,3 @@
-"""Punto de entrada — Bienvenida y presentación del caso."""
-
 import os
 import requests
 import streamlit as st

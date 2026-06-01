@@ -1,11 +1,3 @@
-"""Servicios de catalogo y metadata de productos.
-
-Aqui se resuelve la capa descriptiva del producto:
-- nombre comercial
-- categoria del modelo
-- opciones para selectores
-"""
-
 import pandas as pd
 
 from config.constants import TOPIC_NAMES

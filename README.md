@@ -4,7 +4,9 @@ Proyecto de seminario de ciencia de datos enfocado en predecir la utilidad perci
 
 ## Integrantes
 
-- Eduardo
+- Arevalo Jose
+- Cholango Monica 
+- Torres Byron
 
 ## Objetivo del caso
 
