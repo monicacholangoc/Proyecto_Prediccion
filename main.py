@@ -7,7 +7,6 @@ import streamlit as st
 from config.constants import DEFAULT_METRICS
 from config.theme import PAGE_CONFIG
 from services.data_loader import load_processed_reviews
-
 from services.supabase_service import load_reviews_from_supabase
 from services.model_eval_service import compute_model_evaluation
 from utils.formatters import format_compact_number, format_percentage
@@ -47,7 +46,7 @@ def main() -> None:
     evaluation = compute_model_evaluation()
     metrics_df = evaluation["metrics"]
     has_reviews = not reviews.empty
-    # Sumar reseñas nuevas de Supabase al conteo del hero
+
     try:
         sb_count = len(load_reviews_from_supabase())
     except Exception:
@@ -57,134 +56,195 @@ def main() -> None:
     best      = metrics_df.sort_values("roc_auc", ascending=False).iloc[0] if not metrics_df.empty else None
     roc_val   = format_percentage(float(best["roc_auc"])) if best is not None else "—"
     model_val = str(best["modelo"])                        if best is not None else "—"
+    reviews_label = format_compact_number(total_reviews_count) if has_reviews else "~100 K"
 
     # ── Hero ─────────────────────────────────────────────────────────────────
     st.markdown(
         f"""
-        <div style="
-            background: linear-gradient(135deg, #0f1f3d 0%, #1746a2 55%, #0f4c5c 100%);
-            border-radius: 20px;
-            padding: 2.5rem 2.5rem 2rem;
-            margin-bottom: 1.6rem;
-            color: #ffffff;
-            position: relative;
-            overflow: hidden;
-        ">
-            <div style="font-size:0.7rem;font-weight:700;letter-spacing:0.12em;
-                        color:rgba(255,255,255,0.45);text-transform:uppercase;margin-bottom:0.6rem">
-                Seminario Predictivo 2026 · Caso 06
+        <div style="padding: 2.8rem 0 2rem;">
+
+            <div style="
+                font-size: 0.68rem;
+                font-weight: 600;
+                letter-spacing: 0.14em;
+                text-transform: uppercase;
+                color: var(--muted);
+                margin-bottom: 1.1rem;
+            ">
+                Seminario Predictivo 2026 &nbsp;·&nbsp; Caso 06
             </div>
-            <div style="font-size:clamp(1.7rem,4vw,2.4rem);font-weight:900;
-                        letter-spacing:-0.03em;line-height:1.15;margin-bottom:0.5rem">
-                Predicción de Utilidad<br>de Reseñas Amazon
+
+            <div style="
+                font-size: clamp(2rem, 5vw, 3rem);
+                font-weight: 800;
+                letter-spacing: -0.04em;
+                line-height: 1.1;
+                color: var(--text);
+                margin-bottom: 1.2rem;
+            ">
+                Predicción de utilidad<br>
+                <span style="color: var(--muted); font-weight: 400;">en reseñas de Amazon</span>
             </div>
-            <div style="font-size:0.9rem;color:rgba(255,255,255,0.6);max-width:600px;line-height:1.6">
-                ¿Qué hace que una reseña sea realmente útil para otros compradores?
-                Este proyecto predice la utilidad percibida a partir de características
-                textuales: longitud, sentimiento y coherencia.
+
+            <div style="
+                font-size: 0.95rem;
+                color: var(--muted);
+                max-width: 520px;
+                line-height: 1.75;
+                margin-bottom: 2.4rem;
+            ">
+                No todas las reseñas ayudan por igual. Este proyecto identifica
+                qué características textuales separan una reseña percibida como útil
+                de una que pasa desapercibida — y construye un modelo que lo predice
+                antes de que los usuarios voten.
             </div>
-            <div style="margin-top:1.4rem;display:flex;gap:2rem;flex-wrap:wrap">
-                <div>
-                    <div style="font-size:1.6rem;font-weight:800;color:#7dd3fc">{format_compact_number(total_reviews_count) if has_reviews else '~100 K'}</div>
-                    <div style="font-size:0.7rem;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:.07em">Reseñas analizadas</div>
+
+            <div style="display: flex; gap: 0; border-top: 1px solid var(--border, rgba(0,0,0,0.08));">
+                <div style="padding: 1.4rem 2.5rem 1.4rem 0; border-right: 1px solid var(--border, rgba(0,0,0,0.08));">
+                    <div style="font-size: 1.8rem; font-weight: 700; color: var(--text); letter-spacing: -0.03em; line-height: 1;">
+                        {reviews_label}
+                    </div>
+                    <div style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.09em; color: var(--muted); margin-top: 0.35rem;">
+                        Reseñas analizadas
+                    </div>
                 </div>
-                <div style="width:1px;background:rgba(255,255,255,0.15)"></div>
-                <div>
-                    <div style="font-size:1.6rem;font-weight:800;color:#86efac">{roc_val}</div>
-                    <div style="font-size:0.7rem;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:.07em">ROC-AUC · {model_val}</div>
+                <div style="padding: 1.4rem 2.5rem; border-right: 1px solid var(--border, rgba(0,0,0,0.08));">
+                    <div style="font-size: 1.8rem; font-weight: 700; color: var(--text); letter-spacing: -0.03em; line-height: 1;">
+                        {roc_val}
+                    </div>
+                    <div style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.09em; color: var(--muted); margin-top: 0.35rem;">
+                        ROC-AUC &nbsp;·&nbsp; {model_val}
+                    </div>
                 </div>
-                <div style="width:1px;background:rgba(255,255,255,0.15)"></div>
-                <div>
-                    <div style="font-size:1.6rem;font-weight:800;color:#fcd34d">4</div>
-                    <div style="font-size:0.7rem;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:.07em">Features del modelo</div>
+                <div style="padding: 1.4rem 2.5rem;">
+                    <div style="font-size: 1.8rem; font-weight: 700; color: var(--text); letter-spacing: -0.03em; line-height: 1;">
+                        4
+                    </div>
+                    <div style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.09em; color: var(--muted); margin-top: 0.35rem;">
+                        Features textuales
+                    </div>
                 </div>
             </div>
+
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-    # ── Contexto del problema ─────────────────────────────────────────────────
-    st.markdown('<div class="section-label">Contexto del problema</div>', unsafe_allow_html=True)
+    # ── Separador ────────────────────────────────────────────────────────────
+    st.markdown("<div style='height: 0.5rem'></div>", unsafe_allow_html=True)
+
+    # ── Arquitectura del proyecto ─────────────────────────────────────────────
+    st.markdown(
+        '<div style="font-size:0.68rem;font-weight:600;letter-spacing:0.12em;'
+        'text-transform:uppercase;color:var(--muted);margin-bottom:1.2rem;">'
+        'Arquitectura del proyecto</div>',
+        unsafe_allow_html=True,
+    )
+
     st.markdown(
         """
-        <div class="highlight-card" style="margin-bottom:1rem">
-            <div class="highlight-title">¿Por qué predecir utilidad y no simplemente mostrar las reseñas más recientes?</div>
-            <div class="highlight-body">
-                Amazon muestra primero las reseñas percibidas como útiles porque impactan directamente
-                en las decisiones de compra de millones de usuarios. Sin embargo, la utilidad
-                <strong>no se puede predecir con las estrellas solas</strong> — una reseña de 5 estrellas
-                que solo dice "¡Excelente!" no ayuda a nadie. El verdadero predictor está
-                en el texto: longitud, coherencia, sentimiento y detalle.
-            </div>
-        </div>
+        <svg width="100%" viewBox="0 0 760 210" role="img"
+             xmlns="http://www.w3.org/2000/svg"
+             style="display:block; max-width:760px;">
+
+            <title>Arquitectura del proyecto</title>
+            <desc>Flujo de datos: Dataset → Pipeline Python → FastAPI + Supabase → Dashboard Streamlit</desc>
+
+            <defs>
+                <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5"
+                        markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+                    <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke"
+                          stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </marker>
+            </defs>
+
+            <!-- ── Nodo 1: Dataset ── -->
+            <rect x="20" y="72" width="116" height="64" rx="10"
+                  fill="none" stroke="rgba(128,128,128,0.25)" stroke-width="1"/>
+            <text x="78" y="97" text-anchor="middle"
+                  font-size="12" font-weight="600"
+                  fill="var(--text, #1a1a1a)">Dataset</text>
+            <text x="78" y="114" text-anchor="middle"
+                  font-size="10" fill="var(--muted, #6b6b6b)">Amazon Reviews</text>
+            <text x="78" y="128" text-anchor="middle"
+                  font-size="10" fill="var(--muted, #6b6b6b)">~100 K filas</text>
+
+            <!-- ── Flecha 1→2 ── -->
+            <line x1="136" y1="104" x2="172" y2="104"
+                  stroke="rgba(128,128,128,0.35)" stroke-width="1.2"
+                  marker-end="url(#arr)" fill="none"/>
+
+            <!-- ── Nodo 2: Pipeline ── -->
+            <rect x="172" y="52" width="160" height="104" rx="10"
+                  fill="none" stroke="rgba(128,128,128,0.25)" stroke-width="1"/>
+            <text x="252" y="78" text-anchor="middle"
+                  font-size="12" font-weight="600"
+                  fill="var(--text, #1a1a1a)">Pipeline Python</text>
+            <text x="252" y="97"  text-anchor="middle" font-size="10" fill="var(--muted, #6b6b6b)">Limpieza · dedup</text>
+            <text x="252" y="112" text-anchor="middle" font-size="10" fill="var(--muted, #6b6b6b)">Feature engineering</text>
+            <text x="252" y="127" text-anchor="middle" font-size="10" fill="var(--muted, #6b6b6b)">LogReg · LightGBM</text>
+            <text x="252" y="142" text-anchor="middle" font-size="10" fill="var(--muted, #6b6b6b)">scikit-learn · pandas</text>
+
+            <!-- ── Flecha 2→3a ── -->
+            <line x1="332" y1="84" x2="400" y2="84"
+                  stroke="rgba(128,128,128,0.35)" stroke-width="1.2"
+                  marker-end="url(#arr)" fill="none"/>
+
+            <!-- ── Flecha 2→3b ── -->
+            <line x1="332" y1="124" x2="400" y2="124"
+                  stroke="rgba(128,128,128,0.35)" stroke-width="1.2"
+                  marker-end="url(#arr)" fill="none"/>
+
+            <!-- ── Nodo 3a: FastAPI ── -->
+            <rect x="400" y="52" width="140" height="56" rx="10"
+                  fill="none" stroke="rgba(128,128,128,0.25)" stroke-width="1"/>
+            <text x="470" y="76" text-anchor="middle"
+                  font-size="12" font-weight="600"
+                  fill="var(--text, #1a1a1a)">FastAPI</text>
+            <text x="470" y="93" text-anchor="middle"
+                  font-size="10" fill="var(--muted, #6b6b6b)">Render · predicción</text>
+
+            <!-- ── Nodo 3b: Supabase ── -->
+            <rect x="400" y="100" width="140" height="56" rx="10"
+                  fill="none" stroke="rgba(128,128,128,0.25)" stroke-width="1"/>
+            <text x="470" y="124" text-anchor="middle"
+                  font-size="12" font-weight="600"
+                  fill="var(--text, #1a1a1a)">Supabase</text>
+            <text x="470" y="141" text-anchor="middle"
+                  font-size="10" fill="var(--muted, #6b6b6b)">Auditorías · historial</text>
+
+            <!-- ── Flecha 3→4 (desde FastAPI y Supabase hacia Dashboard) ── -->
+            <line x1="540" y1="80" x2="576" y2="80"
+                  stroke="rgba(128,128,128,0.35)" stroke-width="1.2" fill="none"/>
+            <line x1="540" y1="128" x2="576" y2="128"
+                  stroke="rgba(128,128,128,0.35)" stroke-width="1.2" fill="none"/>
+            <line x1="576" y1="80" x2="576" y2="128"
+                  stroke="rgba(128,128,128,0.35)" stroke-width="1.2" fill="none"/>
+            <line x1="576" y1="104" x2="610" y2="104"
+                  stroke="rgba(128,128,128,0.35)" stroke-width="1.2"
+                  marker-end="url(#arr)" fill="none"/>
+
+            <!-- ── Nodo 4: Dashboard ── -->
+            <rect x="610" y="72" width="130" height="64" rx="10"
+                  fill="none" stroke="rgba(128,128,128,0.25)" stroke-width="1"/>
+            <text x="675" y="97" text-anchor="middle"
+                  font-size="12" font-weight="600"
+                  fill="var(--text, #1a1a1a)">Dashboard</text>
+            <text x="675" y="114" text-anchor="middle"
+                  font-size="10" fill="var(--muted, #6b6b6b)">Streamlit Cloud</text>
+            <text x="675" y="128" text-anchor="middle"
+                  font-size="10" fill="var(--muted, #6b6b6b)">5 secciones</text>
+
+        </svg>
         """,
         unsafe_allow_html=True,
     )
 
-    ctx1, ctx2 = st.columns(2, gap="large")
-    with ctx1:
-        st.markdown(
-            """
-            <div class="metric-card">
-                <div class="metric-label" style="margin-bottom:0.6rem">Desafíos del dataset</div>
-                <ul style="margin:0;padding-left:1.2rem;font-size:0.83rem;color:var(--text);line-height:1.9">
-                    <li>Reseñas con &lt; 5 votos producen tasas de utilidad no representativas</li>
-                    <li>174 K duplicados por usuario-producto-fecha</li>
-                    <li>70 % de clases "no útiles" → <em>Accuracy</em> no sirve como métrica</li>
-                    <li>Texto de longitud muy variable: desde 1 palabra hasta miles</li>
-                </ul>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-    with ctx2:
-        st.markdown(
-            """
-            <div class="metric-card">
-                <div class="metric-label" style="margin-bottom:0.6rem">Solución construida</div>
-                <ul style="margin:0;padding-left:1.2rem;font-size:0.83rem;color:var(--text);line-height:1.9">
-                    <li>Pipeline de limpieza reproducible con filtros documentados</li>
-                    <li>4 features textuales derivadas sin modelos de lenguaje</li>
-                    <li>2 clasificadores comparados con F1 y ROC-AUC</li>
-                    <li>API FastAPI + Dashboard Streamlit con auditoría en tiempo real</li>
-                </ul>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-    # ── Guía de navegación ────────────────────────────────────────────────────
-    st.markdown('<div class="section-label">Guía del dashboard — qué encontrarás en cada sección</div>', unsafe_allow_html=True)
-
-    pages = [
-        ("📋", "Resumen Ejecutivo",        "Indicadores del pipeline de datos, métricas de modelos comparadas, hipótesis verificadas y distribuciones clave del caso."),
-        ("🔍", "Exploración de Datos",     "EDA interactivo con filtros por estrellas, categoría y longitud. Relaciones entre variables y correlación con la utilidad."),
-        ("🧪", "Modelos y Evaluación",     "Comparación Logistic Regression vs. LightGBM. Curva ROC, matriz de confusión e importancia de features explicada en lenguaje natural."),
-        ("🛡️", "Auditoría en Tiempo Real", "Escribe una reseña y obtén en segundos su probabilidad de utilidad, diagnóstico de coherencia y recomendaciones para mejorarla."),
-        ("🏆", "Ranking y Benchmark",      "Posición de cada reseña auditada dentro del catálogo del producto. Vista global y comparativa entre productos."),
-    ]
-
-    for icon, title, desc in pages:
-        st.markdown(
-            f"""
-            <div style="display:flex;gap:1rem;align-items:flex-start;
-                        padding:0.85rem 1rem;border-radius:10px;
-                        border:1px solid rgba(23,70,162,0.12);
-                        background:rgba(23,70,162,0.03);
-                        margin-bottom:0.5rem">
-                <div style="font-size:1.4rem;line-height:1;flex-shrink:0;padding-top:0.1rem">{icon}</div>
-                <div>
-                    <div style="font-weight:700;font-size:0.88rem;color:var(--text);margin-bottom:0.2rem">{title}</div>
-                    <div style="font-size:0.8rem;color:var(--muted);line-height:1.5">{desc}</div>
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+    # ── Separador ────────────────────────────────────────────────────────────
+    st.markdown("<div style='height: 1.5rem'></div>", unsafe_allow_html=True)
 
     # ── Estado de la API ──────────────────────────────────────────────────────
-    st.markdown('<div class="section-label">Estado de la API de predicción</div>', unsafe_allow_html=True)
     with st.spinner(""):
         api_status = _get_api_status()
     api_ok = api_status.get("status") == "ok"
@@ -196,12 +256,16 @@ def main() -> None:
             <div class="api-card">
                 <div class="api-card-label">FastAPI · Render</div>
                 <div class="api-card-value">proyecto-prediccion-v9qk</div>
-                <span class="metric-badge {'metric-badge-good' if api_ok else 'metric-badge-warn'}">{'Activa' if api_ok else 'Sin respuesta'}</span>
+                <span class="metric-badge {'metric-badge-good' if api_ok else 'metric-badge-warn'}">
+                    {'Activa' if api_ok else 'Sin respuesta'}
+                </span>
             </div>
             <div class="api-card">
                 <div class="api-card-label">Modelo en API</div>
                 <div class="api-card-value">LightGBM</div>
-                <span class="metric-badge {'metric-badge-good' if lgb_ok else 'metric-badge-warn'}">{'Cargado' if lgb_ok else 'Heurística'}</span>
+                <span class="metric-badge {'metric-badge-good' if lgb_ok else 'metric-badge-warn'}">
+                    {'Cargado' if lgb_ok else 'Heurística'}
+                </span>
             </div>
             <div class="api-card">
                 <div class="api-card-label">Endpoint predicción</div>
@@ -217,20 +281,45 @@ def main() -> None:
     )
 
     # ── Equipo ────────────────────────────────────────────────────────────────
-    st.markdown('<div class="section-label">Equipo</div>', unsafe_allow_html=True)
+    st.markdown("<div style='height: 1.5rem'></div>", unsafe_allow_html=True)
+    st.markdown(
+        '<div style="font-size:0.68rem;font-weight:600;letter-spacing:0.12em;'
+        'text-transform:uppercase;color:var(--muted);margin-bottom:1rem;">'
+        'Equipo</div>',
+        unsafe_allow_html=True,
+    )
+
     t1, t2, t3 = st.columns(3, gap="medium")
-    for col, name, role in zip(
-        [t1, t2, t3],
-        ["Arévalo José", "Cholango Mónica", "Torres Byron"],
-        ["EDA & Pipeline", "Modelado & API", "Dashboard & UI"],
-    ):
+    team = [
+        ("Arévalo José",   "EDA & Pipeline"),
+        ("Cholango Mónica", "Modelado & API"),
+        ("Torres Byron",    "Dashboard & UI"),
+    ]
+    for col, (name, role) in zip([t1, t2, t3], team):
+        initials = "".join(p[0] for p in name.split())
         with col:
             st.markdown(
                 f"""
-                <div class="metric-card" style="text-align:center">
-                    <div style="font-size:1.6rem;margin-bottom:0.4rem">👤</div>
-                    <div style="font-weight:700;font-size:0.9rem">{name}</div>
-                    <div style="font-size:0.75rem;color:var(--muted);margin-top:0.2rem">{role}</div>
+                <div style="
+                    padding: 1.2rem 1rem;
+                    border: 1px solid var(--border, rgba(0,0,0,0.08));
+                    border-radius: 10px;
+                    display: flex;
+                    align-items: center;
+                    gap: 0.9rem;
+                ">
+                    <div style="
+                        width: 36px; height: 36px; border-radius: 50%;
+                        background: var(--border, rgba(0,0,0,0.06));
+                        display: flex; align-items: center; justify-content: center;
+                        font-size: 0.7rem; font-weight: 700;
+                        color: var(--muted); flex-shrink: 0;
+                        letter-spacing: 0.03em;
+                    ">{initials}</div>
+                    <div>
+                        <div style="font-size: 0.85rem; font-weight: 600; color: var(--text);">{name}</div>
+                        <div style="font-size: 0.75rem; color: var(--muted); margin-top: 0.1rem;">{role}</div>
+                    </div>
                 </div>
                 """,
                 unsafe_allow_html=True,
