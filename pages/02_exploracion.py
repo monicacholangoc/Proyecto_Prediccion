@@ -308,47 +308,134 @@ else:
         unsafe_allow_html=True,
     )
 
-    dl1, dl2, dl3 = st.columns(3, gap="medium")
+    import io, re
+
+    # Limpieza de caracteres ilegales para Excel y PDF (control chars, etc.)
+    def _clean_text(val):
+        if not isinstance(val, str):
+            return val
+        return re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f]", " ", val).strip()
+
+    df_clean = df_export.copy()
+    for col in df_clean.select_dtypes(include="object").columns:
+        df_clean[col] = df_clean[col].map(_clean_text)
+
+    dl1, dl2, dl3, dl4 = st.columns(4, gap="medium")
 
     # ── CSV ──────────────────────────────────────────────────────────────────
     with dl1:
-        csv_bytes = df_export.to_csv(index=False).encode("utf-8")
+        csv_bytes = df_clean.to_csv(index=False).encode("utf-8")
         st.download_button(
-            label="⬇ Descargar CSV",
+            label="⬇ CSV",
             data=csv_bytes,
             file_name="resenas_filtradas.csv",
             mime="text/csv",
             use_container_width=True,
-            help="Formato compatible con Excel, Google Sheets y cualquier herramienta de análisis.",
+            help="Compatible con Excel, Google Sheets y cualquier herramienta de análisis.",
         )
-        st.caption("Compatible con Excel y Google Sheets.")
+        st.caption("Excel · Google Sheets")
 
     # ── JSON ─────────────────────────────────────────────────────────────────
     with dl2:
-        json_bytes = df_export.to_json(orient="records", force_ascii=False, indent=2).encode("utf-8")
+        json_bytes = df_clean.to_json(orient="records", force_ascii=False, indent=2).encode("utf-8")
         st.download_button(
-            label="⬇ Descargar JSON",
+            label="⬇ JSON",
             data=json_bytes,
             file_name="resenas_filtradas.json",
             mime="application/json",
             use_container_width=True,
-            help="Formato ideal para consumir desde una API o sistema externo.",
+            help="Ideal para consumir desde una API o sistema externo.",
         )
-        st.caption("Ideal para integraciones y APIs.")
+        st.caption("APIs · integraciones")
 
-    # ── Excel ─────────────────────────────────────────────────────────────────
+    # ── Excel ────────────────────────────────────────────────────────────────
     with dl3:
-        import io
-        buffer = io.BytesIO()
-        with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
-            df_export.to_excel(writer, index=False, sheet_name="Reseñas filtradas")
-        excel_bytes = buffer.getvalue()
-        st.download_button(
-            label="⬇ Descargar Excel",
-            data=excel_bytes,
-            file_name="resenas_filtradas.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            use_container_width=True,
-            help="Archivo Excel con hoja nombrada y columnas formateadas.",
-        )
-        st.caption("Archivo Excel con columnas formateadas.")
+        try:
+            buffer_xl = io.BytesIO()
+            with pd.ExcelWriter(buffer_xl, engine="openpyxl") as writer:
+                df_clean.to_excel(writer, index=False, sheet_name="Resenas filtradas")
+            st.download_button(
+                label="⬇ Excel",
+                data=buffer_xl.getvalue(),
+                file_name="resenas_filtradas.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True,
+                help="Archivo .xlsx con hoja nombrada y columnas formateadas.",
+            )
+            st.caption("Hoja de cálculo .xlsx")
+        except Exception:
+            st.warning("Excel no disponible — usa CSV.")
+
+    # ── PDF ──────────────────────────────────────────────────────────────────
+    with dl4:
+        try:
+            from reportlab.lib.pagesizes import A4, landscape
+            from reportlab.lib import colors
+            from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+            from reportlab.lib.styles import getSampleStyleSheet
+            from reportlab.lib.units import cm
+
+            buffer_pdf = io.BytesIO()
+            doc = SimpleDocTemplate(
+                buffer_pdf,
+                pagesize=landscape(A4),
+                rightMargin=1*cm, leftMargin=1*cm,
+                topMargin=1.5*cm, bottomMargin=1*cm,
+            )
+            styles = getSampleStyleSheet()
+            elements = []
+
+            # Título
+            elements.append(Paragraph(
+                f"Reseñas Amazon Fine Food — Corte filtrado ({format_compact_number(n_filas)} registros)",
+                styles["Heading2"]
+            ))
+            elements.append(Spacer(1, 0.4*cm))
+
+            # Limitar a 500 filas para no generar un PDF enorme
+            df_pdf = df_clean.head(500)
+            cols_pdf = list(df_pdf.columns)
+
+            # Truncar texto largo en columnas de texto
+            def _trunc(val, n=60):
+                s = str(val) if not isinstance(val, float) else f"{val:.3f}"
+                return s[:n] + "…" if len(s) > n else s
+
+            data = [cols_pdf] + [[_trunc(v) for v in row] for row in df_pdf.itertuples(index=False)]
+
+            col_width = (landscape(A4)[0] - 2*cm) / len(cols_pdf)
+            table = Table(data, colWidths=[col_width] * len(cols_pdf), repeatRows=1)
+            table.setStyle(TableStyle([
+                ("BACKGROUND",  (0, 0), (-1, 0),  colors.HexColor("#1746A2")),
+                ("TEXTCOLOR",   (0, 0), (-1, 0),  colors.white),
+                ("FONTNAME",    (0, 0), (-1, 0),  "Helvetica-Bold"),
+                ("FONTSIZE",    (0, 0), (-1, 0),  7),
+                ("FONTSIZE",    (0, 1), (-1, -1), 6),
+                ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#EFF6FF")]),
+                ("GRID",        (0, 0), (-1, -1), 0.3, colors.HexColor("#CBD5E1")),
+                ("VALIGN",      (0, 0), (-1, -1), "TOP"),
+                ("TOPPADDING",  (0, 0), (-1, -1), 3),
+                ("BOTTOMPADDING",(0,0), (-1, -1), 3),
+            ]))
+            elements.append(table)
+
+            if n_filas > 500:
+                elements.append(Spacer(1, 0.3*cm))
+                elements.append(Paragraph(
+                    f"* PDF limitado a 500 filas. Descarga CSV o Excel para el dataset completo ({format_compact_number(n_filas)} reseñas).",
+                    styles["Italic"]
+                ))
+
+            doc.build(elements)
+
+            st.download_button(
+                label="⬇ PDF",
+                data=buffer_pdf.getvalue(),
+                file_name="resenas_filtradas.pdf",
+                mime="application/pdf",
+                use_container_width=True,
+                help="Tabla en PDF. Máximo 500 filas para un archivo manejable.",
+            )
+            st.caption("Vista imprimible · máx. 500 filas")
+        except ImportError:
+            st.info("PDF no disponible — instala reportlab.")
