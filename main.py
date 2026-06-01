@@ -3,6 +3,7 @@
 import os
 import requests
 import streamlit as st
+import streamlit.components.v1 as components
 
 from config.constants import DEFAULT_METRICS
 from config.theme import PAGE_CONFIG
@@ -36,6 +37,103 @@ def _get_api_status() -> dict:
         return {"status": "error", "detalle": str(exc)}
 
 
+_ARCH_HTML = """
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: transparent; overflow: hidden; }
+  .wrap {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    display: flex;
+    align-items: center;
+    gap: 0;
+    width: 100%;
+    padding: 6px 0 10px;
+  }
+  .node {
+    border: 1px solid rgba(128,128,128,0.22);
+    border-radius: 10px;
+    padding: 11px 15px;
+    flex-shrink: 0;
+  }
+  .nl { font-size: 12px; font-weight: 600; color: #1a1a1a; margin-bottom: 4px; white-space: nowrap; }
+  .ns { font-size: 10.5px; color: #888; line-height: 1.65; white-space: nowrap; }
+  .arr { flex-shrink:0; padding: 0 5px; color: rgba(128,128,128,0.55); font-size: 15px; line-height:1; }
+  .branch {
+    display: flex; flex-direction: column;
+    align-items: flex-end; flex-shrink: 0;
+    width: 30px; gap: 0;
+  }
+  .branch .hl { height:1px; width:100%; background:rgba(128,128,128,0.28); }
+  .branch .vl { width:1px; flex:1; background:rgba(128,128,128,0.28); align-self:flex-end; }
+  .merge {
+    display: flex; flex-direction: column;
+    align-items: flex-start; flex-shrink: 0;
+    width: 30px; gap: 0;
+  }
+  .merge .hl { height:1px; width:100%; background:rgba(128,128,128,0.28); }
+  .merge .vl { width:1px; flex:1; background:rgba(128,128,128,0.28); align-self:flex-start; }
+  .services { display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
+</style>
+
+<div class="wrap">
+
+  <!-- Dataset -->
+  <div class="node" style="min-width:108px">
+    <div class="nl">Dataset</div>
+    <div class="ns">Amazon Reviews<br>~100 K filas</div>
+  </div>
+
+  <div class="arr">&#8594;</div>
+
+  <!-- Pipeline -->
+  <div class="node" style="min-width:148px">
+    <div class="nl">Pipeline Python</div>
+    <div class="ns">
+      Limpieza &amp; dedup<br>
+      Feature engineering<br>
+      LogReg · LightGBM<br>
+      scikit-learn · pandas
+    </div>
+  </div>
+
+  <!-- Bifurcación -->
+  <div class="branch" style="height:88px">
+    <div class="hl"></div>
+    <div class="vl"></div>
+    <div class="hl"></div>
+  </div>
+
+  <!-- FastAPI + Supabase -->
+  <div class="services">
+    <div class="node" style="min-width:136px">
+      <div class="nl">FastAPI</div>
+      <div class="ns">Render · predicción</div>
+    </div>
+    <div class="node" style="min-width:136px">
+      <div class="nl">Supabase</div>
+      <div class="ns">Auditorías · historial</div>
+    </div>
+  </div>
+
+  <!-- Convergencia -->
+  <div class="merge" style="height:88px">
+    <div class="hl"></div>
+    <div class="vl"></div>
+    <div class="hl"></div>
+  </div>
+
+  <div class="arr">&#8594;</div>
+
+  <!-- Dashboard -->
+  <div class="node" style="min-width:118px">
+    <div class="nl">Dashboard</div>
+    <div class="ns">Streamlit Cloud<br>5 secciones</div>
+  </div>
+
+</div>
+"""
+
+
 def main() -> None:
     st.set_page_config(**PAGE_CONFIG)
     _setup()
@@ -53,9 +151,9 @@ def main() -> None:
         sb_count = 0
     total_reviews_count = len(reviews) + sb_count
 
-    best      = metrics_df.sort_values("roc_auc", ascending=False).iloc[0] if not metrics_df.empty else None
-    roc_val   = format_percentage(float(best["roc_auc"])) if best is not None else "—"
-    model_val = str(best["modelo"])                        if best is not None else "—"
+    best          = metrics_df.sort_values("roc_auc", ascending=False).iloc[0] if not metrics_df.empty else None
+    roc_val       = format_percentage(float(best["roc_auc"])) if best is not None else "—"
+    model_val     = str(best["modelo"])                        if best is not None else "—"
     reviews_label = format_compact_number(total_reviews_count) if has_reviews else "~100 K"
 
     # ── Hero ─────────────────────────────────────────────────────────────────
@@ -64,34 +162,24 @@ def main() -> None:
         <div style="padding: 2.8rem 0 2rem;">
 
             <div style="
-                font-size: 0.68rem;
-                font-weight: 600;
-                letter-spacing: 0.14em;
-                text-transform: uppercase;
-                color: var(--muted);
-                margin-bottom: 1.1rem;
+                font-size: 0.68rem; font-weight: 600; letter-spacing: 0.14em;
+                text-transform: uppercase; color: var(--muted); margin-bottom: 1.1rem;
             ">
                 Seminario Predictivo 2026 &nbsp;·&nbsp; Caso 06
             </div>
 
             <div style="
-                font-size: clamp(2rem, 5vw, 3rem);
-                font-weight: 800;
-                letter-spacing: -0.04em;
-                line-height: 1.1;
-                color: var(--text);
-                margin-bottom: 1.2rem;
+                font-size: clamp(2rem, 5vw, 3rem); font-weight: 800;
+                letter-spacing: -0.04em; line-height: 1.1;
+                color: var(--text); margin-bottom: 1.2rem;
             ">
                 Predicción de utilidad<br>
                 <span style="color: var(--muted); font-weight: 400;">en reseñas de Amazon</span>
             </div>
 
             <div style="
-                font-size: 0.95rem;
-                color: var(--muted);
-                max-width: 520px;
-                line-height: 1.75;
-                margin-bottom: 2.4rem;
+                font-size: 0.95rem; color: var(--muted);
+                max-width: 520px; line-height: 1.75; margin-bottom: 2.4rem;
             ">
                 No todas las reseñas ayudan por igual. Este proyecto identifica
                 qué características textuales separan una reseña percibida como útil
@@ -99,28 +187,28 @@ def main() -> None:
                 antes de que los usuarios voten.
             </div>
 
-            <div style="display: flex; gap: 0; border-top: 1px solid var(--border, rgba(0,0,0,0.08));">
-                <div style="padding: 1.4rem 2.5rem 1.4rem 0; border-right: 1px solid var(--border, rgba(0,0,0,0.08));">
-                    <div style="font-size: 1.8rem; font-weight: 700; color: var(--text); letter-spacing: -0.03em; line-height: 1;">
+            <div style="display:flex; gap:0; border-top:1px solid rgba(0,0,0,0.08);">
+                <div style="padding:1.4rem 2.5rem 1.4rem 0; border-right:1px solid rgba(0,0,0,0.08);">
+                    <div style="font-size:1.8rem;font-weight:700;color:var(--text);letter-spacing:-0.03em;line-height:1;">
                         {reviews_label}
                     </div>
-                    <div style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.09em; color: var(--muted); margin-top: 0.35rem;">
+                    <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.09em;color:var(--muted);margin-top:0.35rem;">
                         Reseñas analizadas
                     </div>
                 </div>
-                <div style="padding: 1.4rem 2.5rem; border-right: 1px solid var(--border, rgba(0,0,0,0.08));">
-                    <div style="font-size: 1.8rem; font-weight: 700; color: var(--text); letter-spacing: -0.03em; line-height: 1;">
+                <div style="padding:1.4rem 2.5rem; border-right:1px solid rgba(0,0,0,0.08);">
+                    <div style="font-size:1.8rem;font-weight:700;color:var(--text);letter-spacing:-0.03em;line-height:1;">
                         {roc_val}
                     </div>
-                    <div style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.09em; color: var(--muted); margin-top: 0.35rem;">
+                    <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.09em;color:var(--muted);margin-top:0.35rem;">
                         ROC-AUC &nbsp;·&nbsp; {model_val}
                     </div>
                 </div>
-                <div style="padding: 1.4rem 2.5rem;">
-                    <div style="font-size: 1.8rem; font-weight: 700; color: var(--text); letter-spacing: -0.03em; line-height: 1;">
+                <div style="padding:1.4rem 2.5rem;">
+                    <div style="font-size:1.8rem;font-weight:700;color:var(--text);letter-spacing:-0.03em;line-height:1;">
                         4
                     </div>
-                    <div style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.09em; color: var(--muted); margin-top: 0.35rem;">
+                    <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.09em;color:var(--muted);margin-top:0.35rem;">
                         Features textuales
                     </div>
                 </div>
@@ -131,118 +219,17 @@ def main() -> None:
         unsafe_allow_html=True,
     )
 
-    # ── Separador ────────────────────────────────────────────────────────────
-    st.markdown("<div style='height: 0.5rem'></div>", unsafe_allow_html=True)
-
     # ── Arquitectura del proyecto ─────────────────────────────────────────────
     st.markdown(
         '<div style="font-size:0.68rem;font-weight:600;letter-spacing:0.12em;'
-        'text-transform:uppercase;color:var(--muted);margin-bottom:1.2rem;">'
+        'text-transform:uppercase;color:var(--muted);margin-bottom:0.8rem;">'
         'Arquitectura del proyecto</div>',
         unsafe_allow_html=True,
     )
+    # components.html evita la sanitización que aplica st.markdown al HTML/SVG
+    components.html(_ARCH_HTML, height=130, scrolling=False)
 
-    st.markdown(
-        """
-        <svg width="100%" viewBox="0 0 760 210" role="img"
-             xmlns="http://www.w3.org/2000/svg"
-             style="display:block; max-width:760px;">
-
-            <title>Arquitectura del proyecto</title>
-            <desc>Flujo de datos: Dataset → Pipeline Python → FastAPI + Supabase → Dashboard Streamlit</desc>
-
-            <defs>
-                <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5"
-                        markerWidth="5" markerHeight="5" orient="auto-start-reverse">
-                    <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke"
-                          stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-                </marker>
-            </defs>
-
-            <!-- ── Nodo 1: Dataset ── -->
-            <rect x="20" y="72" width="116" height="64" rx="10"
-                  fill="none" stroke="rgba(128,128,128,0.25)" stroke-width="1"/>
-            <text x="78" y="97" text-anchor="middle"
-                  font-size="12" font-weight="600"
-                  fill="var(--text, #1a1a1a)">Dataset</text>
-            <text x="78" y="114" text-anchor="middle"
-                  font-size="10" fill="var(--muted, #6b6b6b)">Amazon Reviews</text>
-            <text x="78" y="128" text-anchor="middle"
-                  font-size="10" fill="var(--muted, #6b6b6b)">~100 K filas</text>
-
-            <!-- ── Flecha 1→2 ── -->
-            <line x1="136" y1="104" x2="172" y2="104"
-                  stroke="rgba(128,128,128,0.35)" stroke-width="1.2"
-                  marker-end="url(#arr)" fill="none"/>
-
-            <!-- ── Nodo 2: Pipeline ── -->
-            <rect x="172" y="52" width="160" height="104" rx="10"
-                  fill="none" stroke="rgba(128,128,128,0.25)" stroke-width="1"/>
-            <text x="252" y="78" text-anchor="middle"
-                  font-size="12" font-weight="600"
-                  fill="var(--text, #1a1a1a)">Pipeline Python</text>
-            <text x="252" y="97"  text-anchor="middle" font-size="10" fill="var(--muted, #6b6b6b)">Limpieza · dedup</text>
-            <text x="252" y="112" text-anchor="middle" font-size="10" fill="var(--muted, #6b6b6b)">Feature engineering</text>
-            <text x="252" y="127" text-anchor="middle" font-size="10" fill="var(--muted, #6b6b6b)">LogReg · LightGBM</text>
-            <text x="252" y="142" text-anchor="middle" font-size="10" fill="var(--muted, #6b6b6b)">scikit-learn · pandas</text>
-
-            <!-- ── Flecha 2→3a ── -->
-            <line x1="332" y1="84" x2="400" y2="84"
-                  stroke="rgba(128,128,128,0.35)" stroke-width="1.2"
-                  marker-end="url(#arr)" fill="none"/>
-
-            <!-- ── Flecha 2→3b ── -->
-            <line x1="332" y1="124" x2="400" y2="124"
-                  stroke="rgba(128,128,128,0.35)" stroke-width="1.2"
-                  marker-end="url(#arr)" fill="none"/>
-
-            <!-- ── Nodo 3a: FastAPI ── -->
-            <rect x="400" y="52" width="140" height="56" rx="10"
-                  fill="none" stroke="rgba(128,128,128,0.25)" stroke-width="1"/>
-            <text x="470" y="76" text-anchor="middle"
-                  font-size="12" font-weight="600"
-                  fill="var(--text, #1a1a1a)">FastAPI</text>
-            <text x="470" y="93" text-anchor="middle"
-                  font-size="10" fill="var(--muted, #6b6b6b)">Render · predicción</text>
-
-            <!-- ── Nodo 3b: Supabase ── -->
-            <rect x="400" y="100" width="140" height="56" rx="10"
-                  fill="none" stroke="rgba(128,128,128,0.25)" stroke-width="1"/>
-            <text x="470" y="124" text-anchor="middle"
-                  font-size="12" font-weight="600"
-                  fill="var(--text, #1a1a1a)">Supabase</text>
-            <text x="470" y="141" text-anchor="middle"
-                  font-size="10" fill="var(--muted, #6b6b6b)">Auditorías · historial</text>
-
-            <!-- ── Flecha 3→4 (desde FastAPI y Supabase hacia Dashboard) ── -->
-            <line x1="540" y1="80" x2="576" y2="80"
-                  stroke="rgba(128,128,128,0.35)" stroke-width="1.2" fill="none"/>
-            <line x1="540" y1="128" x2="576" y2="128"
-                  stroke="rgba(128,128,128,0.35)" stroke-width="1.2" fill="none"/>
-            <line x1="576" y1="80" x2="576" y2="128"
-                  stroke="rgba(128,128,128,0.35)" stroke-width="1.2" fill="none"/>
-            <line x1="576" y1="104" x2="610" y2="104"
-                  stroke="rgba(128,128,128,0.35)" stroke-width="1.2"
-                  marker-end="url(#arr)" fill="none"/>
-
-            <!-- ── Nodo 4: Dashboard ── -->
-            <rect x="610" y="72" width="130" height="64" rx="10"
-                  fill="none" stroke="rgba(128,128,128,0.25)" stroke-width="1"/>
-            <text x="675" y="97" text-anchor="middle"
-                  font-size="12" font-weight="600"
-                  fill="var(--text, #1a1a1a)">Dashboard</text>
-            <text x="675" y="114" text-anchor="middle"
-                  font-size="10" fill="var(--muted, #6b6b6b)">Streamlit Cloud</text>
-            <text x="675" y="128" text-anchor="middle"
-                  font-size="10" fill="var(--muted, #6b6b6b)">5 secciones</text>
-
-        </svg>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    # ── Separador ────────────────────────────────────────────────────────────
-    st.markdown("<div style='height: 1.5rem'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='height: 1rem'></div>", unsafe_allow_html=True)
 
     # ── Estado de la API ──────────────────────────────────────────────────────
     with st.spinner(""):
@@ -291,7 +278,7 @@ def main() -> None:
 
     t1, t2, t3 = st.columns(3, gap="medium")
     team = [
-        ("Arévalo José",   "EDA & Pipeline"),
+        ("Arévalo José",    "EDA & Pipeline"),
         ("Cholango Mónica", "Modelado & API"),
         ("Torres Byron",    "Dashboard & UI"),
     ]
@@ -301,24 +288,21 @@ def main() -> None:
             st.markdown(
                 f"""
                 <div style="
-                    padding: 1.2rem 1rem;
-                    border: 1px solid var(--border, rgba(0,0,0,0.08));
-                    border-radius: 10px;
-                    display: flex;
-                    align-items: center;
-                    gap: 0.9rem;
+                    padding:1.2rem 1rem;
+                    border:1px solid rgba(0,0,0,0.08);
+                    border-radius:10px;
+                    display:flex; align-items:center; gap:0.9rem;
                 ">
                     <div style="
-                        width: 36px; height: 36px; border-radius: 50%;
-                        background: var(--border, rgba(0,0,0,0.06));
-                        display: flex; align-items: center; justify-content: center;
-                        font-size: 0.7rem; font-weight: 700;
-                        color: var(--muted); flex-shrink: 0;
-                        letter-spacing: 0.03em;
+                        width:36px; height:36px; border-radius:50%;
+                        background:rgba(0,0,0,0.05);
+                        display:flex; align-items:center; justify-content:center;
+                        font-size:0.7rem; font-weight:700; color:#888;
+                        flex-shrink:0; letter-spacing:0.03em;
                     ">{initials}</div>
                     <div>
-                        <div style="font-size: 0.85rem; font-weight: 600; color: var(--text);">{name}</div>
-                        <div style="font-size: 0.75rem; color: var(--muted); margin-top: 0.1rem;">{role}</div>
+                        <div style="font-size:0.85rem;font-weight:600;color:var(--text);">{name}</div>
+                        <div style="font-size:0.75rem;color:var(--muted);margin-top:0.1rem;">{role}</div>
                     </div>
                 </div>
                 """,
