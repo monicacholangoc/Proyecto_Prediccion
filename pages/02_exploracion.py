@@ -101,335 +101,450 @@ except Exception:
 
 años_disponibles = sorted([y for y in source["Año"].unique() if y > 2000])
 
-# ══════════════════════════════════════════════════════════════════════════════
-# FILTROS — multiselect
-# ══════════════════════════════════════════════════════════════════════════════
-st.markdown('<div class="section-label">Filtros</div>', unsafe_allow_html=True)
+tab_general, tab_producto = st.tabs(["📊 Exploración General", "🔍 Análisis por Producto"])
 
-fc1, fc2, fc3, fc4, fc5 = st.columns([1, 1.4, 1, 1, 1], gap="medium")
+with tab_general:
+    # ══════════════════════════════════════════════════════════════════════════════
+    # FILTROS — multiselect
+    # ══════════════════════════════════════════════════════════════════════════════
+    st.markdown('<div class="section-label">Filtros</div>', unsafe_allow_html=True)
 
-with fc1:
-    star_options = [str(x) for x in sorted(source[score_col].dropna().astype(int).unique())] if score_col else []
-    sel_stars = st.multiselect("Estrellas", options=star_options, placeholder="Todas")
+    fc1, fc2, fc3, fc4, fc5 = st.columns([1, 1.4, 1, 1, 1], gap="medium")
 
-with fc2:
-    cat_options = sorted(source[category_col].dropna().astype(str).unique().tolist()) if category_col else []
-    sel_cats = st.multiselect(category_label, options=cat_options, placeholder="Todas")
+    with fc1:
+        star_options = [str(x) for x in sorted(source[score_col].dropna().astype(int).unique())] if score_col else []
+        sel_stars = st.multiselect("Estrellas", options=star_options, placeholder="Todas")
 
-with fc3:
-    year_options = [str(y) for y in años_disponibles]
-    sel_years = st.multiselect("Año", options=year_options, placeholder="Todos")
+    with fc2:
+        cat_options = sorted(source[category_col].dropna().astype(str).unique().tolist()) if category_col else []
+        sel_cats = st.multiselect(category_label, options=cat_options, placeholder="Todas")
 
-with fc4:
-    min_l = int(source["review_len"].min()) if "review_len" in source.columns else 0
-    max_l = int(source["review_len"].max()) if "review_len" in source.columns else 500
-    max_l = max(max_l, min_l + 1)
-    sel_len = st.slider("Longitud (palabras)", min_value=min_l, max_value=max_l, value=(min_l, max_l))
+    with fc3:
+        year_options = [str(y) for y in años_disponibles]
+        sel_years = st.multiselect("Año", options=year_options, placeholder="Todos")
 
-with fc5:
-    sel_util = st.selectbox("Utilidad", options=["Todas", "Útiles (≥ 0.70)", "No útiles (< 0.70)"])
+    with fc4:
+        min_l = int(source["review_len"].min()) if "review_len" in source.columns else 0
+        max_l = int(source["review_len"].max()) if "review_len" in source.columns else 500
+        max_l = max(max_l, min_l + 1)
+        sel_len = st.slider("Longitud (palabras)", min_value=min_l, max_value=max_l, value=(min_l, max_l))
 
-# ── Aplicar filtros ───────────────────────────────────────────────────────────
-df = source.copy()
-if sel_stars and score_col:
-    df = df[df[score_col].astype(str).isin(sel_stars)]
-if sel_cats and category_col:
-    df = df[df[category_col].isin(sel_cats)]
-if sel_years:
-    df = df[df["Año"].astype(str).isin(sel_years)]
-if "review_len" in df.columns:
-    df = df[df["review_len"].between(sel_len[0], sel_len[1])]
-if helpfulness_col and sel_util != "Todas":
-    df = df[df[helpfulness_col] >= 0.70] if "Útiles" in sel_util else df[df[helpfulness_col] < 0.70]
+    with fc5:
+        sel_util = st.selectbox("Utilidad", options=["Todas", "Útiles (≥ 0.70)", "No útiles (< 0.70)"])
 
-# Badge de filtros activos
-filtros_activos = []
-if sel_stars:    filtros_activos.append(f"Estrellas: {', '.join(sel_stars)}")
-if sel_cats:     filtros_activos.append(f"Categorías: {len(sel_cats)} seleccionadas")
-if sel_years:    filtros_activos.append(f"Años: {', '.join(sel_years)}")
-if sel_util != "Todas": filtros_activos.append(sel_util)
+    # ── Aplicar filtros ───────────────────────────────────────────────────────────
+    df = source.copy()
+    if sel_stars and score_col:
+        df = df[df[score_col].astype(str).isin(sel_stars)]
+    if sel_cats and category_col:
+        df = df[df[category_col].isin(sel_cats)]
+    if sel_years:
+        df = df[df["Año"].astype(str).isin(sel_years)]
+    if "review_len" in df.columns:
+        df = df[df["review_len"].between(sel_len[0], sel_len[1])]
+    if helpfulness_col and sel_util != "Todas":
+        df = df[df[helpfulness_col] >= 0.70] if "Útiles" in sel_util else df[df[helpfulness_col] < 0.70]
 
-if filtros_activos:
-    badges = " &nbsp;·&nbsp; ".join(f'<span style="background:#dbeafe;color:#1d4ed8;font-size:0.72rem;font-weight:600;padding:0.2rem 0.6rem;border-radius:999px">{f}</span>' for f in filtros_activos)
-    st.markdown(f'<div style="margin-bottom:0.6rem">{badges}</div>', unsafe_allow_html=True)
+    # Badge de filtros activos
+    filtros_activos = []
+    if sel_stars:    filtros_activos.append(f"Estrellas: {', '.join(sel_stars)}")
+    if sel_cats:     filtros_activos.append(f"Categorías: {len(sel_cats)} seleccionadas")
+    if sel_years:    filtros_activos.append(f"Años: {', '.join(sel_years)}")
+    if sel_util != "Todas": filtros_activos.append(sel_util)
 
-# ══════════════════════════════════════════════════════════════════════════════
-# INDICADORES DEL CORTE
-# ══════════════════════════════════════════════════════════════════════════════
-try:
-    _sb_extra = len(load_reviews_from_supabase())
-except Exception:
-    _sb_extra = 0
+    if filtros_activos:
+        badges = " &nbsp;·&nbsp; ".join(f'<span style="background:#dbeafe;color:#1d4ed8;font-size:0.72rem;font-weight:600;padding:0.2rem 0.6rem;border-radius:999px">{f}</span>' for f in filtros_activos)
+        st.markdown(f'<div style="margin-bottom:0.6rem">{badges}</div>', unsafe_allow_html=True)
 
-n_total   = len(df) + _sb_extra
-n_base    = len(df)
-products  = int(df["ProductId"].astype(str).nunique()) if "ProductId" in df.columns else 0
-ratio     = float(df[helpfulness_col].ge(0.70).mean()) if helpfulness_col and n_base > 0 else 0.0
-avg_len   = int(df["review_len"].fillna(0).mean()) if "review_len" in df.columns and n_base > 0 else 0
-pct_filtro = round(n_base / len(source) * 100, 1) if len(source) > 0 else 100.0
+    # ══════════════════════════════════════════════════════════════════════════════
+    # INDICADORES DEL CORTE
+    # ══════════════════════════════════════════════════════════════════════════════
+    try:
+        _sb_extra = len(load_reviews_from_supabase())
+    except Exception:
+        _sb_extra = 0
 
-st.markdown('<div class="section-label">Indicadores del corte actual</div>', unsafe_allow_html=True)
+    n_total   = len(df) + _sb_extra
+    n_base    = len(df)
+    products  = int(df["ProductId"].astype(str).nunique()) if "ProductId" in df.columns else 0
+    ratio     = float(df[helpfulness_col].ge(0.70).mean()) if helpfulness_col and n_base > 0 else 0.0
+    avg_len   = int(df["review_len"].fillna(0).mean()) if "review_len" in df.columns and n_base > 0 else 0
+    pct_filtro = round(n_base / len(source) * 100, 1) if len(source) > 0 else 100.0
 
-i1, i2, i3, i4 = st.columns(4, gap="medium")
-for col, valor, label, sublabel, color in [
-    (i1, format_compact_number(n_total),    "Reseñas totales",   f"{pct_filtro}% del dataset",       "#1d4ed8"),
-    (i2, format_compact_number(products),   "Productos únicos",  "IDs distintos en el corte",         "#7c3aed"),
-    (i3, format_percentage(ratio),          "Ratio de útiles",   "Reseñas con Helpfulness ≥ 0.70",   "#15803d"),
-    (i4, f"{avg_len} palabras",             "Longitud media",    "Promedio del corte filtrado",       "#b45309"),
-]:
-    with col:
-        st.markdown(f"""
-        <div style="background:#fff;border:1px solid #e2e8f0;border-top:3px solid {color};
-                    border-radius:12px;padding:0.85rem 0.8rem;text-align:center">
-            <div style="font-size:1.5rem;font-weight:900;color:{color};line-height:1.1">{valor}</div>
-            <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;
-                        color:#64748b;margin:0.25rem 0;letter-spacing:.05em">{label}</div>
-            <div style="font-size:0.65rem;color:#94a3b8">{sublabel}</div>
-        </div>
-        """, unsafe_allow_html=True)
+    st.markdown('<div class="section-label">Indicadores del corte actual</div>', unsafe_allow_html=True)
 
-# ══════════════════════════════════════════════════════════════════════════════
-# DISTRIBUCIONES
-# ══════════════════════════════════════════════════════════════════════════════
-st.markdown('<div class="section-label">Distribuciones</div>', unsafe_allow_html=True)
+    i1, i2, i3, i4 = st.columns(4, gap="medium")
+    for col, valor, label, sublabel, color in [
+        (i1, format_compact_number(n_total),    "Reseñas totales",   f"{pct_filtro}% del dataset",       "#1d4ed8"),
+        (i2, format_compact_number(products),   "Productos únicos",  "IDs distintos en el corte",         "#7c3aed"),
+        (i3, format_percentage(ratio),          "Ratio de útiles",   "Reseñas con Helpfulness ≥ 0.70",   "#15803d"),
+        (i4, f"{avg_len} palabras",             "Longitud media",    "Promedio del corte filtrado",       "#b45309"),
+    ]:
+        with col:
+            st.markdown(f"""
+            <div style="background:#fff;border:1px solid #e2e8f0;border-top:3px solid {color};
+                        border-radius:12px;padding:0.85rem 0.8rem;text-align:center">
+                <div style="font-size:1.5rem;font-weight:900;color:{color};line-height:1.1">{valor}</div>
+                <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;
+                            color:#64748b;margin:0.25rem 0;letter-spacing:.05em">{label}</div>
+                <div style="font-size:0.65rem;color:#94a3b8">{sublabel}</div>
+            </div>
+            """, unsafe_allow_html=True)
 
-d1, d2 = st.columns(2, gap="large")
-with d1:
-    st.caption("**Calificaciones** — Concentración en 4-5 estrellas genera desbalance.")
-    st.plotly_chart(build_stars_distribution(df), use_container_width=True)
-with d2:
-    st.caption("**Longitud** — Las reseñas largas son minoría pero suelen ser más útiles.")
-    st.plotly_chart(build_review_length_distribution(df), use_container_width=True)
+    # ══════════════════════════════════════════════════════════════════════════════
+    # DISTRIBUCIONES
+    # ══════════════════════════════════════════════════════════════════════════════
+    st.markdown('<div class="section-label">Distribuciones</div>', unsafe_allow_html=True)
 
-d3, d4 = st.columns(2, gap="large")
-with d3:
-    st.caption("**Balance de clases** — Desbalance que justifica F1 sobre Accuracy.")
-    st.plotly_chart(build_target_balance(df), use_container_width=True)
-with d4:
-    st.caption("**Coherencia texto-estrellas** — El 18% presenta incoherencia.")
-    st.plotly_chart(build_incoherence_distribution(df), use_container_width=True)
+    d1, d2 = st.columns(2, gap="large")
+    with d1:
+        st.caption("**Calificaciones** — Concentración en 4-5 estrellas genera desbalance.")
+        st.plotly_chart(build_stars_distribution(df), use_container_width=True)
+    with d2:
+        st.caption("**Longitud** — Las reseñas largas son minoría pero suelen ser más útiles.")
+        st.plotly_chart(build_review_length_distribution(df), use_container_width=True)
 
-# ══════════════════════════════════════════════════════════════════════════════
-# RELACIONES CON LA UTILIDAD
-# ══════════════════════════════════════════════════════════════════════════════
-st.markdown('<div class="section-label">Relaciones con la utilidad</div>', unsafe_allow_html=True)
+    d3, d4 = st.columns(2, gap="large")
+    with d3:
+        st.caption("**Balance de clases** — Desbalance que justifica F1 sobre Accuracy.")
+        st.plotly_chart(build_target_balance(df), use_container_width=True)
+    with d4:
+        st.caption("**Coherencia texto-estrellas** — El 18% presenta incoherencia.")
+        st.plotly_chart(build_incoherence_distribution(df), use_container_width=True)
 
-r1, r2 = st.columns(2, gap="large")
-with r1:
-    st.caption("**Estrellas vs. utilidad** — Las 4-5 estrellas dominan pero no garantizan utilidad.")
-    st.plotly_chart(build_stars_vs_helpfulness(df), use_container_width=True)
-with r2:
-    st.caption("**Longitud vs. utilidad** — Relación más fuerte del dataset.")
-    st.plotly_chart(build_length_vs_helpfulness(df), use_container_width=True)
+    # ══════════════════════════════════════════════════════════════════════════════
+    # RELACIONES CON LA UTILIDAD
+    # ══════════════════════════════════════════════════════════════════════════════
+    st.markdown('<div class="section-label">Relaciones con la utilidad</div>', unsafe_allow_html=True)
 
-st.caption("**Sentimiento por estrellas** — El sentimiento sube con las estrellas pero con alta varianza.")
-st.plotly_chart(build_sentiment_vs_score(df), use_container_width=True)
+    r1, r2 = st.columns(2, gap="large")
+    with r1:
+        st.caption("**Estrellas vs. utilidad** — Las 4-5 estrellas dominan pero no garantizan utilidad.")
+        st.plotly_chart(build_stars_vs_helpfulness(df), use_container_width=True)
+    with r2:
+        st.caption("**Longitud vs. utilidad** — Relación más fuerte del dataset.")
+        st.plotly_chart(build_length_vs_helpfulness(df), use_container_width=True)
 
-# ══════════════════════════════════════════════════════════════════════════════
-# DISTRIBUCIÓN POR CATEGORÍA
-# ══════════════════════════════════════════════════════════════════════════════
-if category_col and not df.empty:
-    st.markdown('<div class="section-label">Distribución por categoría de alimento</div>', unsafe_allow_html=True)
+    st.caption("**Sentimiento por estrellas** — El sentimiento sube con las estrellas pero con alta varianza.")
+    st.plotly_chart(build_sentiment_vs_score(df), use_container_width=True)
 
-    cat_stats = (
-        df.groupby(category_col)
-        .agg(
-            n_resenas=(category_col, "count"),
-            ratio_util=(helpfulness_col, lambda x: (x >= 0.70).mean()) if helpfulness_col else (category_col, "count"),
-            avg_len=("review_len", "mean") if "review_len" in df.columns else (category_col, "count"),
+    # ══════════════════════════════════════════════════════════════════════════════
+    # DISTRIBUCIÓN POR CATEGORÍA
+    # ══════════════════════════════════════════════════════════════════════════════
+    if category_col and not df.empty:
+        st.markdown('<div class="section-label">Distribución por categoría de alimento</div>', unsafe_allow_html=True)
+
+        cat_stats = (
+            df.groupby(category_col)
+            .agg(
+                n_resenas=(category_col, "count"),
+                ratio_util=(helpfulness_col, lambda x: (x >= 0.70).mean()) if helpfulness_col else (category_col, "count"),
+                avg_len=("review_len", "mean") if "review_len" in df.columns else (category_col, "count"),
+            )
+            .reset_index()
+            .sort_values("n_resenas", ascending=False)
         )
-        .reset_index()
-        .sort_values("n_resenas", ascending=False)
-    )
 
-    fig_cat = px.bar(
-        cat_stats.sort_values("n_resenas", ascending=True),
-        x="n_resenas", y=category_col, orientation="h",
-        title="Reseñas por categoría de alimento",
-        labels={"n_resenas": "N° de reseñas", category_col: "Categoría"},
-        color="ratio_util",
-        color_continuous_scale=["#ef4444", "#f59e0b", "#22c55e"],
-        color_continuous_midpoint=0.5,
-        template="plotly_white",
-    )
-    fig_cat.update_coloraxes(colorbar_title="Ratio útiles")
-    fig_cat.update_layout(height=max(350, len(cat_stats) * 28), margin=dict(l=10, r=20, t=40, b=10))
-    st.plotly_chart(fig_cat, use_container_width=True)
-
-    cat_display = cat_stats.copy()
-    cat_display["n_resenas"]  = cat_display["n_resenas"].apply(format_compact_number)
-    cat_display["ratio_util"] = cat_display["ratio_util"].apply(format_percentage)
-    cat_display["avg_len"]    = cat_display["avg_len"].apply(lambda x: f"{int(x)} palabras")
-    cat_display.columns       = ["Categoría", "Reseñas", "% Útiles", "Longitud media"]
-    st.dataframe(cat_display, use_container_width=True, hide_index=True)
-
-# ══════════════════════════════════════════════════════════════════════════════
-# CORRELACIÓN
-# ══════════════════════════════════════════════════════════════════════════════
-st.markdown('<div class="section-label">Correlación entre variables</div>', unsafe_allow_html=True)
-st.plotly_chart(build_correlation_heatmap(df), use_container_width=True)
-
-# ══════════════════════════════════════════════════════════════════════════════
-# DESCARGA DE DATOS FILTRADOS
-# ══════════════════════════════════════════════════════════════════════════════
-st.markdown('<div class="section-label">Descargar datos del corte actual</div>', unsafe_allow_html=True)
-
-if df.empty:
-    st.info("No hay datos con los filtros actuales para descargar.")
-else:
-    # Columnas legibles para exportar
-    export_cols = [c for c in [
-        score_col, "review_len", "sentiment_score", "incoherente",
-        "y_util", helpfulness_col, "Text", "ProductId",
-        category_col, "Año",
-    ] if c and c in df.columns]
-    df_export = df[export_cols].copy()
-
-    # Renombrar columnas a nombres legibles
-    rename_map = {
-        score_col:        "Estrellas",
-        "review_len":     "Longitud (palabras)",
-        "sentiment_score":"Sentimiento VADER",
-        "incoherente":    "Incoherente",
-        "y_util":         "Es útil (1/0)",
-        helpfulness_col:  "Tasa de utilidad",
-        "Text":           "Texto de la reseña",
-        "ProductId":      "ID Producto",
-        category_col:     "Categoría",
-        "Año":            "Año",
-    }
-    df_export = df_export.rename(columns={k: v for k, v in rename_map.items() if k and k in df_export.columns})
-
-    n_filas = len(df_export)
-
-    import io, re
-
-    # Limpieza de caracteres ilegales para Excel y PDF (control chars, etc.)
-    def _clean_text(val):
-        if not isinstance(val, str):
-            return val
-        return re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f]", " ", val).strip()
-
-    df_clean = df_export.copy()
-    for col in df_clean.select_dtypes(include="object").columns:
-        df_clean[col] = df_clean[col].map(_clean_text)
-
-    dl1, dl2, dl3, dl4 = st.columns(4, gap="medium")
-
-    # ── CSV ──────────────────────────────────────────────────────────────────
-    with dl1:
-        csv_bytes = df_clean.to_csv(index=False).encode("utf-8")
-        st.download_button(
-            label="⬇ CSV",
-            data=csv_bytes,
-            file_name="resenas_filtradas.csv",
-            mime="text/csv",
-            use_container_width=True,
-            help="Compatible con Excel, Google Sheets y cualquier herramienta de análisis.",
+        fig_cat = px.bar(
+            cat_stats.sort_values("n_resenas", ascending=True),
+            x="n_resenas", y=category_col, orientation="h",
+            title="Reseñas por categoría de alimento",
+            labels={"n_resenas": "N° de reseñas", category_col: "Categoría"},
+            color="ratio_util",
+            color_continuous_scale=["#ef4444", "#f59e0b", "#22c55e"],
+            color_continuous_midpoint=0.5,
+            template="plotly_white",
         )
-        st.caption("Excel · Google Sheets")
+        fig_cat.update_coloraxes(colorbar_title="Ratio útiles")
+        fig_cat.update_layout(height=max(350, len(cat_stats) * 28), margin=dict(l=10, r=20, t=40, b=10))
+        st.plotly_chart(fig_cat, use_container_width=True)
 
-    # ── JSON ─────────────────────────────────────────────────────────────────
-    with dl2:
-        json_bytes = df_clean.to_json(orient="records", force_ascii=False, indent=2).encode("utf-8")
-        st.download_button(
-            label="⬇ JSON",
-            data=json_bytes,
-            file_name="resenas_filtradas.json",
-            mime="application/json",
-            use_container_width=True,
-            help="Ideal para consumir desde una API o sistema externo.",
-        )
-        st.caption("APIs · integraciones")
+        cat_display = cat_stats.copy()
+        cat_display["n_resenas"]  = cat_display["n_resenas"].apply(format_compact_number)
+        cat_display["ratio_util"] = cat_display["ratio_util"].apply(format_percentage)
+        cat_display["avg_len"]    = cat_display["avg_len"].apply(lambda x: f"{int(x)} palabras")
+        cat_display.columns       = ["Categoría", "Reseñas", "% Útiles", "Longitud media"]
+        st.dataframe(cat_display, use_container_width=True, hide_index=True)
 
-    # ── Excel ────────────────────────────────────────────────────────────────
-    with dl3:
-        try:
-            buffer_xl = io.BytesIO()
-            with pd.ExcelWriter(buffer_xl, engine="openpyxl") as writer:
-                df_clean.to_excel(writer, index=False, sheet_name="Resenas filtradas")
+    # ══════════════════════════════════════════════════════════════════════════════
+    # CORRELACIÓN
+    # ══════════════════════════════════════════════════════════════════════════════
+    st.markdown('<div class="section-label">Correlación entre variables</div>', unsafe_allow_html=True)
+    st.plotly_chart(build_correlation_heatmap(df), use_container_width=True)
+
+    # ══════════════════════════════════════════════════════════════════════════════
+    # DESCARGA DE DATOS FILTRADOS
+    # ══════════════════════════════════════════════════════════════════════════════
+    st.markdown('<div class="section-label">Descargar datos del corte actual</div>', unsafe_allow_html=True)
+
+    if df.empty:
+        st.info("No hay datos con los filtros actuales para descargar.")
+    else:
+        # Columnas legibles para exportar
+        export_cols = [c for c in [
+            score_col, "review_len", "sentiment_score", "incoherente",
+            "y_util", helpfulness_col, "Text", "ProductId",
+            category_col, "Año",
+        ] if c and c in df.columns]
+        df_export = df[export_cols].copy()
+
+        # Renombrar columnas a nombres legibles
+        rename_map = {
+            score_col:        "Estrellas",
+            "review_len":     "Longitud (palabras)",
+            "sentiment_score":"Sentimiento VADER",
+            "incoherente":    "Incoherente",
+            "y_util":         "Es útil (1/0)",
+            helpfulness_col:  "Tasa de utilidad",
+            "Text":           "Texto de la reseña",
+            "ProductId":      "ID Producto",
+            category_col:     "Categoría",
+            "Año":            "Año",
+        }
+        df_export = df_export.rename(columns={k: v for k, v in rename_map.items() if k and k in df_export.columns})
+
+        n_filas = len(df_export)
+
+        import io, re
+
+        # Limpieza de caracteres ilegales para Excel y PDF (control chars, etc.)
+        def _clean_text(val):
+            if not isinstance(val, str):
+                return val
+            return re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f]", " ", val).strip()
+
+        df_clean = df_export.copy()
+        for col in df_clean.select_dtypes(include="object").columns:
+            df_clean[col] = df_clean[col].map(_clean_text)
+
+        dl1, dl2, dl3, dl4 = st.columns(4, gap="medium")
+
+        # ── CSV ──────────────────────────────────────────────────────────────────
+        with dl1:
+            csv_bytes = df_clean.to_csv(index=False).encode("utf-8")
             st.download_button(
-                label="⬇ Excel",
-                data=buffer_xl.getvalue(),
-                file_name="resenas_filtradas.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                label="⬇ CSV",
+                data=csv_bytes,
+                file_name="resenas_filtradas.csv",
+                mime="text/csv",
                 use_container_width=True,
-                help="Archivo .xlsx con hoja nombrada y columnas formateadas.",
+                help="Compatible con Excel, Google Sheets y cualquier herramienta de análisis.",
             )
-            st.caption("Hoja de cálculo .xlsx")
-        except Exception:
-            st.warning("Excel no disponible — usa CSV.")
+            st.caption("Excel · Google Sheets")
 
-    # ── PDF ──────────────────────────────────────────────────────────────────
-    with dl4:
-        try:
-            from reportlab.lib.pagesizes import A4, landscape
-            from reportlab.lib import colors
-            from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
-            from reportlab.lib.styles import getSampleStyleSheet
-            from reportlab.lib.units import cm
-
-            buffer_pdf = io.BytesIO()
-            doc = SimpleDocTemplate(
-                buffer_pdf,
-                pagesize=landscape(A4),
-                rightMargin=1*cm, leftMargin=1*cm,
-                topMargin=1.5*cm, bottomMargin=1*cm,
+        # ── JSON ─────────────────────────────────────────────────────────────────
+        with dl2:
+            json_bytes = df_clean.to_json(orient="records", force_ascii=False, indent=2).encode("utf-8")
+            st.download_button(
+                label="⬇ JSON",
+                data=json_bytes,
+                file_name="resenas_filtradas.json",
+                mime="application/json",
+                use_container_width=True,
+                help="Ideal para consumir desde una API o sistema externo.",
             )
-            styles = getSampleStyleSheet()
-            elements = []
+            st.caption("APIs · integraciones")
 
-            # Título
-            elements.append(Paragraph(
-                f"Reseñas Amazon Fine Food — Corte filtrado ({format_compact_number(n_filas)} registros)",
-                styles["Heading2"]
-            ))
-            elements.append(Spacer(1, 0.4*cm))
+        # ── Excel ────────────────────────────────────────────────────────────────
+        with dl3:
+            try:
+                buffer_xl = io.BytesIO()
+                with pd.ExcelWriter(buffer_xl, engine="openpyxl") as writer:
+                    df_clean.to_excel(writer, index=False, sheet_name="Resenas filtradas")
+                st.download_button(
+                    label="⬇ Excel",
+                    data=buffer_xl.getvalue(),
+                    file_name="resenas_filtradas.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    use_container_width=True,
+                    help="Archivo .xlsx con hoja nombrada y columnas formateadas.",
+                )
+                st.caption("Hoja de cálculo .xlsx")
+            except Exception:
+                st.warning("Excel no disponible — usa CSV.")
 
-            # Limitar a 500 filas para no generar un PDF enorme
-            df_pdf = df_clean.head(500)
-            cols_pdf = list(df_pdf.columns)
+        # ── PDF ──────────────────────────────────────────────────────────────────
+        with dl4:
+            try:
+                from reportlab.lib.pagesizes import A4, landscape
+                from reportlab.lib import colors
+                from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+                from reportlab.lib.styles import getSampleStyleSheet
+                from reportlab.lib.units import cm
 
-            # Truncar texto largo en columnas de texto
-            def _trunc(val, n=60):
-                s = str(val) if not isinstance(val, float) else f"{val:.3f}"
-                return s[:n] + "…" if len(s) > n else s
+                buffer_pdf = io.BytesIO()
+                doc = SimpleDocTemplate(
+                    buffer_pdf,
+                    pagesize=landscape(A4),
+                    rightMargin=1*cm, leftMargin=1*cm,
+                    topMargin=1.5*cm, bottomMargin=1*cm,
+                )
+                styles = getSampleStyleSheet()
+                elements = []
 
-            data = [cols_pdf] + [[_trunc(v) for v in row] for row in df_pdf.itertuples(index=False)]
-
-            col_width = (landscape(A4)[0] - 2*cm) / len(cols_pdf)
-            table = Table(data, colWidths=[col_width] * len(cols_pdf), repeatRows=1)
-            table.setStyle(TableStyle([
-                ("BACKGROUND",  (0, 0), (-1, 0),  colors.HexColor("#1746A2")),
-                ("TEXTCOLOR",   (0, 0), (-1, 0),  colors.white),
-                ("FONTNAME",    (0, 0), (-1, 0),  "Helvetica-Bold"),
-                ("FONTSIZE",    (0, 0), (-1, 0),  7),
-                ("FONTSIZE",    (0, 1), (-1, -1), 6),
-                ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#EFF6FF")]),
-                ("GRID",        (0, 0), (-1, -1), 0.3, colors.HexColor("#CBD5E1")),
-                ("VALIGN",      (0, 0), (-1, -1), "TOP"),
-                ("TOPPADDING",  (0, 0), (-1, -1), 3),
-                ("BOTTOMPADDING",(0,0), (-1, -1), 3),
-            ]))
-            elements.append(table)
-
-            if n_filas > 500:
-                elements.append(Spacer(1, 0.3*cm))
+                # Título
                 elements.append(Paragraph(
-                    f"* PDF limitado a 500 filas. Descarga CSV o Excel para el dataset completo ({format_compact_number(n_filas)} reseñas).",
-                    styles["Italic"]
+                    f"Reseñas Amazon Fine Food — Corte filtrado ({format_compact_number(n_filas)} registros)",
+                    styles["Heading2"]
                 ))
+                elements.append(Spacer(1, 0.4*cm))
 
-            doc.build(elements)
+                # Limitar a 500 filas para no generar un PDF enorme
+                df_pdf = df_clean.head(500)
+                cols_pdf = list(df_pdf.columns)
 
-            st.download_button(
-                label="⬇ PDF",
-                data=buffer_pdf.getvalue(),
-                file_name="resenas_filtradas.pdf",
-                mime="application/pdf",
-                use_container_width=True,
-                help="Tabla en PDF. Máximo 500 filas para un archivo manejable.",
-            )
-            st.caption("Vista imprimible · máx. 500 filas")
-        except ImportError:
-            st.info("PDF no disponible — instala reportlab.")
+                # Truncar texto largo en columnas de texto
+                def _trunc(val, n=60):
+                    s = str(val) if not isinstance(val, float) else f"{val:.3f}"
+                    return s[:n] + "…" if len(s) > n else s
+
+                data = [cols_pdf] + [[_trunc(v) for v in row] for row in df_pdf.itertuples(index=False)]
+
+                col_width = (landscape(A4)[0] - 2*cm) / len(cols_pdf)
+                table = Table(data, colWidths=[col_width] * len(cols_pdf), repeatRows=1)
+                table.setStyle(TableStyle([
+                    ("BACKGROUND",  (0, 0), (-1, 0),  colors.HexColor("#1746A2")),
+                    ("TEXTCOLOR",   (0, 0), (-1, 0),  colors.white),
+                    ("FONTNAME",    (0, 0), (-1, 0),  "Helvetica-Bold"),
+                    ("FONTSIZE",    (0, 0), (-1, 0),  7),
+                    ("FONTSIZE",    (0, 1), (-1, -1), 6),
+                    ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#EFF6FF")]),
+                    ("GRID",        (0, 0), (-1, -1), 0.3, colors.HexColor("#CBD5E1")),
+                    ("VALIGN",      (0, 0), (-1, -1), "TOP"),
+                    ("TOPPADDING",  (0, 0), (-1, -1), 3),
+                    ("BOTTOMPADDING",(0,0), (-1, -1), 3),
+                ]))
+                elements.append(table)
+
+                if n_filas > 500:
+                    elements.append(Spacer(1, 0.3*cm))
+                    elements.append(Paragraph(
+                        f"* PDF limitado a 500 filas. Descarga CSV o Excel para el dataset completo ({format_compact_number(n_filas)} reseñas).",
+                        styles["Italic"]
+                    ))
+
+                doc.build(elements)
+
+                st.download_button(
+                    label="⬇ PDF",
+                    data=buffer_pdf.getvalue(),
+                    file_name="resenas_filtradas.pdf",
+                    mime="application/pdf",
+                    use_container_width=True,
+                    help="Tabla en PDF. Máximo 500 filas para un archivo manejable.",
+                )
+                st.caption("Vista imprimible · máx. 500 filas")
+            except ImportError:
+                st.info("PDF no disponible — instala reportlab.")
+
+with tab_producto:
+    st.markdown('<div class="section-label">Selecciona un producto para analizar</div>', unsafe_allow_html=True)
+
+    from services.catalog_service import get_product_detail, get_product_options
+
+    prod_options = get_product_options()
+    if not prod_options:
+        st.warning("No hay productos disponibles en el catálogo.")
+    else:
+        selected_prod = st.selectbox(
+            "Producto a analizar",
+            options=prod_options,
+            key="_eda_product_selector",
+        )
+        detail = get_product_detail(selected_prod)
+
+        prod_name = detail.get("ProductName", "—")
+        prod_cat  = detail.get("Categoria_Real", "—")
+        prod_id   = detail.get("ProductId", "—")
+
+        st.markdown(
+            f'''<div class="highlight-card">
+                <div style="display:flex;gap:2rem;flex-wrap:wrap">
+                    <div><div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;color:#64748b">Producto</div>
+                         <div style="font-size:0.95rem;font-weight:700;color:#0f172a">{prod_name}</div></div>
+                    <div><div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;color:#64748b">Categoría</div>
+                         <div style="font-size:0.95rem;font-weight:700;color:#1746a2">{prod_cat}</div></div>
+                    <div><div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;color:#64748b">ID</div>
+                         <div style="font-size:0.9rem;font-family:monospace;color:#64748b">{prod_id}</div></div>
+                </div>
+            </div>''',
+            unsafe_allow_html=True,
+        )
+
+        prod_col_name = "ProductId"
+        df_prod = source[source[prod_col_name].astype(str) == str(selected_prod)].copy() if prod_col_name in source.columns else pd.DataFrame()
+
+        if df_prod.empty:
+            st.info("No hay reseñas disponibles para este producto en el dataset procesado.")
+        else:
+            n_prod          = len(df_prod)
+            helpfulness_p   = "Helpfulness" if "Helpfulness" in df_prod.columns else ("helpfulness_ratio" if "helpfulness_ratio" in df_prod.columns else None)
+            score_p         = "Score" if "Score" in df_prod.columns else ("Stars" if "Stars" in df_prod.columns else None)
+            ratio_util      = float(df_prod["y_util"].mean()) if "y_util" in df_prod.columns else 0.0
+            avg_len_p       = int(df_prod["review_len"].mean()) if "review_len" in df_prod.columns else 0
+            avg_score_p     = float(df_prod[score_p].mean()) if score_p else 0.0
+
+            k1, k2, k3, k4 = st.columns(4, gap="medium")
+            for col, val, label, sub in [
+                (k1, format_compact_number(n_prod), "Reseñas",         "Total del producto"),
+                (k2, f"{ratio_util:.1%}",           "Ratio de útiles", "Reseñas con Helpfulness ≥ 0.70"),
+                (k3, f"{avg_len_p} palabras",        "Longitud media",  "Promedio de palabras"),
+                (k4, f"{avg_score_p:.1f} ★",         "Calificación",    "Promedio de estrellas"),
+            ]:
+                with col:
+                    st.markdown(
+                        f'''<div style="background:#fff;border:1px solid #e2e8f0;
+                                    border-top:3px solid #1746a2;border-radius:12px;
+                                    padding:0.9rem;text-align:center">
+                            <div style="font-size:1.4rem;font-weight:900;color:#1746a2">{val}</div>
+                            <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;
+                                        color:#64748b;margin:0.3rem 0">{label}</div>
+                            <div style="font-size:0.68rem;color:#94a3b8">{sub}</div>
+                        </div>''',
+                        unsafe_allow_html=True,
+                    )
+
+            st.markdown("<br>", unsafe_allow_html=True)
+
+            g1, g2 = st.columns(2, gap="large")
+            with g1:
+                st.markdown('<div class="section-label">Distribución de calificaciones</div>', unsafe_allow_html=True)
+                st.plotly_chart(build_stars_distribution(df_prod), use_container_width=True)
+            with g2:
+                st.markdown('<div class="section-label">Distribución de longitud</div>', unsafe_allow_html=True)
+                st.plotly_chart(build_review_length_distribution(df_prod), use_container_width=True)
+
+            g3, g4 = st.columns(2, gap="large")
+            with g3:
+                st.markdown('<div class="section-label">Utilidad por calificación</div>', unsafe_allow_html=True)
+                st.plotly_chart(build_stars_vs_helpfulness(df_prod), use_container_width=True)
+            with g4:
+                st.markdown('<div class="section-label">Sentimiento por calificación</div>', unsafe_allow_html=True)
+                st.plotly_chart(build_sentiment_vs_score(df_prod), use_container_width=True)
+
+            st.markdown('<div class="section-label">Coherencia texto-estrellas</div>', unsafe_allow_html=True)
+            st.plotly_chart(build_incoherence_distribution(df_prod), use_container_width=True)
+
+            # Top 5 más útiles
+            st.markdown('<div class="section-label">Top 5 reseñas más útiles de este producto</div>', unsafe_allow_html=True)
+            if helpfulness_p:
+                top5     = df_prod.nlargest(5, helpfulness_p)
+                text_col = "Text" if "Text" in top5.columns else None
+                for i, (_, row) in enumerate(top5.iterrows(), 1):
+                    score_v = int(row[score_p]) if score_p else "—"
+                    util_v  = f"{float(row[helpfulness_p]):.1%}"
+                    text_v  = str(row[text_col])[:300] + "..." if text_col and len(str(row[text_col])) > 300 else (str(row[text_col]) if text_col else "")
+                    stars   = "★" * score_v + "☆" * (5 - score_v) if isinstance(score_v, int) else ""
+                    st.markdown(
+                        f'''<div style="background:#fff;border:1px solid #e2e8f0;
+                                    border-left:4px solid #1746a2;border-radius:0 10px 10px 0;
+                                    padding:0.8rem 1rem;margin-bottom:0.5rem">
+                            <div style="display:flex;gap:1rem;margin-bottom:0.4rem;align-items:center">
+                                <span style="font-size:0.75rem;font-weight:700;color:#1746a2">#{i}</span>
+                                <span style="font-size:0.8rem;color:#f59e0b">{stars}</span>
+                                <span style="font-size:0.75rem;font-weight:700;color:#15803d">Utilidad: {util_v}</span>
+                            </div>
+                            <div style="font-size:0.82rem;color:#0f172a;line-height:1.6">{text_v}</div>
+                        </div>''',
+                        unsafe_allow_html=True,
+                    )
